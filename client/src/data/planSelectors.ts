@@ -38,6 +38,8 @@ export function buildRoomView(db: DbView, planId: number, identity?: { toHexStri
       name: activity.name,
       price: activity.price,
       minPeople: activity.minPeople,
+      distanceKm: activity.distanceKm,
+      timeMinutes: activity.timeMinutes,
       eligibleCount,
       possible: eligibleCount >= activity.minPeople,
       callerAnswer: state === "In" ? { state: "in" as const } : state === "Out" ? { state: "out" as const } : state === "Conditional" ? { state: "conditional" as const, ...(answer?.maxPrice == null ? {} : { maxPrice: answer.maxPrice }) } : null,
