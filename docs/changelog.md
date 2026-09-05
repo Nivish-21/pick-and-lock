@@ -6,3 +6,5 @@
 - Hardened the contract with share-code resolution, uniqueness, reconnect, concurrency, email safety, onboarding, and no-loop lifecycle rules; added a pre-handoff audit package.
 - Corrected the event schedule: at 17:46 Saturday the team still has 14 hours 44 minutes to the 08:30 Sunday code freeze; added checkpoint-based execution timing.
 - Completed the pre-handoff package: acceptance matrix, server/UI/auditor prompts, conflict amendments, and hardening completion record. No application code added.
+- Added the live-execution plan, collaborator launch prompt, and Maincloud database-owner runbook so both builders can start without a second planning pass.
+- Recorded launch authority: UI workspace and server-core work can start in parallel; Maincloud database creation is deferred to the owner's first tested-module publish.

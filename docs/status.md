@@ -11,3 +11,7 @@ Plan hardening is in progress. Do not hand the repository to the collaborator or
 Schedule corrected at 17:46 IST on Saturday: 14 hours 44 minutes remain before the 08:30 Sunday code freeze. The immediate plan is the M1-to-M3 sequence in `docs/two-builder-execution.md`; no first-iteration core feature is cut.
 
 The hardened plan package is complete and awaiting repository-owner acceptance. It includes the frozen contract, acceptance matrix, owner prompts, plan-auditor prompt, and checkpoint schedule. No application code has been created in this hardening pass.
+
+The next execution package is ready: a copy-and-send collaborator launch prompt, a live two-owner sequence, and a Maincloud owner runbook. Maincloud is the chosen database host; do not self-host for this time-boxed build.
+
+The repository owner authorised launch by requesting the exact collaborator prompt and live plan. The UI owner may create the Vite workspace on an owned branch; the collaborator may start `server/**` immediately. The owner authenticates to Maincloud now and creates `pick-and-lock` by publishing the merged, tested server core.

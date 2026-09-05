@@ -29,3 +29,6 @@ The current plan supersedes the earlier single-lane schedule:
 | [Server-agent prompt](prompts/server-agent.md) | Exact starting instruction for the collaborator's agent. |
 | [UI-owner prompt](prompts/ui-owner.md) | Exact independent UI lane instruction. |
 | [Plan-auditor prompt](prompts/plan-auditor.md) | Read-only red-team check to run before implementation and before release. |
+| [Collaborator launch prompt](prompts/collaborator-launch.md) | Copy-and-send instruction that starts the server agent without another planning pass. |
+| [Saturday live-execution plan](superpowers/plans/2026-09-05-saturday-live-execution.md) | Exact owner sequence, database handoff, and milestone evidence. |
+| [Maincloud owner runbook](maincloud-owner-runbook.md) | Exact commands for the account owner to create the Maincloud database after server-core merge. |
