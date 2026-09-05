@@ -1248,7 +1248,6 @@ pub fn create_room(
         locked_activity_id: None,
         version: 0,
     });
-    seed_activities(ctx, plan.id);
     event(ctx, plan.id, "created", None, None, "Room created".into());
     Ok(())
 }
