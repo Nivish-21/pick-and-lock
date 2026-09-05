@@ -1,5 +1,6 @@
 use sha2::{Digest, Sha256};
 use spacetimedb::{Identity, ReducerContext, SpacetimeType, Table, Timestamp, ViewContext};
+use std::time::Duration;
 
 #[derive(SpacetimeType, Clone, Copy, PartialEq, Eq)]
 pub enum PlanStatus {
@@ -109,6 +110,60 @@ pub struct EventLog {
     pub activity_id: Option<u32>,
     pub message: String,
     pub at: Timestamp,
+}
+
+#[spacetimedb::table(accessor = chat_message, private)]
+pub struct ChatMessage {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u64,
+    #[index(btree)]
+    pub room_id: u32,
+    pub sender_identity: Identity,
+    pub sender_name: String,
+    pub is_bot: bool,
+    pub body: String,
+    pub kind: String,
+    pub payload_json: String,
+    pub sent_at: Timestamp,
+}
+
+#[spacetimedb::table(accessor = member_preference, private)]
+pub struct MemberPreference {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u64,
+    #[index(btree)]
+    pub room_id: u32,
+    pub friend_id: u32,
+    pub friend_name: String,
+    pub statement: String,
+    pub category: String,
+    pub source_message_id: u64,
+    pub recorded_at: Timestamp,
+}
+
+#[spacetimedb::table(accessor = bot_room_state, private)]
+pub struct BotRoomState {
+    #[primary_key]
+    pub room_id: u32,
+    pub last_bot_message_at: Option<Timestamp>,
+    pub bot_messages_in_current_minute: u32,
+    pub minute_window_started_at: Timestamp,
+    pub last_processed_message_id: u64,
+}
+
+#[spacetimedb::table(accessor = location_submission, private)]
+pub struct LocationSubmission {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u64,
+    #[index(btree)]
+    pub room_id: u32,
+    pub friend_id: u32,
+    pub lat: f64,
+    pub lng: f64,
+    pub submitted_at: Timestamp,
 }
 
 #[derive(SpacetimeType, Clone, Copy, PartialEq, Eq)]
@@ -234,6 +289,50 @@ pub struct MyRoomMember {
     pub display_name: String,
     pub joined_at: Timestamp,
     pub role: RoomMembershipRole,
+}
+
+#[derive(SpacetimeType)]
+pub struct MyRoomChat {
+    pub id: u64,
+    pub room_id: u32,
+    pub sender_identity: Identity,
+    pub sender_name: String,
+    pub is_bot: bool,
+    pub body: String,
+    pub kind: String,
+    pub payload_json: String,
+    pub sent_at: Timestamp,
+}
+
+#[derive(SpacetimeType)]
+pub struct MyRoomPreference {
+    pub id: u64,
+    pub room_id: u32,
+    pub friend_id: u32,
+    pub friend_name: String,
+    pub statement: String,
+    pub category: String,
+    pub source_message_id: u64,
+    pub recorded_at: Timestamp,
+}
+
+#[derive(SpacetimeType)]
+pub struct MyRoomLocation {
+    pub id: u64,
+    pub room_id: u32,
+    pub friend_id: u32,
+    pub lat: f64,
+    pub lng: f64,
+    pub submitted_at: Timestamp,
+}
+
+#[derive(SpacetimeType)]
+pub struct MyBotRoomState {
+    pub room_id: u32,
+    pub last_bot_message_at: Option<Timestamp>,
+    pub bot_messages_in_current_minute: u32,
+    pub minute_window_started_at: Timestamp,
+    pub last_processed_message_id: u64,
 }
 
 fn friend_for(ctx: &ReducerContext, plan_id: u32) -> Option<Friend> {
@@ -405,6 +504,58 @@ fn membership_for(ctx: &ReducerContext, room_id: u32) -> Option<RoomMembership> 
         .find(|membership| membership.room_id == room_id && membership.identity == ctx.sender())
 }
 
+fn active_private_membership(ctx: &ReducerContext, room_id: u32) -> Result<RoomMembership, String> {
+    membership_for(ctx, room_id)
+        .filter(|membership| membership.left_at.is_none())
+        .ok_or_else(|| "Join the room first".into())
+}
+
+fn configured_bot_identity() -> Option<Identity> {
+    option_env!("BOT_IDENTITY").and_then(|value| Identity::from_hex(value).ok())
+}
+
+fn require_bot(ctx: &ReducerContext) -> Result<(), String> {
+    match configured_bot_identity() {
+        Some(identity) if identity == ctx.sender() => Ok(()),
+        _ => Err("Bot identity is not authorized".into()),
+    }
+}
+
+fn valid_chat_kind(kind: &str) -> bool {
+    matches!(
+        kind,
+        "text" | "location_request" | "place_suggestions" | "recap"
+    )
+}
+
+fn bot_state_for(ctx: &ReducerContext, room_id: u32) -> BotRoomState {
+    ctx.db
+        .bot_room_state()
+        .room_id()
+        .find(room_id)
+        .unwrap_or(BotRoomState {
+            room_id,
+            last_bot_message_at: None,
+            bot_messages_in_current_minute: 0,
+            minute_window_started_at: ctx.timestamp,
+            last_processed_message_id: 0,
+        })
+}
+
+fn save_bot_state(ctx: &ReducerContext, state: BotRoomState) {
+    if ctx
+        .db
+        .bot_room_state()
+        .room_id()
+        .find(state.room_id)
+        .is_some()
+    {
+        ctx.db.bot_room_state().room_id().update(state);
+    } else {
+        ctx.db.bot_room_state().insert(state);
+    }
+}
+
 fn creator_private_room(ctx: &ReducerContext, public_room_id: &str) -> Result<PrivateRoom, String> {
     let room = private_room_by_public_id(ctx, public_room_id)?;
     if room.creator_identity != ctx.sender() {
@@ -524,6 +675,246 @@ pub fn my_room_members(ctx: &ViewContext) -> Vec<MyRoomMember> {
             role: membership.role,
         })
         .collect()
+}
+
+#[spacetimedb::view(accessor = my_room_chat, public, primary_key = id)]
+pub fn my_room_chat(ctx: &ViewContext) -> Vec<MyRoomChat> {
+    let room_ids = view_active_room_ids(ctx);
+    room_ids
+        .into_iter()
+        .flat_map(|room_id| ctx.db.chat_message().room_id().filter(room_id))
+        .map(|message| MyRoomChat {
+            id: message.id,
+            room_id: message.room_id,
+            sender_identity: message.sender_identity,
+            sender_name: message.sender_name,
+            is_bot: message.is_bot,
+            body: message.body,
+            kind: message.kind,
+            payload_json: message.payload_json,
+            sent_at: message.sent_at,
+        })
+        .collect()
+}
+
+#[spacetimedb::view(accessor = my_room_preferences, public, primary_key = id)]
+pub fn my_room_preferences(ctx: &ViewContext) -> Vec<MyRoomPreference> {
+    let room_ids = view_active_room_ids(ctx);
+    room_ids
+        .into_iter()
+        .flat_map(|room_id| ctx.db.member_preference().room_id().filter(room_id))
+        .map(|preference| MyRoomPreference {
+            id: preference.id,
+            room_id: preference.room_id,
+            friend_id: preference.friend_id,
+            friend_name: preference.friend_name,
+            statement: preference.statement,
+            category: preference.category,
+            source_message_id: preference.source_message_id,
+            recorded_at: preference.recorded_at,
+        })
+        .collect()
+}
+
+#[spacetimedb::view(accessor = my_room_locations, public, primary_key = id)]
+pub fn my_room_locations(ctx: &ViewContext) -> Vec<MyRoomLocation> {
+    let room_ids = view_active_room_ids(ctx);
+    room_ids
+        .into_iter()
+        .flat_map(|room_id| ctx.db.location_submission().room_id().filter(room_id))
+        .map(|location| MyRoomLocation {
+            id: location.id,
+            room_id: location.room_id,
+            friend_id: location.friend_id,
+            lat: location.lat,
+            lng: location.lng,
+            submitted_at: location.submitted_at,
+        })
+        .collect()
+}
+
+#[spacetimedb::view(accessor = my_bot_room_state, public, primary_key = room_id)]
+pub fn my_bot_room_state(ctx: &ViewContext) -> Vec<MyBotRoomState> {
+    let room_ids = view_active_room_ids(ctx);
+    room_ids
+        .into_iter()
+        .filter_map(|room_id| ctx.db.bot_room_state().room_id().find(room_id))
+        .map(|state| MyBotRoomState {
+            room_id: state.room_id,
+            last_bot_message_at: state.last_bot_message_at,
+            bot_messages_in_current_minute: state.bot_messages_in_current_minute,
+            minute_window_started_at: state.minute_window_started_at,
+            last_processed_message_id: state.last_processed_message_id,
+        })
+        .collect()
+}
+
+#[spacetimedb::reducer]
+pub fn send_chat_message(ctx: &ReducerContext, room_id: u32, body: String) -> Result<(), String> {
+    let membership = active_private_membership(ctx, room_id)?;
+    let body = body.trim().to_string();
+    if body.is_empty() || body.len() > 500 {
+        return Err("Message must be 1-500 characters".into());
+    }
+    ctx.db.chat_message().insert(ChatMessage {
+        id: 0,
+        room_id,
+        sender_identity: ctx.sender(),
+        sender_name: membership.display_name,
+        is_bot: false,
+        body,
+        kind: "text".into(),
+        payload_json: "{}".into(),
+        sent_at: ctx.timestamp,
+    });
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+pub fn send_bot_message(
+    ctx: &ReducerContext,
+    room_id: u32,
+    body: String,
+    kind: String,
+    payload_json: String,
+) -> Result<(), String> {
+    require_bot(ctx)?;
+    if ctx.db.private_room().id().find(room_id).is_none() {
+        return Err("Room not found".into());
+    }
+    let body = body.trim().to_string();
+    if body.is_empty() || body.len() > 500 || !valid_chat_kind(&kind) {
+        return Err("Bot message is invalid".into());
+    }
+    if payload_json.len() > 4_000 {
+        return Err("Bot payload is too large".into());
+    }
+
+    let mut state = bot_state_for(ctx, room_id);
+    let in_minute = ctx
+        .timestamp
+        .duration_since(state.minute_window_started_at)
+        .is_some_and(|duration| duration < Duration::from_secs(60));
+    if !in_minute {
+        state.minute_window_started_at = ctx.timestamp;
+        state.bot_messages_in_current_minute = 0;
+    }
+    if state
+        .last_bot_message_at
+        .and_then(|last| ctx.timestamp.duration_since(last))
+        .is_some_and(|duration| duration < Duration::from_secs(25))
+    {
+        return Err("Bot cooldown is active".into());
+    }
+    if state.bot_messages_in_current_minute >= 3 {
+        return Err("Bot message limit reached".into());
+    }
+
+    ctx.db.chat_message().insert(ChatMessage {
+        id: 0,
+        room_id,
+        sender_identity: ctx.sender(),
+        sender_name: "AI Concierge".into(),
+        is_bot: true,
+        body,
+        kind,
+        payload_json,
+        sent_at: ctx.timestamp,
+    });
+    state.last_bot_message_at = Some(ctx.timestamp);
+    state.bot_messages_in_current_minute += 1;
+    save_bot_state(ctx, state);
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+pub fn record_preference(
+    ctx: &ReducerContext,
+    room_id: u32,
+    friend_id: u32,
+    statement: String,
+    category: String,
+    source_message_id: u64,
+) -> Result<(), String> {
+    require_bot(ctx)?;
+    let member = ctx
+        .db
+        .room_membership()
+        .id()
+        .find(friend_id)
+        .filter(|membership| membership.room_id == room_id && membership.left_at.is_none())
+        .ok_or("Member not found")?;
+    let statement = statement.trim().to_string();
+    if statement.is_empty() || statement.len() > 240 {
+        return Err("Preference statement must be 1-240 characters".into());
+    }
+    if !matches!(
+        category.as_str(),
+        "dietary" | "budget" | "timing" | "access" | "other"
+    ) {
+        return Err("Preference category is invalid".into());
+    }
+    if ctx
+        .db
+        .chat_message()
+        .id()
+        .find(source_message_id)
+        .is_none_or(|message| message.room_id != room_id)
+    {
+        return Err("Source message not found".into());
+    }
+    ctx.db.member_preference().insert(MemberPreference {
+        id: 0,
+        room_id,
+        friend_id,
+        friend_name: member.display_name,
+        statement,
+        category,
+        source_message_id,
+        recorded_at: ctx.timestamp,
+    });
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+pub fn submit_location(
+    ctx: &ReducerContext,
+    room_id: u32,
+    lat: f64,
+    lng: f64,
+) -> Result<(), String> {
+    let member = active_private_membership(ctx, room_id)?;
+    if !lat.is_finite()
+        || !lng.is_finite()
+        || !(-90.0..=90.0).contains(&lat)
+        || !(-180.0..=180.0).contains(&lng)
+    {
+        return Err("Location is invalid".into());
+    }
+    ctx.db.location_submission().insert(LocationSubmission {
+        id: 0,
+        room_id,
+        friend_id: member.id,
+        lat,
+        lng,
+        submitted_at: ctx.timestamp,
+    });
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+pub fn advance_bot_watermark(
+    ctx: &ReducerContext,
+    room_id: u32,
+    last_processed_message_id: u64,
+) -> Result<(), String> {
+    require_bot(ctx)?;
+    let mut state = bot_state_for(ctx, room_id);
+    if last_processed_message_id > state.last_processed_message_id {
+        state.last_processed_message_id = last_processed_message_id;
+        save_bot_state(ctx, state);
+    }
+    Ok(())
 }
 
 fn seed_activities(ctx: &ReducerContext, plan_id: u32) {

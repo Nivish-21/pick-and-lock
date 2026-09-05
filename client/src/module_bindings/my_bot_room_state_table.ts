@@ -9,17 +9,11 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import {
-  PrivateRoomStatus,
-} from "./types";
-
 
 export default __t.row({
   roomId: __t.u32().primaryKey().name("room_id"),
-  publicRoomId: __t.string().name("public_room_id"),
-  title: __t.string(),
-  createdAt: __t.timestamp().name("created_at"),
-  get status() {
-    return PrivateRoomStatus;
-  },
+  lastBotMessageAt: __t.option(__t.timestamp()).name("last_bot_message_at"),
+  botMessagesInCurrentMinute: __t.u32().name("bot_messages_in_current_minute"),
+  minuteWindowStartedAt: __t.timestamp().name("minute_window_started_at"),
+  lastProcessedMessageId: __t.u64().name("last_processed_message_id"),
 });

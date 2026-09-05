@@ -7,6 +7,7 @@ import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
 import AcceptReducer from "../accept_reducer";
+import AdvanceBotWatermarkReducer from "../advance_bot_watermark_reducer";
 import CancelProposalReducer from "../cancel_proposal_reducer";
 import CreatePrivateRoomReducer from "../create_private_room_reducer";
 import CreateRoomReducer from "../create_room_reducer";
@@ -15,11 +16,16 @@ import JoinReducer from "../join_reducer";
 import JoinWithInviteReducer from "../join_with_invite_reducer";
 import LeaveReducer from "../leave_reducer";
 import ProposeReducer from "../propose_reducer";
+import RecordPreferenceReducer from "../record_preference_reducer";
 import RegenerateInviteReducer from "../regenerate_invite_reducer";
 import RevokeInviteReducer from "../revoke_invite_reducer";
+import SendBotMessageReducer from "../send_bot_message_reducer";
+import SendChatMessageReducer from "../send_chat_message_reducer";
 import SetAnswerReducer from "../set_answer_reducer";
+import SubmitLocationReducer from "../submit_location_reducer";
 
 export type AcceptParams = __Infer<typeof AcceptReducer>;
+export type AdvanceBotWatermarkParams = __Infer<typeof AdvanceBotWatermarkReducer>;
 export type CancelProposalParams = __Infer<typeof CancelProposalReducer>;
 export type CreatePrivateRoomParams = __Infer<typeof CreatePrivateRoomReducer>;
 export type CreateRoomParams = __Infer<typeof CreateRoomReducer>;
@@ -28,6 +34,10 @@ export type JoinParams = __Infer<typeof JoinReducer>;
 export type JoinWithInviteParams = __Infer<typeof JoinWithInviteReducer>;
 export type LeaveParams = __Infer<typeof LeaveReducer>;
 export type ProposeParams = __Infer<typeof ProposeReducer>;
+export type RecordPreferenceParams = __Infer<typeof RecordPreferenceReducer>;
 export type RegenerateInviteParams = __Infer<typeof RegenerateInviteReducer>;
 export type RevokeInviteParams = __Infer<typeof RevokeInviteReducer>;
+export type SendBotMessageParams = __Infer<typeof SendBotMessageReducer>;
+export type SendChatMessageParams = __Infer<typeof SendChatMessageReducer>;
 export type SetAnswerParams = __Infer<typeof SetAnswerReducer>;
+export type SubmitLocationParams = __Infer<typeof SubmitLocationReducer>;

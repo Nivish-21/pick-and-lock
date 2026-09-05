@@ -10,7 +10,9 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-import { PrivateRoomChoiceInput } from "./types";
+import {
+  PrivateRoomChoiceInput,
+} from "./types";
 
 export default {
   publicRoomId: __t.string(),
