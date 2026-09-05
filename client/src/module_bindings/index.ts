@@ -35,6 +35,7 @@ import {
 
 // Import all reducer arg schemas
 import AcceptReducer from "./accept_reducer";
+import AddActivityReducer from "./add_activity_reducer";
 import CancelProposalReducer from "./cancel_proposal_reducer";
 import CreatePrivateRoomReducer from "./create_private_room_reducer";
 import CreateRoomReducer from "./create_room_reducer";
@@ -207,6 +208,7 @@ const tablesSchema = __schema({
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
   __reducerSchema("accept", AcceptReducer),
+  __reducerSchema("add_activity", AddActivityReducer),
   __reducerSchema("cancel_proposal", CancelProposalReducer),
   __reducerSchema("create_private_room", CreatePrivateRoomReducer),
   __reducerSchema("create_room", CreateRoomReducer),
