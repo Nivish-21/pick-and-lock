@@ -131,3 +131,22 @@ Standalone Node/TypeScript process in `bot/`. **Not inside the SpacetimeDB modul
 - Internal consistency: Lane C is additive-only and doesn't touch Lane A's tables, matching the stated conflict-avoidance rationale.
 - Scope: this spec covers Lanes B-E only; Lane A (decision engine) is the teammate's pre-existing, separately-owned worktree and is referenced, not redefined, here.
 - Ambiguity resolved explicitly: memory = per-room only (stated); speak-gate = deterministic-first, LLM-second (stated); bot runs external to the WASM module (stated, with the reason).
+
+## 8. 2026-09-06 correction — chat schema was built against the wrong room system
+
+Lanes B and C+D both merged and were both independently verified (build/test/lint green, live-published to Maincloud, and manually smoke-tested in a real browser against production). That smoke test found the actual defect this section fixes.
+
+**Root cause**: this spec's original section 3 wrote `room_id: u32, // FK to Plan/Room`, which read as ambiguous. The implementer reasonably built `chat_message`/`member_preference`/`bot_room_state`/`location_submission` against `PrivateRoom.id` (v2, invite-only, still incomplete/unmerged in `.worktrees/private-decision-engine`) instead of `Plan.id` (v1, public share-code rooms — the only system real users actually reach today). Result: the chat/bot feature has no room to attach to in the live app, and `RoomChat`/`GroupInputPanel` were never mounted into `RoomPage.tsx` at all (built and unit-tested in isolation only).
+
+**Fix, decided by the repository owner**: retarget `room_id` on all four chat/bot/location tables to mean `Plan.id`, and change every reducer's membership/authorization check from `room_membership`/`private_room` to `friend_for(ctx, plan_id)`/`plan_for(ctx, plan_id)` (the same helpers `add_activity`, `set_answer`, and `propose` already use). This is additive-only at the schema level — table shapes don't change, only what the id refers to and how reducers validate it.
+
+## 9. New scope — merged onboarding, split-screen chat, autonomous poll authoring
+
+The repository owner's next request, folded into this spec rather than a new document:
+
+1. **Merge host-name entry into room creation.** `CreateRoomPage` collects title, date, *and* the creator's display name in one screen. On create, the creator lands directly in the room already joined — no separate `LandingPage` name step for the creator specifically. Joiners who receive the share link still go through `LandingPage` to enter their own name (unchanged).
+2. **Split-screen `RoomPage` layout.** Activities/poll on the left (existing content, unchanged), a persistent `RoomChat` + `GroupInputPanel` sidebar on the right. Chat is live and visible the whole time, not a scroll-down section.
+3. **`@`-mention direct address.** The bot-service speak-gate's direct-address regex (`api/bot-service/speakGate.ts`) already recognizes `@bot`/`@ai concierge`/`pick & lock` — broaden it to also match `@sorted` and treat any `@`-prefixed token addressed at the bot as a direct-address trigger, not just the fixed phrase list.
+4. **Autonomous poll authoring.** New `bot_add_activity(room_id, name, price, min_people)` reducer, `require_bot`-gated (mirrors `send_bot_message`'s auth pattern), doing the same validation/dedupe as `add_activity`. The bot-service extracts candidate activity ideas from recent chat via the existing per-room debounce cycle's LLM call, posts a `send_bot_message` status line ("Drafting a few options from the chat...") before adding anything, calls `bot_add_activity` for each new idea (skip anything that duplicates an existing activity name), then confirms what was added. This uses the existing debounce/cooldown machinery — no new trigger type needed, just a new action the bot can take when it does speak.
+
+Non-goals unchanged from section 6. Lane ownership: the schema retarget (section 8) and autonomous poll authoring (section 9.3-9.4) are server/bot-service work; the onboarding merge and split-screen layout (section 9.1-9.2) are client work. Both are handed off as separate prompts to the two builders; this session integrates and re-verifies at merge time, same as every lane so far.
