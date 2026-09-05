@@ -328,6 +328,9 @@ export class RoomBotService {
         )
         .join("; "),
     });
+    console.log(
+      `Room ${roomId}: trigger=${gate.trigger} allowed=${gate.allowed} newMessages=${newMessages.length} reply=${result.reply_text ? "yes" : "no"} ideas=${result.activity_ideas.length}`,
+    );
 
     const ideas =
       newMessages.length > 0
@@ -347,7 +350,9 @@ export class RoomBotService {
           kind: "text",
           payloadJson: "{}",
         })
-        .catch(() => undefined);
+        .catch((error) =>
+          console.error(`sendBotMessage (drafting) failed for room ${roomId}`, error),
+        );
       for (const idea of ideas) {
         try {
           await this.connection.reducers.botAddActivity({
@@ -373,7 +378,9 @@ export class RoomBotService {
               kind: "recap",
               payloadJson: JSON.stringify({ activities: authoredNames }),
             })
-            .catch(() => undefined);
+            .catch((error) =>
+              console.error(`sendBotMessage (recap) failed for room ${roomId}`, error),
+            );
         }, 26_000);
       }
     }
@@ -395,7 +402,9 @@ export class RoomBotService {
           kind: "text",
           payloadJson: "{}",
         })
-        .catch(() => undefined);
+        .catch((error) =>
+          console.error(`sendBotMessage (reply) failed for room ${roomId}`, error),
+        );
     }
 
     const location = (this.locations.get(roomId) ?? []).at(-1);
@@ -419,8 +428,11 @@ export class RoomBotService {
             kind: "place_suggestions",
             payloadJson: JSON.stringify({ places }),
           })
-          .catch(() => undefined);
-      } catch {
+          .catch((error) =>
+            console.error(`sendBotMessage (places) failed for room ${roomId}`, error),
+          );
+      } catch (error) {
+        console.error(`findNearbyPlaces failed for room ${roomId}`, error);
         await this.connection.reducers
           .sendBotMessage({
             roomId,
@@ -428,7 +440,9 @@ export class RoomBotService {
             kind: "place_suggestions",
             payloadJson: JSON.stringify({ places: [] }),
           })
-          .catch(() => undefined);
+          .catch((error) =>
+            console.error(`sendBotMessage (places-error) failed for room ${roomId}`, error),
+          );
       }
     }
 
