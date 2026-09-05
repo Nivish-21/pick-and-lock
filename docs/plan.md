@@ -2,11 +2,11 @@
 
 ## Resume point
 
-Everything is merged into `main` except one open lane. To resume:
+Both chat-feature lanes are merged into `main`: issue #17 (onboarding + split-chat layout, PR #18) and issue #16 (server retarget to `Plan.id` + `bot_add_activity`/`ensure_bot_friend` + autonomous poll authoring, PR #19) — both independently re-verified, not just self-reported. To resume:
 
-1. Check GitHub issue #16 (`server/chat-schema-plan-retarget`) — server retarget of chat/location/bot tables from `PrivateRoom.id` to `Plan.id`, plus a new `bot_add_activity` reducer and bot-service autonomous poll authoring. Spec: `docs/superpowers/specs/2026-09-05-web-fix-and-chat-agent-design.md` sections 8-9.
-2. Once #16 merges: regenerate `client/src/module_bindings`, replace the `TODO(issue #16)` placeholder chat wiring in `client/src/pages/RoomPage.tsx` with the real `my_room_chat`/`my_room_preferences` subscriptions and `sendChatMessage` action (client-side plumbing pattern already established in `RoomDataBridge.tsx`/`spacetime.ts` for `activity`/`friend`/etc.).
-3. Re-run full verification (server + client + bot-service, see any recent PR body for the exact command list), then publish to Maincloud again with explicit owner confirmation (`spacetime publish pick-and-lock --module-path server/spacetimedb --yes=remote` — additive-only, verify with `git diff <prev> HEAD -- server/spacetimedb/src/lib.rs` that no existing table's columns changed, same check performed before every publish so far).
+1. ~~Check GitHub issue #16~~ — done, merged as PR #19 (`70e0ca5`).
+2. Regenerate/confirm `client/src/module_bindings` is current (PR #19 already includes `bot_add_activity_reducer.ts`/`ensure_bot_friend_reducer.ts`), then replace the `TODO(issue #16)` placeholder chat wiring in `client/src/pages/RoomPage.tsx` (`messages={[]}`, `onSend={placeholderSendChat}`) with the real `my_room_chat`/`my_room_preferences` subscriptions and `sendChatMessage` action (client-side plumbing pattern already established in `RoomDataBridge.tsx`/`spacetime.ts` for `activity`/`friend`/etc.). This is not yet a filed issue — needs a new prompt/issue before either builder can pick it up.
+3. Re-run full verification (server + client + bot-service, see PR #19's body for the exact command list), then publish to Maincloud again with explicit owner confirmation (`spacetime publish pick-and-lock --module-path server/spacetimedb --yes=remote` — additive-only, verify with `git diff <prev> HEAD -- server/spacetimedb/src/lib.rs` that no existing table's columns changed, same check performed before every publish so far).
 4. Live-browser-test the merged result the same way this session did (create a room, join, exercise the feature, check console/network) before considering it done — unit tests alone missed both the "module not republished" and "wrong room schema" defects this session found.
 
 Everything below this point is prior-session history, kept for context; `docs/status.md` and `docs/changelog.md` have the full detailed log of what was merged, verified, and published.
