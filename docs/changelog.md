@@ -93,3 +93,9 @@
 - Reviewed and merged PR #9 as `dcd5ac5`; private rooms, schedules, choices, membership, hash-only invites, and caller-filtered foundational views now exist locally in the module and bindings.
 - Verified on `main`: Rust format, 3 module tests, SpacetimeDB build, 23 client tests, lint, production build, and whitespace validation pass.
 - Kept Maincloud unpublished. Added the private decision-engine prerequisite (#10) because public sharing requires server-authoritative decision history and metrics.
+
+# 2026-09-05 — Lane B custom activity UI wired
+
+- Regenerated `client/src/module_bindings/` with the new `add_activity` reducer binding.
+- Added `RoomActions.addActivity`, live `actionsFor` wiring, fixture no-op support, and an open-room form in `RoomPage` for name, price, and minimum people.
+- Added success and reducer-error React Testing Library coverage. All requested Rust/client verification commands pass.

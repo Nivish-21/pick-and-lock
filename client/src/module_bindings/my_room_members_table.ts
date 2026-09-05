@@ -9,7 +9,10 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import { RoomMembershipRole } from "./types";
+import {
+  RoomMembershipRole,
+} from "./types";
+
 
 export default __t.row({
   membershipId: __t.u32().primaryKey().name("membership_id"),

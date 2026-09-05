@@ -79,3 +79,7 @@ Multiple agents changed branches and wrote partial changes in the primary checko
 ## 2026-09-05 — Assumed the next GitHub issue number
 
 The private decision-engine plan named issue `#7`, but pull requests and issues share GitHub's repository number sequence, so the created issue was `#10`. Always capture the URL returned by `gh issue create` and update planning references from that authoritative number before assigning work.
+
+## 2026-09-05 — Client test command ran without worktree dependencies
+
+`npm run test --prefix client -- --run src/pages/RoomPage.test.tsx` failed before Vitest discovery with `vitest: command not found` because this Git worktree had no `client/node_modules`. The source test was not evaluated. Refresh the local dependency tree from `client/package-lock.json` before interpreting client test results.

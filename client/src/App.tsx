@@ -36,6 +36,7 @@ function RoomSession() {
         if (name === null) {
           return (
             <LandingPage
+              view={view}
               onJoin={(nextName) => {
                 void actions.join(nextName).then(() => setName(nextName));
               }}
