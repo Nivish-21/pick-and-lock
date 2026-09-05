@@ -122,3 +122,7 @@ Use `docs/agent-collaboration-protocol.md` and GitHub Issues as the current task
 - #3 `ui/public-story`: fixture-only read-only public-story UI; it cannot touch routes or data access.
 - #6 `integration/calendar-event`: ready, isolated RFC 5545 calendar-text helper for an external collaborator.
 - #1, #4, and #5 remain blocked until their named dependencies merge. Do not bypass this order.
+
+Update: #3 merged as `9d82753` after independent review with no findings. The next public-sharing dependency is #1, which stays blocked until #2 supplies the private v2 access core and generated bindings.
+
+Update: #2 merged as `dcd5ac5` after privacy review and root quality gates. The next server lane is #10: private votes, proposal/accept/lock/reopen, immutable decisions, and metrics. #1 remains blocked until #10 merges; #6 calendar export is awaiting PR #8 review.

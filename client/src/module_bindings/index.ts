@@ -35,12 +35,17 @@ import {
 
 // Import all reducer arg schemas
 import AcceptReducer from "./accept_reducer";
+import AddActivityReducer from "./add_activity_reducer";
 import CancelProposalReducer from "./cancel_proposal_reducer";
+import CreatePrivateRoomReducer from "./create_private_room_reducer";
 import CreateRoomReducer from "./create_room_reducer";
 import DropOutReducer from "./drop_out_reducer";
 import JoinReducer from "./join_reducer";
+import JoinWithInviteReducer from "./join_with_invite_reducer";
 import LeaveReducer from "./leave_reducer";
 import ProposeReducer from "./propose_reducer";
+import RegenerateInviteReducer from "./regenerate_invite_reducer";
+import RevokeInviteReducer from "./revoke_invite_reducer";
 import SetAnswerReducer from "./set_answer_reducer";
 
 // Import all procedure arg schemas
@@ -51,6 +56,10 @@ import ActivityRow from "./activity_table";
 import AnswerRow from "./answer_table";
 import EventLogRow from "./event_log_table";
 import FriendRow from "./friend_table";
+import MyRoomChoicesRow from "./my_room_choices_table";
+import MyRoomMembersRow from "./my_room_members_table";
+import MyRoomScheduleRow from "./my_room_schedule_table";
+import MyRoomsRow from "./my_rooms_table";
 import PlanRow from "./plan_table";
 import ProposalRow from "./proposal_table";
 
@@ -166,17 +175,50 @@ const tablesSchema = __schema({
       { name: 'proposal_id_key', constraint: 'unique', columns: ['id'] },
     ],
   }, ProposalRow),
+  myRoomChoices: __table({
+    name: 'my_room_choices',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyRoomChoicesRow),
+  myRoomMembers: __table({
+    name: 'my_room_members',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyRoomMembersRow),
+  myRoomSchedule: __table({
+    name: 'my_room_schedule',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyRoomScheduleRow),
+  myRooms: __table({
+    name: 'my_rooms',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyRoomsRow),
 });
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
   __reducerSchema("accept", AcceptReducer),
+  __reducerSchema("add_activity", AddActivityReducer),
   __reducerSchema("cancel_proposal", CancelProposalReducer),
+  __reducerSchema("create_private_room", CreatePrivateRoomReducer),
   __reducerSchema("create_room", CreateRoomReducer),
   __reducerSchema("drop_out", DropOutReducer),
   __reducerSchema("join", JoinReducer),
+  __reducerSchema("join_with_invite", JoinWithInviteReducer),
   __reducerSchema("leave", LeaveReducer),
   __reducerSchema("propose", ProposeReducer),
+  __reducerSchema("regenerate_invite", RegenerateInviteReducer),
+  __reducerSchema("revoke_invite", RevokeInviteReducer),
   __reducerSchema("set_answer", SetAnswerReducer),
 );
 
@@ -188,6 +230,14 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
   tables: typeof tablesSchema.schemaType.tables & {
     /** @deprecated Use `eventLog` instead. This alias will be removed in the next major version. */
     readonly "event_log": Omit<typeof tablesSchema.schemaType.tables["eventLog"], "accessorName"> & { readonly accessorName: "event_log" };
+    /** @deprecated Use `myRoomChoices` instead. This alias will be removed in the next major version. */
+    readonly "my_room_choices": Omit<typeof tablesSchema.schemaType.tables["myRoomChoices"], "accessorName"> & { readonly accessorName: "my_room_choices" };
+    /** @deprecated Use `myRoomMembers` instead. This alias will be removed in the next major version. */
+    readonly "my_room_members": Omit<typeof tablesSchema.schemaType.tables["myRoomMembers"], "accessorName"> & { readonly accessorName: "my_room_members" };
+    /** @deprecated Use `myRoomSchedule` instead. This alias will be removed in the next major version. */
+    readonly "my_room_schedule": Omit<typeof tablesSchema.schemaType.tables["myRoomSchedule"], "accessorName"> & { readonly accessorName: "my_room_schedule" };
+    /** @deprecated Use `myRooms` instead. This alias will be removed in the next major version. */
+    readonly "my_rooms": Omit<typeof tablesSchema.schemaType.tables["myRooms"], "accessorName"> & { readonly accessorName: "my_rooms" };
   };
 };
 
@@ -207,6 +257,10 @@ const REMOTE_MODULE = {
 
 const tableAccessorAliases = {
   "event_log": "eventLog",
+  "my_room_choices": "myRoomChoices",
+  "my_room_members": "myRoomMembers",
+  "my_room_schedule": "myRoomSchedule",
+  "my_rooms": "myRooms",
 } as const;
 
 function __withTableAccessorAliases<T extends object>(target: T, freeze = false): T {
@@ -224,17 +278,32 @@ function __withTableAccessorAliases<T extends object>(target: T, freeze = false)
   }
   return freeze ? Object.freeze(out) : out;
 }
-
 type __DbViewBase = __DbConnectionImpl<typeof REMOTE_MODULE>["db"];
 export type DbView = __DbViewBase & {
   /** @deprecated Use `eventLog` instead. This alias will be removed in the next major version. */
   readonly "event_log": __DbViewBase["eventLog"];
+  /** @deprecated Use `myRoomChoices` instead. This alias will be removed in the next major version. */
+  readonly "my_room_choices": __DbViewBase["myRoomChoices"];
+  /** @deprecated Use `myRoomMembers` instead. This alias will be removed in the next major version. */
+  readonly "my_room_members": __DbViewBase["myRoomMembers"];
+  /** @deprecated Use `myRoomSchedule` instead. This alias will be removed in the next major version. */
+  readonly "my_room_schedule": __DbViewBase["myRoomSchedule"];
+  /** @deprecated Use `myRooms` instead. This alias will be removed in the next major version. */
+  readonly "my_rooms": __DbViewBase["myRooms"];
 };
 
 type __TablesBase = __QueryBuilder<typeof tablesSchema.schemaType>;
 export type Tables = __TablesBase & {
   /** @deprecated Use `eventLog` instead. This alias will be removed in the next major version. */
   readonly "event_log": __TablesBase["eventLog"];
+  /** @deprecated Use `myRoomChoices` instead. This alias will be removed in the next major version. */
+  readonly "my_room_choices": __TablesBase["myRoomChoices"];
+  /** @deprecated Use `myRoomMembers` instead. This alias will be removed in the next major version. */
+  readonly "my_room_members": __TablesBase["myRoomMembers"];
+  /** @deprecated Use `myRoomSchedule` instead. This alias will be removed in the next major version. */
+  readonly "my_room_schedule": __TablesBase["myRoomSchedule"];
+  /** @deprecated Use `myRooms` instead. This alias will be removed in the next major version. */
+  readonly "my_rooms": __TablesBase["myRooms"];
 };
 
 /** The tables available in this remote SpacetimeDB module. Each table reference doubles as a query builder. */

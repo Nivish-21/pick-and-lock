@@ -1,4 +1,5 @@
-use spacetimedb::{Identity, ReducerContext, SpacetimeType, Table, Timestamp};
+use sha2::{Digest, Sha256};
+use spacetimedb::{Identity, ReducerContext, SpacetimeType, Table, Timestamp, ViewContext};
 
 #[derive(SpacetimeType, Clone, Copy, PartialEq, Eq)]
 pub enum PlanStatus {
@@ -110,6 +111,131 @@ pub struct EventLog {
     pub at: Timestamp,
 }
 
+#[derive(SpacetimeType, Clone, Copy, PartialEq, Eq)]
+pub enum PrivateRoomStatus {
+    Open,
+}
+
+#[derive(SpacetimeType, Clone, Copy, PartialEq, Eq)]
+pub enum RoomMembershipRole {
+    Creator,
+    Member,
+}
+
+#[derive(SpacetimeType)]
+pub struct PrivateRoomChoiceInput {
+    pub label: String,
+    pub price: Option<u32>,
+    pub min_people: u32,
+}
+
+#[spacetimedb::table(accessor = private_room, private)]
+pub struct PrivateRoom {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u32,
+    #[unique]
+    pub public_room_id: String,
+    #[index(btree)]
+    pub creator_identity: Identity,
+    pub title: String,
+    pub created_at: Timestamp,
+    pub status: PrivateRoomStatus,
+}
+
+#[spacetimedb::table(accessor = room_schedule, private)]
+pub struct RoomSchedule {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u32,
+    #[unique]
+    pub room_id: u32,
+    pub starts_at: Timestamp,
+    pub ends_at: Timestamp,
+    pub timezone: String,
+}
+
+#[spacetimedb::table(accessor = room_choice, private)]
+pub struct RoomChoice {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u32,
+    #[index(btree)]
+    pub room_id: u32,
+    pub label: String,
+    pub price: Option<u32>,
+    pub min_people: u32,
+    pub sort_order: u32,
+}
+
+#[spacetimedb::table(accessor = room_membership, private)]
+pub struct RoomMembership {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u32,
+    #[index(btree)]
+    pub room_id: u32,
+    #[index(btree)]
+    pub identity: Identity,
+    #[unique]
+    pub membership_key: String,
+    pub display_name: String,
+    pub joined_at: Timestamp,
+    pub role: RoomMembershipRole,
+    pub left_at: Option<Timestamp>,
+}
+
+#[spacetimedb::table(accessor = room_invite, private)]
+pub struct RoomInvite {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u32,
+    #[index(btree)]
+    pub room_id: u32,
+    #[unique]
+    pub token_hash: String,
+    pub expires_at: Option<Timestamp>,
+    pub max_uses: Option<u32>,
+    pub uses: u32,
+    pub revoked_at: Option<Timestamp>,
+}
+
+#[derive(SpacetimeType)]
+pub struct MyRoom {
+    pub room_id: u32,
+    pub public_room_id: String,
+    pub title: String,
+    pub created_at: Timestamp,
+    pub status: PrivateRoomStatus,
+}
+
+#[derive(SpacetimeType)]
+pub struct MyRoomSchedule {
+    pub room_id: u32,
+    pub starts_at: Timestamp,
+    pub ends_at: Timestamp,
+    pub timezone: String,
+}
+
+#[derive(SpacetimeType)]
+pub struct MyRoomChoice {
+    pub choice_id: u32,
+    pub room_id: u32,
+    pub label: String,
+    pub price: Option<u32>,
+    pub min_people: u32,
+    pub sort_order: u32,
+}
+
+#[derive(SpacetimeType)]
+pub struct MyRoomMember {
+    pub membership_id: u32,
+    pub room_id: u32,
+    pub display_name: String,
+    pub joined_at: Timestamp,
+    pub role: RoomMembershipRole,
+}
+
 fn friend_for(ctx: &ReducerContext, plan_id: u32) -> Option<Friend> {
     ctx.db
         .friend()
@@ -203,6 +329,203 @@ fn valid_share_code(share_code: &str) -> bool {
             .all(|character| character.is_ascii_uppercase() || character.is_ascii_digit())
 }
 
+fn valid_private_room_id(public_room_id: &str) -> bool {
+    (6..=64).contains(&public_room_id.len())
+        && public_room_id.bytes().all(|character| {
+            character.is_ascii_alphanumeric() || character == b'-' || character == b'_'
+        })
+}
+
+fn valid_timezone(timezone: &str) -> bool {
+    !timezone.is_empty()
+        && timezone.len() <= 64
+        && timezone.bytes().all(|character| {
+            character.is_ascii_alphanumeric()
+                || matches!(character, b'/' | b'_' | b'+' | b'-' | b'.')
+        })
+}
+
+fn valid_invite_token(token: &str) -> bool {
+    (22..=128).contains(&token.len())
+        && token.bytes().all(|character| {
+            character.is_ascii_alphanumeric() || character == b'-' || character == b'_'
+        })
+}
+
+fn invite_token_hash(token: &str) -> String {
+    format!("{:x}", Sha256::digest(token.as_bytes()))
+}
+
+fn membership_key(room_id: u32, identity: Identity) -> String {
+    format!("{room_id}:{identity}")
+}
+
+fn invite_is_active(invite: &RoomInvite, now: Timestamp) -> bool {
+    invite.revoked_at.is_none() && invite.expires_at.is_none_or(|expires_at| expires_at > now)
+}
+
+fn invite_has_capacity(invite: &RoomInvite) -> bool {
+    invite
+        .max_uses
+        .is_none_or(|max_uses| invite.uses < max_uses)
+}
+
+fn active_room_ids<I>(memberships: I, identity: Identity) -> Vec<u32>
+where
+    I: Iterator<Item = RoomMembership>,
+{
+    memberships
+        .filter(|membership| membership.identity == identity && membership.left_at.is_none())
+        .map(|membership| membership.room_id)
+        .collect()
+}
+
+fn view_active_room_ids(ctx: &ViewContext) -> Vec<u32> {
+    active_room_ids(
+        ctx.db.room_membership().identity().filter(ctx.sender()),
+        ctx.sender(),
+    )
+}
+
+fn private_room_by_public_id(
+    ctx: &ReducerContext,
+    public_room_id: &str,
+) -> Result<PrivateRoom, String> {
+    ctx.db
+        .private_room()
+        .iter()
+        .find(|room| room.public_room_id == public_room_id)
+        .ok_or_else(|| "Room not found".into())
+}
+
+fn membership_for(ctx: &ReducerContext, room_id: u32) -> Option<RoomMembership> {
+    ctx.db
+        .room_membership()
+        .iter()
+        .find(|membership| membership.room_id == room_id && membership.identity == ctx.sender())
+}
+
+fn creator_private_room(ctx: &ReducerContext, public_room_id: &str) -> Result<PrivateRoom, String> {
+    let room = private_room_by_public_id(ctx, public_room_id)?;
+    if room.creator_identity != ctx.sender() {
+        return Err("Only the room creator can do that".into());
+    }
+    Ok(room)
+}
+
+fn insert_invite(
+    ctx: &ReducerContext,
+    room_id: u32,
+    token: String,
+    expires_at: Option<Timestamp>,
+    max_uses: Option<u32>,
+) -> Result<(), String> {
+    if !valid_invite_token(&token) {
+        return Err("Invite token is invalid".into());
+    }
+    if expires_at.is_some_and(|expires_at| expires_at <= ctx.timestamp) {
+        return Err("Invite expiry must be in the future".into());
+    }
+    if max_uses == Some(0) {
+        return Err("Invite uses must be at least one".into());
+    }
+    let token_hash = invite_token_hash(&token);
+    if ctx
+        .db
+        .room_invite()
+        .iter()
+        .any(|invite| invite.token_hash == token_hash)
+    {
+        return Err("Invite token is already in use".into());
+    }
+    ctx.db.room_invite().insert(RoomInvite {
+        id: 0,
+        room_id,
+        token_hash,
+        expires_at,
+        max_uses,
+        uses: 0,
+        revoked_at: None,
+    });
+    Ok(())
+}
+
+fn revoke_active_invites(ctx: &ReducerContext, room_id: u32) -> bool {
+    let mut revoked_any = false;
+    for mut invite in ctx
+        .db
+        .room_invite()
+        .iter()
+        .filter(|invite| invite.room_id == room_id && invite.revoked_at.is_none())
+    {
+        invite.revoked_at = Some(ctx.timestamp);
+        ctx.db.room_invite().id().update(invite);
+        revoked_any = true;
+    }
+    revoked_any
+}
+
+#[spacetimedb::view(accessor = my_rooms, public, primary_key = room_id)]
+pub fn my_rooms(ctx: &ViewContext) -> Vec<MyRoom> {
+    view_active_room_ids(ctx)
+        .into_iter()
+        .filter_map(|room_id| ctx.db.private_room().id().find(room_id))
+        .map(|room| MyRoom {
+            room_id: room.id,
+            public_room_id: room.public_room_id,
+            title: room.title,
+            created_at: room.created_at,
+            status: room.status,
+        })
+        .collect()
+}
+
+#[spacetimedb::view(accessor = my_room_schedule, public, primary_key = room_id)]
+pub fn my_room_schedule(ctx: &ViewContext) -> Vec<MyRoomSchedule> {
+    view_active_room_ids(ctx)
+        .into_iter()
+        .filter_map(|room_id| ctx.db.room_schedule().room_id().find(room_id))
+        .map(|schedule| MyRoomSchedule {
+            room_id: schedule.room_id,
+            starts_at: schedule.starts_at,
+            ends_at: schedule.ends_at,
+            timezone: schedule.timezone,
+        })
+        .collect()
+}
+
+#[spacetimedb::view(accessor = my_room_choices, public, primary_key = choice_id)]
+pub fn my_room_choices(ctx: &ViewContext) -> Vec<MyRoomChoice> {
+    view_active_room_ids(ctx)
+        .into_iter()
+        .flat_map(|room_id| ctx.db.room_choice().room_id().filter(room_id))
+        .map(|choice| MyRoomChoice {
+            choice_id: choice.id,
+            room_id: choice.room_id,
+            label: choice.label,
+            price: choice.price,
+            min_people: choice.min_people,
+            sort_order: choice.sort_order,
+        })
+        .collect()
+}
+
+#[spacetimedb::view(accessor = my_room_members, public, primary_key = membership_id)]
+pub fn my_room_members(ctx: &ViewContext) -> Vec<MyRoomMember> {
+    view_active_room_ids(ctx)
+        .into_iter()
+        .flat_map(|room_id| ctx.db.room_membership().room_id().filter(room_id))
+        .filter(|membership| membership.left_at.is_none())
+        .map(|membership| MyRoomMember {
+            membership_id: membership.id,
+            room_id: membership.room_id,
+            display_name: membership.display_name,
+            joined_at: membership.joined_at,
+            role: membership.role,
+        })
+        .collect()
+}
+
 fn seed_activities(ctx: &ReducerContext, plan_id: u32) {
     for (name, price, min_people) in [
         ("Bowling", 400, 4),
@@ -234,6 +557,176 @@ pub fn init(ctx: &ReducerContext) {
         version: 0,
     });
     seed_activities(ctx, p.id);
+}
+
+#[spacetimedb::reducer]
+pub fn create_private_room(
+    ctx: &ReducerContext,
+    public_room_id: String,
+    title: String,
+    creator_display_name: String,
+    starts_at: Timestamp,
+    ends_at: Timestamp,
+    timezone: String,
+    choices: Vec<PrivateRoomChoiceInput>,
+    invite_token: String,
+    invite_expires_at: Option<Timestamp>,
+    invite_max_uses: Option<u32>,
+) -> Result<(), String> {
+    let public_room_id = public_room_id.trim().to_string();
+    let title = title.trim().to_string();
+    let creator_display_name = creator_display_name.trim().to_string();
+    let timezone = timezone.trim().to_string();
+    if !valid_private_room_id(&public_room_id) {
+        return Err("Room ID is invalid".into());
+    }
+    if title.is_empty() || title.len() > 60 {
+        return Err("Room title must be 1-60 characters".into());
+    }
+    if creator_display_name.is_empty() || creator_display_name.len() > 40 {
+        return Err("Display name must be 1-40 characters".into());
+    }
+    if ends_at <= starts_at || !valid_timezone(&timezone) {
+        return Err("Schedule is invalid".into());
+    }
+    if !(2..=6).contains(&choices.len())
+        || choices.iter().any(|choice| {
+            let label = choice.label.trim();
+            label.is_empty() || label.len() > 60 || choice.min_people == 0
+        })
+        || choices.iter().enumerate().any(|(index, choice)| {
+            choices[..index]
+                .iter()
+                .any(|other| other.label.trim().eq_ignore_ascii_case(choice.label.trim()))
+        })
+    {
+        return Err("Choices are invalid".into());
+    }
+    if ctx
+        .db
+        .private_room()
+        .iter()
+        .any(|room| room.public_room_id == public_room_id)
+    {
+        return Err("That room ID is already in use".into());
+    }
+    let room = ctx.db.private_room().insert(PrivateRoom {
+        id: 0,
+        public_room_id,
+        creator_identity: ctx.sender(),
+        title,
+        created_at: ctx.timestamp,
+        status: PrivateRoomStatus::Open,
+    });
+    ctx.db.room_schedule().insert(RoomSchedule {
+        id: 0,
+        room_id: room.id,
+        starts_at,
+        ends_at,
+        timezone,
+    });
+    for (sort_order, choice) in choices.into_iter().enumerate() {
+        ctx.db.room_choice().insert(RoomChoice {
+            id: 0,
+            room_id: room.id,
+            label: choice.label.trim().to_string(),
+            price: choice.price,
+            min_people: choice.min_people,
+            sort_order: sort_order as u32,
+        });
+    }
+    ctx.db.room_membership().insert(RoomMembership {
+        id: 0,
+        room_id: room.id,
+        identity: ctx.sender(),
+        membership_key: membership_key(room.id, ctx.sender()),
+        display_name: creator_display_name,
+        joined_at: ctx.timestamp,
+        role: RoomMembershipRole::Creator,
+        left_at: None,
+    });
+    insert_invite(
+        ctx,
+        room.id,
+        invite_token,
+        invite_expires_at,
+        invite_max_uses,
+    )
+}
+
+#[spacetimedb::reducer]
+pub fn join_with_invite(
+    ctx: &ReducerContext,
+    token: String,
+    display_name: String,
+) -> Result<(), String> {
+    let display_name = display_name.trim().to_string();
+    if display_name.is_empty() || display_name.len() > 40 || !valid_invite_token(&token) {
+        return Err("Invite is invalid".into());
+    }
+    let token_hash = invite_token_hash(&token);
+    let mut invite = ctx
+        .db
+        .room_invite()
+        .iter()
+        .find(|invite| invite.token_hash == token_hash)
+        .ok_or("Invite is invalid")?;
+    if !invite_is_active(&invite, ctx.timestamp) {
+        return Err("Invite is invalid".into());
+    }
+    if let Some(mut membership) = membership_for(ctx, invite.room_id) {
+        if membership.left_at.is_none() {
+            membership.display_name = display_name;
+            ctx.db.room_membership().id().update(membership);
+            return Ok(());
+        }
+        if !invite_has_capacity(&invite) {
+            return Err("Invite is invalid".into());
+        }
+        membership.display_name = display_name;
+        membership.joined_at = ctx.timestamp;
+        membership.left_at = None;
+        ctx.db.room_membership().id().update(membership);
+    } else {
+        if !invite_has_capacity(&invite) {
+            return Err("Invite is invalid".into());
+        }
+        ctx.db.room_membership().insert(RoomMembership {
+            id: 0,
+            room_id: invite.room_id,
+            identity: ctx.sender(),
+            membership_key: membership_key(invite.room_id, ctx.sender()),
+            display_name,
+            joined_at: ctx.timestamp,
+            role: RoomMembershipRole::Member,
+            left_at: None,
+        });
+    }
+    invite.uses += 1;
+    ctx.db.room_invite().id().update(invite);
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+pub fn revoke_invite(ctx: &ReducerContext, public_room_id: String) -> Result<(), String> {
+    let room = creator_private_room(ctx, public_room_id.trim())?;
+    if !revoke_active_invites(ctx, room.id) {
+        return Err("No active invite".into());
+    }
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+pub fn regenerate_invite(
+    ctx: &ReducerContext,
+    public_room_id: String,
+    token: String,
+    expires_at: Option<Timestamp>,
+    max_uses: Option<u32>,
+) -> Result<(), String> {
+    let room = creator_private_room(ctx, public_room_id.trim())?;
+    revoke_active_invites(ctx, room.id);
+    insert_invite(ctx, room.id, token, expires_at, max_uses)
 }
 
 #[spacetimedb::reducer]
@@ -386,6 +879,55 @@ pub fn set_answer(
         Some(f.id),
         Some(activity_id),
         format!("{} answered", f.name),
+    );
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+pub fn add_activity(
+    ctx: &ReducerContext,
+    plan_id: u32,
+    name: String,
+    price: u32,
+    min_people: u32,
+) -> Result<(), String> {
+    let p = plan_for(ctx, plan_id)?;
+    if p.status != PlanStatus::Open {
+        return Err("Plan is locked".into());
+    }
+    friend_for(ctx, plan_id).ok_or("Join the plan first")?;
+    let name = name.trim().to_string();
+    if name.is_empty() || name.len() > 60 {
+        return Err("Activity name must be 1-60 characters".into());
+    }
+    if min_people == 0 || min_people > 50 {
+        return Err("Minimum people must be between 1 and 50".into());
+    }
+    if price > 1_000_000 {
+        return Err("Price is too high".into());
+    }
+    if ctx
+        .db
+        .activity()
+        .iter()
+        .any(|a| a.plan_id == plan_id && a.name.eq_ignore_ascii_case(&name))
+    {
+        return Err("That option already exists".into());
+    }
+    let a = ctx.db.activity().insert(Activity {
+        id: 0,
+        plan_id,
+        name: name.clone(),
+        price,
+        min_people,
+    });
+    event(
+        ctx,
+        plan_id,
+        "activity_added",
+        None,
+        Some(a.id),
+        format!("New option added: {}", name),
     );
     Ok(())
 }
@@ -613,4 +1155,84 @@ pub fn leave(ctx: &ReducerContext, plan_id: u32) -> Result<(), String> {
     f.online = false;
     ctx.db.friend().id().update(f);
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn identity(value: u8) -> Identity {
+        Identity::from_byte_array([value; 32])
+    }
+
+    fn membership(room_id: u32, identity: Identity, left_at: Option<Timestamp>) -> RoomMembership {
+        RoomMembership {
+            id: room_id,
+            room_id,
+            identity,
+            membership_key: membership_key(room_id, identity),
+            display_name: "Member".into(),
+            joined_at: Timestamp::UNIX_EPOCH,
+            role: RoomMembershipRole::Member,
+            left_at,
+        }
+    }
+
+    #[test]
+    fn outsider_has_no_visible_private_room_ids() {
+        let member = identity(1);
+        let outsider = identity(2);
+        let visible = active_room_ids(
+            vec![
+                membership(7, member, None),
+                membership(8, outsider, Some(Timestamp::UNIX_EPOCH)),
+            ]
+            .into_iter(),
+            outsider,
+        );
+
+        assert!(visible.is_empty());
+        assert_eq!(
+            active_room_ids(vec![membership(7, member, None)].into_iter(), member),
+            [7]
+        );
+    }
+
+    #[test]
+    fn invite_storage_uses_only_a_sha256_hash() {
+        let token = "aGVsbG8tdGhpcy1pcy1hLXNlY3JldA";
+        let token_hash = invite_token_hash(token);
+
+        assert!(valid_invite_token(token));
+        assert_ne!(token_hash, token);
+        assert_eq!(token_hash.len(), 64);
+        assert!(
+            token_hash
+                .bytes()
+                .all(|character| character.is_ascii_hexdigit())
+        );
+    }
+
+    #[test]
+    fn invite_acceptance_binds_membership_to_the_sender_identity() {
+        let sender = identity(3);
+        let other_sender = identity(4);
+        let invite = RoomInvite {
+            id: 1,
+            room_id: 9,
+            token_hash: invite_token_hash("aGVsbG8tdGhpcy1pcy1hLXNlY3JldA"),
+            expires_at: None,
+            max_uses: Some(1),
+            uses: 0,
+            revoked_at: None,
+        };
+
+        assert!(invite_is_active(&invite, Timestamp::UNIX_EPOCH));
+        assert!(invite_has_capacity(&invite));
+        assert_ne!(
+            membership_key(invite.room_id, sender),
+            membership_key(invite.room_id, other_sender)
+        );
+        assert_eq!(membership(9, sender, None).identity, sender);
+    }
 }

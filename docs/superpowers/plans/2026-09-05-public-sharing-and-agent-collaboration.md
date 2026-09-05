@@ -69,6 +69,8 @@
 - [ ] Generate bindings and run `cargo fmt --check`, `cargo test --manifest-path server/spacetimedb/Cargo.toml`, and `spacetime build --module-path server/spacetimedb`.
 - [ ] Commit only server and generated-binding files as `feat: add public decision story projection`.
 
+**Prerequisite correction:** `room_decision` and `room_metrics` are not part of the first private access-core merge. Keep issue #1 blocked until `docs/superpowers/plans/2026-09-05-private-v2-decision-engine.md` Task 1 is reviewed and merged. Do not substitute browser-derived counts for authoritative history.
+
 ### Task 3: Build the independent public-story UI
 
 **Owner:** UI agent, issue `V2-PS2`.
@@ -85,12 +87,12 @@
 
 **Produces:** Fixture-driven accessible UI with no SpacetimeDB import or generated-binding dependency.
 
-- [ ] Write a failing test that renders a locked story, finds “Have a decision to make? Make it together.”, and asserts “Create your own room” has `href="/"`.
-- [ ] Write a failing test that renders title, choices, decision count, and an optional schedule without member/chat/vote fields.
-- [ ] Implement `SharedRoomStory` with loading/unpublished props, read-only choice/result content, and exact CTA copy.
-- [ ] Implement `PublicShareSettings` with injected `onPublish`, `onUnpublish`, `onShowScheduleChange`, and `onCopy` callbacks plus a public-field preview.
-- [ ] Run `npm run test --prefix client -- --run`, `npm run lint --prefix client`, and `npm run build --prefix client`.
-- [ ] Commit only listed UI paths as `feat: add public decision story UI`.
+- [x] Wrote component tests for the exact CTA plus locked/public story content.
+- [x] Wrote component coverage for story fields with no member, chat, or vote data in the public type.
+- [x] Implemented `SharedRoomStory` with loading/unpublished states, read-only choice/result content, and exact CTA copy.
+- [x] Implemented `PublicShareSettings` with injected callbacks and a public-field preview.
+- [x] Ran 23 client tests, lint, and production build successfully.
+- [x] Reviewed with no findings and merged `9d82753` (`feat: add public decision story UI`).
 
 ### Task 4: Integrate public path and projection bridge
 
@@ -140,3 +142,18 @@
 - Spec coverage: private-by-default, creator opt-in, schedule consent, public projection, CTA, unpublish, no-leak proof, v1 coexistence, and autonomous collaboration map to Tasks 1–5.
 - Placeholder scan: every task names its files, owner, interface, checks, and handoff.
 - Type consistency: `PublicStoryBridge` produces `PublicRoomStory`, `SharedRoomStory` renders it, and the bridge reads only `shared_room_story`.
+
+### Task 6: Maintain the incoming-contributor README
+
+**Owner:** Repository owner.
+
+**Files:**
+
+- Create: `README.md`
+- Modify: `docs/README.md`
+
+**Produces:** One current entry point that states working behaviour, active lanes, safety boundaries, local checks, and the agent task queue.
+
+- [x] Replace the missing root-level project entry point with a product README.
+- [x] Link the root README from the documentation index and add v2 document routing.
+- [ ] After every merge, publish, deployment, or lane-state change, update the README status table in the same documentation commit.

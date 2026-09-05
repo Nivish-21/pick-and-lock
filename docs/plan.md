@@ -1,108 +1,87 @@
-# Active execution plan
+# Active execution plan — 2026-09-05 checkpoint
 
-## U5 — UI verification recovery
+## Where this stands right now
 
-Goal: make the fixture-driven UI checks repeatable without changing production behaviour.
+Design approved. Spec written and committed to:
+`docs/superpowers/specs/2026-09-05-web-fix-and-chat-agent-design.md`
 
-- [ ] Add explicit DOM cleanup after each React component test.
-- [ ] Run the UI tests, lint, production build, deterministic design scan, and browser accessibility smoke check.
-- [ ] Append the completed U5 checkpoint to the execution log, status, and changelog; commit and push it.
+That spec is the source of truth for: diagnosis of the broken UI, lane ownership (A=teammate's decision-engine worktree, B=client wiring fix, C=chat+location schema, D=bot service, E=verification), the full data model, the bot's deterministic speak-gate design, and the non-goals list. Read it before doing anything else in this repo.
 
-## U5 completed
+**Not yet done**: the detailed, self-contained task-by-task implementation plan (one per lane, written so a Codex CLI instance can run each unattended for hours without live steering). Next action on resuming: invoke `superpowers:writing-plans` against the spec above, scoped to Lanes B/C/D/E, and produce the exact per-lane prompts the user pastes into Codex.
 
-- [x] Registered explicit React DOM cleanup, added four fixture-driven component checks, and ran the full quality gate.
-- [x] Browser accessibility smoke check confirms the name field, join action, labelled regions, headings, and answer controls remain exposed at 390px.
-- [x] U5 checkpoint is ready to commit and push.
+## Environment facts established this session (do not re-derive)
 
-## U6 — Server handoff and real-time bridge
+- Two people building in parallel: this session (client/chat/bot) + a teammate driving the existing `server/private-decision-engine` worktree (Lane A). A peer Claude session `development-de` (idle) also exists in this repo's history but the user confirmed both humans keep separate parallel agents — no ownership collapse.
+- LLM: AI Grants India key, OpenAI-compatible proxy at `https://aigrants.in/v/gpt`. Models available on that key: `davinci-002`, `gpt-5-nano`, `gpt-5.6-luna`, `text-embedding-3-small`, `text-embedding-ada-002`. Design targets `gpt-5-nano` for the bot's per-turn call.
+- Voice credit key (`SMALLEST_API_KEY`, smallest.ai, `https://aigrants.in/v/sm`) exists but is explicitly **not used** by the current design — flagged as out of scope, not wired anywhere.
+- Google Places API key: user confirmed they have one with free-tier headroom. **Not yet verified working** — next action once the real key is in `.env`: run one masked test call (Nearby/Text Search) and report only the HTTP status, never the key value.
+- Secrets handling: `.gitignore` now ignores `.env`/`.env.*` (was previously NOT ignoring env files at all — fixed this session, verified with `git check-ignore -v .env`). `.env.example` and `.env` (empty template, gitignored) exist at repo root with `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `SMALLEST_API_KEY`, `SMALLEST_BASE_URL`, `GOOGLE_PLACES_API_KEY`. The real key values the user pasted in chat arrived already truncated/stripped — never obtained the raw values; user must fill `.env` directly in their editor, never paste secret values into this chat again.
+- Codex CLI: `which codex` resolves to `/Users/nivish/.superset/bin/codex` — this is **Superset.app's own wrapped/managed agent CLI** (its own `auth.json`, model already set to `gpt-5.6-terra`, plugin/marketplace system layered into the shared `~/.codex/config.toml`). It has no visible `[model_providers.*]` section and is very likely tied to Superset's own billing, not a raw configurable OpenAI endpoint.
+- A **separate, real, standalone `@openai/codex@0.150.1`** is already installed via npm and symlinked at `/opt/homebrew/bin/codex` — currently shadowed on PATH by Superset's binary of the same name. This is the one to point at the aigrants key (see instructions below), invoked by its full path to bypass the shadow.
 
-Goal: integrate the collaborator's SpacetimeDB core without importing unrelated repository instructions or machine-local configuration.
+## Codex CLI setup — hand this to the user, do not do it for them
 
-- [ ] Validate the server branch in an isolated disposable checkout and compare its public schema and reducers to the frozen contract.
-- [ ] Selectively integrate only `server/spacetimedb/**`, the generated bindings, and essential ignore rules; exclude duplicate agent-instruction files and `server/spacetime.local.json`.
-- [ ] Repair any proven module or contract failures, then build the UI-facing bridge in server-owned data paths without changing visual components.
-- [ ] Verify server build, client tests/lint/build, and an end-to-end local connection when a confirmed Maincloud database name is available.
-- [ ] Append the handoff result to the execution log, status, and changelog; commit and push each completed checkpoint.
+1. Fill in the real key values directly in `/Users/nivish/development/Moonshot/.env` (already created, gitignored) — never paste them into a chat session again.
+2. To use the real, standalone Codex CLI (not Superset's wrapper), invoke it by full path: `/opt/homebrew/bin/codex`. Superset's `~/.superset/bin/codex` shadows it earlier on PATH under the plain `codex` name.
+3. Before running, export the two env vars so the real Codex CLI's default OpenAI provider points at the aigrants proxy instead of api.openai.com:
+   ```
+   export OPENAI_API_KEY="<value from .env>"
+   export OPENAI_BASE_URL="https://aigrants.in/v/gpt"
+   ```
+4. Pass the model explicitly on every invocation, since Codex CLI's own default model will not exist on the aigrants proxy: `/opt/homebrew/bin/codex --model gpt-5-nano ...` (or `gpt-5.6-luna` for heavier reasoning tasks — the plan below will say which lane uses which).
+5. Sanity-check with a trivial prompt first (e.g., "reply with OK") before pointing it at a multi-hour unattended build — confirm it actually reaches the aigrants proxy and doesn't silently fall back to Superset's or a cached default provider.
+6. **Exact TOML syntax for a persistent `[model_providers.aigrants]` block was not verified against current Codex CLI docs this session** — if step 3's env-var approach doesn't stick across invocations, check `https://aigrants.in/v/gpt`'s own setup guide (the user already has this link) before guessing at config.toml keys.
 
-### U6 validation recovery
+## Next steps in order
 
-- [ ] Install the missing Rust toolchain and `wasm32-unknown-unknown` target, then rerun the isolated server build before integrating any branch file.
+1. Resume with `superpowers:writing-plans`, input = the committed spec, scope = Lanes B, C, D, E only (Lane A stays the teammate's).
+2. Output: one self-contained prompt per lane (Codex will run each unattended for hours — lunch/dinner/nap/events happening in parallel), each with: exact files to touch, exact commands to verify (build/test/lint), a hard "do not publish to Maincloud / do not deploy without explicit owner confirmation" boundary, and a definition of done.
+3. Recommend git worktrees per lane (matching this repo's existing `.worktrees/` convention) so parallel Codex instances don't collide on the same files, especially since Lane C touches the same `lib.rs` file Lane A is already mid-editing.
+4. User runs each lane's prompt in its own Codex CLI invocation/worktree; this session checks progress when asked ("babysitting" role — verify commits, run quality gates, do not re-do the build).
 
-### 15-minute MVP amendment
+## 2026-09-05 update — Codex CLI investigation outcome + security incident
 
-- [ ] Support creator-supplied share codes, seeded activities per new room, and a route-aware room creation/join flow.
-- [ ] Scope friend identity, drop-out, and leave behaviour to one room so distinct share links do not interfere.
+**Corrected facts (supersede the "Environment facts" and "Codex CLI setup" sections above where they conflict):**
 
-### U6 server checkpoint completed
+- `https://aigrants.in/v/gpt` is **not** an API base URL — it's a personal redirect link that 307s to a ChatGPT share page. Live-tested: every OpenAI-compatible path under it (`/v1/chat/completions`, `/v1/responses`, `/v1/models`) returns 404 with the marketing site's HTML. `OPENAI_BASE_URL` must be removed from `.env` / `.env.example` — there is no proxy. The key is a **real OpenAI API key**, verified live against `https://api.openai.com/v1/chat/completions` (HTTP 200, real completion from `gpt-5-nano-2025-08-07`).
+- This org's key only has access to: `gpt-5-nano`, `gpt-5.6-luna`, `gpt-5.6-sol`, `text-embedding-3-small`, `text-embedding-ada-002` (confirmed via live `/v1/models`, not the possibly-stale list the user was told).
+- Codex CLI (`/opt/homebrew/bin/codex`, tested at both 0.150.1 and 0.153.4 — user updated mid-session, no change) defaults to stored ChatGPT-login auth (`model: gpt-5.6-terra`) and ignores `OPENAI_API_KEY` as a plain env var. Fix: `codex login --with-api-key` (reads key from stdin), which writes real auth state — must be done against an **isolated `CODEX_HOME`** so it doesn't clobber the user's normal ChatGPT-logged-in Codex used elsewhere (Superset, other projects). Isolated home created at `~/.codex-aigrants`; project profile at `~/.codex-aigrants/pickandlock.config.toml` (`model = "gpt-5-nano"`, `[tools] web_search = false`).
+- **Hard blocker, confirmed on both CLI versions, not fixable via any documented client-side config** (`tools.web_search=false`, feature flags, fresh login all tried): every `codex exec` call fails on the first turn with `Tool 'web_search_preview' disabled for this organization.` Codex CLI unconditionally requests this hosted tool via the Responses API (Chat Completions wire format is hard-removed in these versions — `wire_api = "chat"` errors at config load). This is an OpenAI-org-level permission on the AI Grants India account, not something Codex CLI, this repo, or the key holder can toggle from the client side.
+- Options on the table, presented to the user: (a) org admin enables the hosted tool at `platform.openai.com/settings/organization/data-controls/hosted-tools`, or (b) drop Codex CLI as the build executor and have this session run the unattended build directly instead. **Decision point still open** — pending key rotation (below) before re-testing.
 
-- [x] Validated the collaborator module in a disposable checkout, selectively integrated only product code and generated bindings, and excluded machine-local and duplicate instruction files.
-- [x] Added the multi-room amendment, creator-supplied share codes, room-scoped friends, corrected acceptance eligibility, and counted reopen events.
-- [x] Regenerated bindings; Rust format/build and client test/lint/build pass. Publishing is the next owner-authorised deployment action.
+**Security incident — key rotation required, blocks everything above:**
 
-### U6 interaction checkpoint completed
+The API key currently in `.env` (`sk-proj-aFf...`) was pasted in plaintext into a teammate's ("prana", Windows) personal ChatGPT conversation, which they then shared via a public `chatgpt.com/share/...` link and sent to this session. ChatGPT itself told them to revoke it. Anyone with that share URL can read the raw key. **Do not proceed with any further build work on this key until it is rotated.** Once a new key exists:
+1. User pastes it in chat as before (a hook strips it before it reaches this session and writes straight to `.env` — confirmed working, key never entered this session's context).
+2. Re-run the masked live verification against `api.openai.com` (same method as above) and re-run `codex login --with-api-key` against `~/.codex-aigrants` with the new key.
+3. Re-test one `codex exec` turn to see if the `web_search_preview` block still applies (it's an org setting, not tied to the specific key, so expect it to persist unless the org dashboard was changed).
 
-- [x] Added proposal controls for feasible activities and an accessible share-link copy action with focused UI coverage.
+**Current action:** starting Lane B (client wiring fix — `LandingPage.tsx` hardcoded fixture, missing custom-poll UI, `CreateRoomPage.tsx`) directly in this session while key rotation is pending, since that work has no dependency on the LLM key or Codex CLI.
 
-### U6 merge recovery
+## Lane B — add-activity client wiring (2026-09-05)
 
-- [x] Refreshed `client/node_modules` after merging the QR dependency lockfile; 19 client tests, lint, production build, and whitespace checks pass.
+Goal: expose the existing server `add_activity` reducer through the live client room UI, with focused success and error coverage.
 
-### U6 live bridge checkpoint completed
+Scope: `client/src/pages/**`, `client/src/components/**`, `client/src/data/**`, `client/src/fixtures/room.ts`, `client/src/module_bindings/**`, and `client/src/styles/room.css`. Generated bindings are regenerated, not hand-edited. No server or proposal/vote changes.
 
-- [x] Merged the route, QR, Vercel, bridge, and Create Room client branches; mounted the bridge and creation flow in `App.tsx`.
-- [x] Verified Maincloud in a real browser: `SATURDAY` connected, `Demo Host` joined, and a live Bowling answer changed the authoritative eligible count from 0 to 1.
-- [x] Created and deployed the Vercel `pick-and-lock` project; production `/r/SATURDAY` connected to Maincloud, joined `Demo Guest`, and rendered the deployed canonical QR URL.
+- [x] Regenerate TypeScript bindings and confirm the generated reducer method/signature.
+- [x] Add `addActivity(name, price, minPeople)` to the bridge actions and `RoomActions`; keep fixture actions no-op.
+- [x] Add the joined-room form, using the existing `runAction` toast error path and current room styling.
+- [x] Add focused React Testing Library coverage for valid arguments and reducer failure toast; run the focused test red before implementation, then green.
+- [x] Run all requested Rust/client verification commands plus `git diff --check`.
+- [x] Append completion state to `docs/status.md` and `docs/changelog.md`, commit, push, and comment on issue #12.
 
-## U7 — Room insights and closure
+Assumptions: the form is available on open joined rooms because `RoomPage` is only rendered after joining; no separate membership field exists in `RoomView`, so the server remains the authority for rejecting unauthorised calls. The required project logs are procedural files despite the source-only ownership boundary.
 
-Goal: persist complete room lifecycles, decision history, current metrics, and short room chat without making browser state authoritative.
+## Sorted rebrand (2026-09-05)
 
-- [ ] Add the additive server schema and regenerate bindings in an isolated server-owned branch.
-- [ ] Record each lock atomically as a decision and update the room metrics row.
-- [ ] Add creator-authorised locked-room closure and active-member chat reducers.
-- [ ] Hand the new bindings to the data-bridge agent; mount visual insight, close, and chat controls only after its adapter handoff.
-- [ ] Obtain explicit approval before publishing the schema update to Maincloud, then verify real rows and deploy the client.
+Goal: replace user-facing “Pick & Lock” branding with “Sorted” and install the supplied browser/app icons without changing the live SpacetimeDB database name or internal references.
 
-## U8 — Optional room-link email confirmation
+Scope: `client/public/`, `client/index.html`, `client/src/pages/LandingPage.tsx`, `client/src/pages/RoomPage.tsx`, `client/src/pages/CreateRoomPage.tsx`, and their existing landing/room stylesheets. Procedural project logs will also be updated; no server, connection string, README, AGENTS, or fixture URL changes.
 
-Goal: send a non-authoritative email containing a validated room link without delaying room entry or persisting email addresses in SpacetimeDB.
+- [x] Copy the supplied PNG and generate 32px favicon and 180px Apple touch icon with `sips`.
+- [x] Update the browser title, favicon links, wordmarks, and user-facing accessibility labels to Sorted.
+- [x] Run the requested client tests, lint, build, and whitespace checks.
+- [x] Update project status/changelog, commit, and push `ui/rebrand-sorted`.
 
-- [ ] Add a Vercel serverless `POST /api/capture-email` endpoint in the server-agent-owned `api/**` path using the configured Resend HTTP API and environment variables only.
-- [ ] Validate email and share code at the API boundary, derive the room URL from `PUBLIC_APP_ORIGIN`, and return short, explicit errors without logging email addresses.
-- [ ] Add isolated endpoint tests, then hand the endpoint contract to the bridge/UI lane without editing visual components.
-
-## U9 — Future consented preference memory and decision assistant
-
-Goal: help a group recognise trade-offs from preferences they deliberately share, without covert tracking or autonomous decisions.
-
-- [ ] Complete and deploy version 1 before opening this implementation lane.
-- [ ] Write the separate consent, retention, delete/export, provider, and threat-model specification before adding any identity or memory table.
-- [ ] Use explicit participant identity and consented `preference_profile` rows; never use raw browser fingerprint data as a memory key.
-- [ ] Keep all model/provider calls server-side behind one adapter; pass only room-scoped, consented context and return suggestions only.
-- [ ] Give every preference and suggestion a visible source, correction path, expiry/retention policy, and delete action.
-
-## U7 migration correction — Maincloud compatibility
-
-- [ ] Reject the current `server/room-insights` implementation for deployment because it alters the existing `plan` table incompatibly.
-- [ ] Rework lifecycle as a new `room_lifecycle` table, retain the existing `Plan` schema/status, and preserve `SATURDAY` as a legacy readable room.
-- [ ] Regenerate bindings, re-run all gates, and review the corrected branch before asking for a publish confirmation.
-
-## U10 — Private custom rooms and calendar scheduling (v2)
-
-Goal: add invite-only, member-visible rooms with creator-defined choices and a real schedule without weakening the live v1 demo.
-
-- [ ] Build v2 from `docs/private-rooms-and-scheduling-spec.md` and `docs/superpowers/plans/2026-09-05-private-rooms-v2.md`.
-- [ ] Use new private canonical tables plus caller-filtered views; do not attempt to make already-public v1 room data private retroactively.
-- [ ] Create the wizard, invite acceptance, custom choice board, calendar export, and privacy proof in separate ownership lanes.
-- [ ] Do not publish the v2 module until a two-identity outsider/member proof and explicit owner confirmation are complete.
-
-## U11 — Optional public decision story, CTA, and autonomous agent handoffs
-
-Goal: keep v2 rooms invite-only by default while allowing a creator to deliberately publish a privacy-safe read-only decision story that sends visitors into an independent room-creation flow.
-
-- [ ] Use `docs/public-sharing-and-cta-spec.md` and `docs/superpowers/plans/2026-09-05-public-sharing-and-agent-collaboration.md` as the source of truth.
-- [ ] Build only the new v2 public projection and `/share/<publicRoomId>` route; never expose a private v2 room through `/r/<publicRoomId>`.
-- [ ] Make public sharing default-off, creator-only, reversible, and free of member identity, chat, individual votes, invite data, preferences, and price limits.
-- [ ] Add the exact public CTA: “Have a decision to make? Make it together.” with a “Create your own room” link to `/`.
-- [ ] Use GitHub Issues and `docs/agent-collaboration-protocol.md` for autonomous task claiming and PR handoffs; no agent waits for a manually relayed next task.
-- [ ] Require two-identity privacy proof and explicit owner confirmation before a Maincloud publish or public deployment.
+Assumption: the source icon is trusted as supplied and does not need visual editing; only the requested raster sizes are generated.

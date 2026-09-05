@@ -75,3 +75,33 @@
 - Pushed the planning package as `45626e6` to `origin/main`.
 - Created GitHub labels plus issues #1–#6 with explicit ownership, dependency, and acceptance boundaries.
 - Started disjoint private-room server (#2) and public-story UI (#3) worktrees; reserved the independent calendar-event builder (#6) for a collaborator.
+
+# 2026-09-05 — README operating status
+
+- Added a root README with the live demo, current product state, architecture, active v2 lanes, local checks, safety constraints, and agent workflow.
+- Updated the docs index to route incoming contributors to the current handoff, v2 specifications, collaboration protocol, and execution plan.
+- Added an execution-plan rule requiring README status updates with every merge, publish, deployment, or lane-state change.
+
+# 2026-09-05 — Public-story UI merged
+
+- Reviewed and merged PR #7 as `9d82753`; the fixture-only public-story page and sharing settings component remain isolated from routing and SpacetimeDB.
+- Verified on `main`: 23 client tests, lint, production build, and `git diff --check` pass.
+- Updated the root README and execution plan to mark #3 merged; public projection/route work remains dependency-blocked.
+
+# 2026-09-05 — Private v2 access core merged
+
+- Reviewed and merged PR #9 as `dcd5ac5`; private rooms, schedules, choices, membership, hash-only invites, and caller-filtered foundational views now exist locally in the module and bindings.
+- Verified on `main`: Rust format, 3 module tests, SpacetimeDB build, 23 client tests, lint, production build, and whitespace validation pass.
+- Kept Maincloud unpublished. Added the private decision-engine prerequisite (#10) because public sharing requires server-authoritative decision history and metrics.
+
+# 2026-09-05 — Lane B custom activity UI wired
+
+- Regenerated `client/src/module_bindings/` with the new `add_activity` reducer binding.
+- Added `RoomActions.addActivity`, live `actionsFor` wiring, fixture no-op support, and an open-room form in `RoomPage` for name, price, and minimum people.
+- Added success and reducer-error React Testing Library coverage. All requested Rust/client verification commands pass.
+
+# 2026-09-05 — Sorted brand rebrand
+
+- Added the supplied Sorted icon plus 32px favicon and 180px Apple touch icon assets.
+- Updated browser metadata, accessibility labels, and landing, room, and create-room wordmarks to Sorted.
+- Kept the live SpacetimeDB database name, README, AGENTS, and internal fixture URLs unchanged.

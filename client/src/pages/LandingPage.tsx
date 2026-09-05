@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from "react";
-import { saturdayOpenView } from "../fixtures/room";
+import type { RoomView } from "../fixtures/room";
 import "../styles/landing.css";
 
 type LandingPageProps = {
+  view: RoomView;
   onJoin: (name: string) => void;
 };
 
@@ -10,7 +11,7 @@ function formatPrice(price: number): string {
   return price === 0 ? "Free" : `INR ${price}`;
 }
 
-export function LandingPage({ onJoin }: LandingPageProps) {
+export function LandingPage({ view, onJoin }: LandingPageProps) {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
 
@@ -32,19 +33,24 @@ export function LandingPage({ onJoin }: LandingPageProps) {
       <header className="site-header">
         <a
           className="wordmark"
-          href="/r/SATURDAY"
-          aria-label="Pick and Lock home"
+          href={window.location.pathname}
+          aria-label="Sorted home"
         >
-          <span aria-hidden="true">P&amp;L</span>
-          <span>Pick &amp; Lock</span>
+          <img
+            src="/sorted-icon.png"
+            alt=""
+            aria-hidden="true"
+            className="wordmark-icon"
+          />
+          <span>Sorted</span>
         </a>
-        <p className="header-note">Saturday plans</p>
+        <p className="header-note">{view.title}</p>
       </header>
 
       <section className="landing-hero" aria-labelledby="landing-title">
         <div className="hero-copy">
           <p className="hero-kicker">One plan, confirmed together</p>
-          <h1 id="landing-title">Make Saturday happen.</h1>
+          <h1 id="landing-title">{view.title}</h1>
           <p className="hero-summary">
             See what works for everyone, agree on one plan, and reopen it if a
             required friend drops out.
@@ -63,7 +69,7 @@ export function LandingPage({ onJoin }: LandingPageProps) {
                 aria-describedby="name-help name-error"
                 aria-invalid={Boolean(error)}
               />
-              <button type="submit">Join Saturday room</button>
+              <button type="submit">Join {view.title}</button>
             </div>
             <p id="name-help" className="form-help">
               No account. Just pick the name your friends know.
@@ -76,17 +82,17 @@ export function LandingPage({ onJoin }: LandingPageProps) {
 
         <section
           className="departure-board"
-          aria-label="Live Saturday room preview"
+          aria-label={`Live ${view.title} preview`}
         >
           <div className="board-header">
             <div>
-              <p>Saturday room</p>
+              <p>{view.title}</p>
               <strong>What can happen?</strong>
             </div>
             <span className="board-status">Live</span>
           </div>
           <div className="board-list">
-            {saturdayOpenView.activities.map((activity) => (
+            {view.activities.map((activity) => (
               <article className="board-row" key={activity.id}>
                 <div>
                   <h2>{activity.name}</h2>
@@ -108,12 +114,12 @@ export function LandingPage({ onJoin }: LandingPageProps) {
             ))}
           </div>
           <p className="board-footer">
-            Four friends can lock Bowling right now.
+            {view.latestEvent?.message ?? "Waiting for the first room update."}
           </p>
         </section>
       </section>
 
-      <section className="landing-proof" aria-label="How Pick and Lock works">
+      <section className="landing-proof" aria-label="How Sorted works">
         <p>Answer what works. Propose a feasible plan. Lock it together.</p>
       </section>
     </main>
