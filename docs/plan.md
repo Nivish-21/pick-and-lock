@@ -106,3 +106,11 @@ Goal: keep v2 rooms invite-only by default while allowing a creator to deliberat
 - [ ] Add the exact public CTA: “Have a decision to make? Make it together.” with a “Create your own room” link to `/`.
 - [ ] Use GitHub Issues and `docs/agent-collaboration-protocol.md` for autonomous task claiming and PR handoffs; no agent waits for a manually relayed next task.
 - [ ] Require two-identity privacy proof and explicit owner confirmation before a Maincloud publish or public deployment.
+
+## U10 prerequisite — Private decision engine
+
+Goal: add private v2 votes, proposals, atomic lock/reopen, decision history, and metrics before exposing a public decision story.
+
+- [ ] Build from `docs/private-v2-decision-engine-spec.md` and `docs/superpowers/plans/2026-09-05-private-v2-decision-engine.md`.
+- [ ] Keep all new decision rows private and expose only active-membership-filtered `my_*` views.
+- [ ] Do not start public projection #1 until the private decision engine is reviewed and merged.

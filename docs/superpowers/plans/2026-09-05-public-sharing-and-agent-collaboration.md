@@ -69,6 +69,8 @@
 - [ ] Generate bindings and run `cargo fmt --check`, `cargo test --manifest-path server/spacetimedb/Cargo.toml`, and `spacetime build --module-path server/spacetimedb`.
 - [ ] Commit only server and generated-binding files as `feat: add public decision story projection`.
 
+**Prerequisite correction:** `room_decision` and `room_metrics` are not part of the first private access-core merge. Keep issue #1 blocked until `docs/superpowers/plans/2026-09-05-private-v2-decision-engine.md` Task 1 is reviewed and merged. Do not substitute browser-derived counts for authoritative history.
+
 ### Task 3: Build the independent public-story UI
 
 **Owner:** UI agent, issue `V2-PS2`.
