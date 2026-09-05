@@ -1,0 +1,87 @@
+.group-input-panel {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+}
+
+.group-input-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.group-input-kicker {
+  margin: 0 0 0.25rem;
+  color: var(--signal-strong);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.group-input-panel h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.3rem;
+}
+
+.group-input-heading > span {
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+}
+
+.group-input-empty {
+  margin: 0;
+  color: var(--ink-soft);
+  line-height: 1.45;
+}
+
+.group-input-list {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.group-input-list li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.4rem 0.6rem;
+  align-items: baseline;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  background: var(--canvas);
+}
+
+.group-input-list strong {
+  color: var(--ink);
+}
+
+.group-input-list span {
+  color: var(--ink-soft);
+}
+
+.group-input-list small {
+  color: var(--signal-strong);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+}
+
+@media (max-width: 34rem) {
+  .group-input-list li {
+    grid-template-columns: 1fr auto;
+  }
+
+  .group-input-list span {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
