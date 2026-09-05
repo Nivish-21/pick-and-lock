@@ -54,3 +54,4 @@
 - Verified the direct public room URL `/r/SATURDAY`: Maincloud connected, `Demo Guest` joined alongside `Demo Host`, the real Bowling count rendered, and the QR component encoded the production room URL.
 - Kept the incompatible metrics schema branch out of main and out of the production deployment.
 - Ignored Vercel’s local project directory and local environment files in `client/.gitignore`; no deployment token or environment file entered Git.
+- Created and verified the clean production presenter room `XATWU1XNQB` (`Demo dinner decision`) through the public Create Room, route, and join flows.
