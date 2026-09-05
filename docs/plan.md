@@ -1,5 +1,27 @@
 # Active execution plan — 2026-09-06 checkpoint (most recent, read this first)
 
+## Task block: enable the bot in production (background — does not block the current tester round)
+
+Owner decision: ship human-only chat to the first real tester now (already live — the bot has never worked in production, so no change was needed to reach this state). Build and verify bot-enablement in the background in parallel; only push it live for the tester to try once it's fully verified end-to-end. This plan is written, not yet approved for execution — do not start any step until the owner says go.
+
+**Step 1 — generate a bot SpacetimeDB identity + token (owner runs this, not me).**
+Write a small script (`api/bot-service/generate-identity.ts` or similar) that connects to Maincloud once with no token — same pattern already used by the human client in `spacetime.ts` (server auto-assigns a new identity + token on first connect with `withToken(undefined)`). The script prints ONLY the identity (hex — public, safe to print) to the console and writes the token directly into `.env`'s `BOT_SPACETIME_TOKEN=` line via a file write, never printing it. The owner runs this script themselves on their own machine, per the established credential-handling rule (never read/print secret values; the owner fills `.env` directly, same as `OPENAI_API_KEY` all session).
+
+**Step 2 — rebuild and republish with `BOT_IDENTITY` set (owner confirmation required, like every publish).**
+`require_bot()` checks `option_env!("BOT_IDENTITY")`, a Rust *compile-time* constant — it must be set as an env var before `cargo build`/`spacetime build`/`spacetime publish` run, not just in `.env` (which Rust's `option_env!` does not read at runtime). Command: `BOT_IDENTITY=<hex-identity-from-step-1> spacetime publish pick-and-lock --module-path server/spacetimedb --yes=remote`. No table/column changes in this step — only the compiled module's baked-in constant changes — so `--yes=break-clients` is likely not needed, but check the migration plan output before assuming.
+
+**Step 3 — confirm the remaining bot-service env vars are real.**
+`OPENAI_API_KEY` should already be filled from earlier in the session — confirm it's non-empty (never print the value). `GOOGLE_PLACES_API_KEY` was flagged earlier this session as "not yet verified working" — run one masked test call (report only the HTTP status, never the key) before relying on it. `BOT_SPACETIME_TOKEN` comes from step 1.
+
+**Step 4 — run `api/bot-service` persistently.**
+It's a long-running Node process (`npm start` → `tsx index.ts`), not a serverless function. For this hackathon round: run it as a background process on the owner's machine (e.g. `nohup npm start > bot.log 2>&1 &` from `api/bot-service`), logging to a file so it can be monitored. Note for later (not now): a real always-on host (Railway/Fly.io/a small VPS) if this needs to survive beyond the hackathon or the owner's machine being offline.
+
+**Step 5 — end-to-end verification before flipping it on for the tester.**
+Create a fresh test room, `@sorted` mention the bot, confirm it replies within the tightened latency budget (issue #26's 2s debounce + 6s timeout), confirm `bot_add_activity`-driven autonomous poll authoring actually inserts a real activity, confirm the hardened guardrails hold against a live adversarial message (not just the mocked unit tests), confirm the speak-gate cooldown/minute-cap behaves as tuned. This is exactly the class of defect unit tests can't catch — no test in the suite talks to a live LLM and a live database together.
+
+**Step 6 — owner decides when to tell the tester the bot is live.**
+This is purely backend enablement — no new URL, no client redeploy needed (the client-side chat UI already works, it was only ever the bot's own authentication that was missing). Once step 5 passes, the same room the tester is already using will just start getting bot replies.
+
 ## Task block: kill hardcoded seed data, real date/time, bot hardening (2026-09-06)
 
 Issues #20 and #21 both merged and independently re-verified; live-testing them together on production found and fixed three real bugs directly (mechanical, not new feature work): (1) SpacetimeDB requires `#[default(...)]` on new columns added to an existing table — publish failed without it on `Activity.distance_km`/`time_minutes`; (2) `planSelectors.ts` never copied the new distance/time fields into `ActivityView`, so they never displayed despite the form/reducer/display code all being wired; (3) `my_room_chat`/`my_room_preferences` are views scoped to every room the caller has ever joined, not the room being viewed — the client never filtered by current `plan_id`, so a caller in multiple rooms saw all their chats mixed together. All three fixed, verified, published/deployed.
