@@ -1,18 +1,52 @@
 import { useState } from "react";
-import { fixtureActions, saturdayOpenView } from "./fixtures/room";
+import { RoomDataBridge } from "./data/RoomDataBridge";
+import { createRoom } from "./data/spacetime";
 import { LandingPage } from "./pages/LandingPage";
+import { CreateRoomPage } from "./pages/CreateRoomPage";
 import { RoomPage } from "./pages/RoomPage";
 import { parseRoomRoute } from "./room-route";
 
 function App() {
-  const [name, setName] = useState<string | null>(null);
   const roomCode = parseRoomRoute(window.location.pathname);
 
-  if (name !== null || roomCode !== null) {
-    return <RoomPage view={saturdayOpenView} actions={fixtureActions} />;
+  if (roomCode !== null) {
+    return <RoomSession />;
   }
 
-  return <LandingPage onJoin={setName} />;
+  return (
+    <RoomDataBridge>
+      {() => (
+        <CreateRoomPage
+          onCreate={async (input) => {
+            await createRoom(input);
+            window.location.assign(`/r/${input.shareCode}`);
+          }}
+        />
+      )}
+    </RoomDataBridge>
+  );
+}
+
+function RoomSession() {
+  const [name, setName] = useState<string | null>(null);
+
+  return (
+    <RoomDataBridge>
+      {(view, actions) => {
+        if (name === null) {
+          return (
+            <LandingPage
+              onJoin={(nextName) => {
+                void actions.join(nextName).then(() => setName(nextName));
+              }}
+            />
+          );
+        }
+
+        return <RoomPage view={view} actions={actions} />;
+      }}
+    </RoomDataBridge>
+  );
 }
 
 export default App;

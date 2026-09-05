@@ -60,6 +60,10 @@ SpacetimeDB code generation left extra blank lines at EOF in four TypeScript bin
 
 Backticks in a JavaScript template-literal agent prompt terminated the string before the tool call. Use plain quoted strings or avoid embedded Markdown code markers in orchestration payloads.
 
+## 2026-09-05 — Merged dependency lockfile without refreshing this checkout
+
+After merging `origin/ui/room-qr`, `client/src/components/RoomQrCode.tsx` could not resolve `qrcode.react` during `npm run test --prefix client`. The branch correctly changed `client/package.json` and `client/package-lock.json`; this checkout's `client/node_modules` was stale. After merging any dependency change, run `npm install --prefix client` before the first test/build gate.
+
 ## 2026-09-05 — Maincloud publish required an interactive terminal
 
 `spacetime publish` to Maincloud aborted at its confirmation prompt in a non-interactive shell before changing remote state. Use a TTY and explicitly confirm the reviewed publish after verifying the target database is absent.

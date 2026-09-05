@@ -43,6 +43,15 @@ Goal: integrate the collaborator's SpacetimeDB core without importing unrelated 
 
 - [x] Added proposal controls for feasible activities and an accessible share-link copy action with focused UI coverage.
 
+### U6 merge recovery
+
+- [x] Refreshed `client/node_modules` after merging the QR dependency lockfile; 19 client tests, lint, production build, and whitespace checks pass.
+
+### U6 live bridge checkpoint completed
+
+- [x] Merged the route, QR, Vercel, bridge, and Create Room client branches; mounted the bridge and creation flow in `App.tsx`.
+- [x] Verified Maincloud in a real browser: `SATURDAY` connected, `Demo Host` joined, and a live Bowling answer changed the authoritative eligible count from 0 to 1.
+
 ## U7 — Room insights and closure
 
 Goal: persist complete room lifecycles, decision history, current metrics, and short room chat without making browser state authoritative.

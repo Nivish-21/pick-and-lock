@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ActivityCard } from "../components/ActivityCard";
+import { RoomQrCode } from "../components/RoomQrCode";
 import type { RoomActions, RoomView } from "../fixtures/room";
 import "../styles/room.css";
 
@@ -70,6 +71,7 @@ export function RoomPage({ view, actions }: RoomPageProps) {
         <p className="room-event" aria-live="polite">
           {eventMessage(view.latestEvent)}
         </p>
+        <RoomQrCode roomUrl={window.location.href} />
       </main>
     );
   }
@@ -159,6 +161,7 @@ export function RoomPage({ view, actions }: RoomPageProps) {
       <p className="toast-region" aria-live="polite">
         {toast ? `Action not applied: ${toast}` : ""}
       </p>
+      <RoomQrCode roomUrl={window.location.href} />
     </main>
   );
 }

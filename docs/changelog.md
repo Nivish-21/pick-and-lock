@@ -40,3 +40,10 @@
 - Added `docs/maincloud-migration-safety.md` after reviewing the local metrics branch against Maincloud's automatic-migration constraints.
 - Recorded that `server/room-insights` commit `3ee5a58` is not deployable because it changes the existing `plan` table incompatibly; no data-destroying workaround is authorised.
 - Amended the room-insights specification and plan to use an additive `room_lifecycle` table and leave the seeded legacy room readable but non-closable.
+
+# 2026-09-05 — Live bridge demo integration
+
+- Merged safe route, QR, Vercel SPA, bridge, and Create Room branches into main; deliberately excluded the incompatible metrics schema branch.
+- Mounted the SpacetimeDB bridge and Create Room callback in `client/src/App.tsx`; rendered the room QR payload from the canonical browser URL.
+- Refreshed the local dependency tree after the QR dependency merge and passed 19 client tests, lint, production build, and whitespace validation.
+- Performed a live Maincloud browser smoke test: joined `SATURDAY` as `Demo Host` and changed Bowling eligibility from 0 to 1 through the real reducer.
