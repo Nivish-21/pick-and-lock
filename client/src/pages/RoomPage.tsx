@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { ActivityCard } from "../components/ActivityCard";
 import { RoomQrCode } from "../components/RoomQrCode";
 import type { RoomActions, RoomView } from "../fixtures/room";
@@ -13,6 +13,9 @@ function eventMessage(event: RoomView["latestEvent"]): string {
 export function RoomPage({ view, actions }: RoomPageProps) {
   const [toast, setToast] = useState("");
   const [shareStatus, setShareStatus] = useState("");
+  const [activityName, setActivityName] = useState("");
+  const [activityPrice, setActivityPrice] = useState("0");
+  const [activityMinPeople, setActivityMinPeople] = useState("1");
   const proposal = view.pendingProposal;
   const lockedActivity = view.activities.find(
     (activity) => activity.id === view.lockedActivityId,
@@ -36,6 +39,17 @@ export function RoomPage({ view, actions }: RoomPageProps) {
     } catch {
       setShareStatus("Could not copy room link.");
     }
+  }
+
+  async function addActivity(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await runAction(() =>
+      actions.addActivity(
+        activityName.trim(),
+        Number(activityPrice),
+        Number(activityMinPeople),
+      ),
+    );
   }
 
   if (view.status === "locked") {
@@ -133,6 +147,47 @@ export function RoomPage({ view, actions }: RoomPageProps) {
           />
         ))}
       </section>
+      <form
+        className="add-activity"
+        onSubmit={(event) => void addActivity(event)}
+      >
+        <div>
+          <p className="room-kicker">Add an option</p>
+          <h2>What else could work?</h2>
+        </div>
+        <label>
+          Activity name
+          <input
+            required
+            maxLength={60}
+            value={activityName}
+            onChange={(event) => setActivityName(event.target.value)}
+          />
+        </label>
+        <label>
+          Price in INR
+          <input
+            required
+            min="0"
+            max="1000000"
+            type="number"
+            value={activityPrice}
+            onChange={(event) => setActivityPrice(event.target.value)}
+          />
+        </label>
+        <label>
+          Minimum people
+          <input
+            required
+            min="1"
+            max="50"
+            type="number"
+            value={activityMinPeople}
+            onChange={(event) => setActivityMinPeople(event.target.value)}
+          />
+        </label>
+        <button type="submit">Add activity</button>
+      </form>
       <section className="group-grid" aria-label="Group status">
         <div className="group-panel">
           <h2>Friends</h2>
@@ -177,13 +232,14 @@ function RoomHeader({
 }) {
   return (
     <header className="room-header">
-      <a
-        className="wordmark"
-        href="/r/SATURDAY"
-        aria-label="Pick and Lock home"
-      >
-        <span aria-hidden="true">P&amp;L</span>
-        <span>Pick &amp; Lock</span>
+      <a className="wordmark" href="/r/SATURDAY" aria-label="Sorted home">
+        <img
+          src="/sorted-icon.png"
+          alt=""
+          aria-hidden="true"
+          className="wordmark-icon"
+        />
+        <span>Sorted</span>
       </a>
       <div className="room-header-actions">
         <p>{dateLabel}</p>

@@ -1275,6 +1275,55 @@ pub fn set_answer(
 }
 
 #[spacetimedb::reducer]
+pub fn add_activity(
+    ctx: &ReducerContext,
+    plan_id: u32,
+    name: String,
+    price: u32,
+    min_people: u32,
+) -> Result<(), String> {
+    let p = plan_for(ctx, plan_id)?;
+    if p.status != PlanStatus::Open {
+        return Err("Plan is locked".into());
+    }
+    friend_for(ctx, plan_id).ok_or("Join the plan first")?;
+    let name = name.trim().to_string();
+    if name.is_empty() || name.len() > 60 {
+        return Err("Activity name must be 1-60 characters".into());
+    }
+    if min_people == 0 || min_people > 50 {
+        return Err("Minimum people must be between 1 and 50".into());
+    }
+    if price > 1_000_000 {
+        return Err("Price is too high".into());
+    }
+    if ctx
+        .db
+        .activity()
+        .iter()
+        .any(|a| a.plan_id == plan_id && a.name.eq_ignore_ascii_case(&name))
+    {
+        return Err("That option already exists".into());
+    }
+    let a = ctx.db.activity().insert(Activity {
+        id: 0,
+        plan_id,
+        name: name.clone(),
+        price,
+        min_people,
+    });
+    event(
+        ctx,
+        plan_id,
+        "activity_added",
+        None,
+        Some(a.id),
+        format!("New option added: {}", name),
+    );
+    Ok(())
+}
+
+#[spacetimedb::reducer]
 pub fn propose(ctx: &ReducerContext, activity_id: u32) -> Result<(), String> {
     let a = activity_for(ctx, activity_id)?;
     let p = plan_for(ctx, a.plan_id)?;

@@ -7,6 +7,7 @@ import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
 import AcceptReducer from "../accept_reducer";
+import AddActivityReducer from "../add_activity_reducer";
 import AdvanceBotWatermarkReducer from "../advance_bot_watermark_reducer";
 import CancelProposalReducer from "../cancel_proposal_reducer";
 import CreatePrivateRoomReducer from "../create_private_room_reducer";
@@ -25,6 +26,7 @@ import SetAnswerReducer from "../set_answer_reducer";
 import SubmitLocationReducer from "../submit_location_reducer";
 
 export type AcceptParams = __Infer<typeof AcceptReducer>;
+export type AddActivityParams = __Infer<typeof AddActivityReducer>;
 export type AdvanceBotWatermarkParams = __Infer<typeof AdvanceBotWatermarkReducer>;
 export type CancelProposalParams = __Infer<typeof CancelProposalReducer>;
 export type CreatePrivateRoomParams = __Infer<typeof CreatePrivateRoomReducer>;
@@ -41,3 +43,4 @@ export type SendBotMessageParams = __Infer<typeof SendBotMessageReducer>;
 export type SendChatMessageParams = __Infer<typeof SendChatMessageReducer>;
 export type SetAnswerParams = __Infer<typeof SetAnswerReducer>;
 export type SubmitLocationParams = __Infer<typeof SubmitLocationReducer>;
+

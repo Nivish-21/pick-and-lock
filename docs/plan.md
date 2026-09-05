@@ -57,3 +57,31 @@ The API key currently in `.env` (`sk-proj-aFf...`) was pasted in plaintext into 
 3. Re-test one `codex exec` turn to see if the `web_search_preview` block still applies (it's an org setting, not tied to the specific key, so expect it to persist unless the org dashboard was changed).
 
 **Current action:** starting Lane B (client wiring fix — `LandingPage.tsx` hardcoded fixture, missing custom-poll UI, `CreateRoomPage.tsx`) directly in this session while key rotation is pending, since that work has no dependency on the LLM key or Codex CLI.
+
+## Lane B — add-activity client wiring (2026-09-05)
+
+Goal: expose the existing server `add_activity` reducer through the live client room UI, with focused success and error coverage.
+
+Scope: `client/src/pages/**`, `client/src/components/**`, `client/src/data/**`, `client/src/fixtures/room.ts`, `client/src/module_bindings/**`, and `client/src/styles/room.css`. Generated bindings are regenerated, not hand-edited. No server or proposal/vote changes.
+
+- [x] Regenerate TypeScript bindings and confirm the generated reducer method/signature.
+- [x] Add `addActivity(name, price, minPeople)` to the bridge actions and `RoomActions`; keep fixture actions no-op.
+- [x] Add the joined-room form, using the existing `runAction` toast error path and current room styling.
+- [x] Add focused React Testing Library coverage for valid arguments and reducer failure toast; run the focused test red before implementation, then green.
+- [x] Run all requested Rust/client verification commands plus `git diff --check`.
+- [x] Append completion state to `docs/status.md` and `docs/changelog.md`, commit, push, and comment on issue #12.
+
+Assumptions: the form is available on open joined rooms because `RoomPage` is only rendered after joining; no separate membership field exists in `RoomView`, so the server remains the authority for rejecting unauthorised calls. The required project logs are procedural files despite the source-only ownership boundary.
+
+## Sorted rebrand (2026-09-05)
+
+Goal: replace user-facing “Pick & Lock” branding with “Sorted” and install the supplied browser/app icons without changing the live SpacetimeDB database name or internal references.
+
+Scope: `client/public/`, `client/index.html`, `client/src/pages/LandingPage.tsx`, `client/src/pages/RoomPage.tsx`, `client/src/pages/CreateRoomPage.tsx`, and their existing landing/room stylesheets. Procedural project logs will also be updated; no server, connection string, README, AGENTS, or fixture URL changes.
+
+- [x] Copy the supplied PNG and generate 32px favicon and 180px Apple touch icon with `sips`.
+- [x] Update the browser title, favicon links, wordmarks, and user-facing accessibility labels to Sorted.
+- [x] Run the requested client tests, lint, build, and whitespace checks.
+- [x] Update project status/changelog, commit, and push `ui/rebrand-sorted`.
+
+Assumption: the source icon is trusted as supplied and does not need visual editing; only the requested raster sizes are generated.

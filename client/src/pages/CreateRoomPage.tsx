@@ -91,14 +91,22 @@ export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
   return (
     <main className="create-room-shell">
       <header className="create-room-header">
-        <a className="wordmark" href="/" aria-label="Pick and Lock home">
-          <span aria-hidden="true">P&amp;L</span>
-          <span>Pick &amp; Lock</span>
+        <a className="wordmark" href="/" aria-label="Sorted home">
+          <img
+            src="/sorted-icon.png"
+            alt=""
+            aria-hidden="true"
+            className="wordmark-icon"
+          />
+          <span>Sorted</span>
         </a>
         <p>New decision room</p>
       </header>
 
-      <section className="create-room-layout" aria-labelledby="create-room-title">
+      <section
+        className="create-room-layout"
+        aria-labelledby="create-room-title"
+      >
         <div className="create-room-intro">
           <p className="create-room-kicker">Start with a clear question</p>
           <h1 id="create-room-title">Get everyone on the same page.</h1>
@@ -126,7 +134,9 @@ export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
               autoComplete="off"
               aria-invalid={Boolean(error && !title.trim())}
             />
-            <span className="create-room-hint">Keep it to one clear question.</span>
+            <span className="create-room-hint">
+              Keep it to one clear question.
+            </span>
           </div>
 
           <div className="create-room-field">
@@ -143,22 +153,39 @@ export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
             />
           </div>
 
-          <div className="create-room-code" aria-label="Generated public room code">
+          <div
+            className="create-room-code"
+            aria-label="Generated public room code"
+          >
             <div>
               <span className="create-room-code-label">Public room code</span>
-              <strong>{shareCode || "Generated when you create the room"}</strong>
+              <strong>
+                {shareCode || "Generated when you create the room"}
+              </strong>
             </div>
-            <span className="create-room-code-mark" aria-hidden="true">Open</span>
+            <span className="create-room-code-mark" aria-hidden="true">
+              Open
+            </span>
           </div>
 
-          <p className="create-room-feedback" role="alert" aria-live="assertive">
+          <p
+            className="create-room-feedback"
+            role="alert"
+            aria-live="assertive"
+          >
             {error}
           </p>
 
           {created ? (
-            <div className="create-room-success" role="status" aria-live="polite">
+            <div
+              className="create-room-success"
+              role="status"
+              aria-live="polite"
+            >
               <strong>Room created.</strong>
-              <span>Share code {shareCode} with your group to get started.</span>
+              <span>
+                Share code {shareCode} with your group to get started.
+              </span>
             </div>
           ) : null}
 

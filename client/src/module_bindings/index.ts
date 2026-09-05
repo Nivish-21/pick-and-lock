@@ -35,6 +35,7 @@ import {
 
 // Import all reducer arg schemas
 import AcceptReducer from "./accept_reducer";
+import AddActivityReducer from "./add_activity_reducer";
 import AdvanceBotWatermarkReducer from "./advance_bot_watermark_reducer";
 import CancelProposalReducer from "./cancel_proposal_reducer";
 import CreatePrivateRoomReducer from "./create_private_room_reducer";
@@ -244,6 +245,7 @@ const tablesSchema = __schema({
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
   __reducerSchema("accept", AcceptReducer),
+  __reducerSchema("add_activity", AddActivityReducer),
   __reducerSchema("advance_bot_watermark", AdvanceBotWatermarkReducer),
   __reducerSchema("cancel_proposal", CancelProposalReducer),
   __reducerSchema("create_private_room", CreatePrivateRoomReducer),
@@ -421,3 +423,4 @@ export class DbConnection extends __DbConnectionImpl<typeof REMOTE_MODULE> {
     return new SubscriptionBuilder(this);
   };
 }
+

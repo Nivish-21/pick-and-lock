@@ -16,7 +16,7 @@ Friends coordinating one shared Saturday activity from a link. They need to answ
 
 ## Product Purpose
 
-Pick & Lock turns group-chat uncertainty into one feasible, confirmed activity. Success is a group visibly locking an activity only after enough eligible people agree, then automatically reopening when a required person drops out.
+Sorted turns group-chat uncertainty into one feasible, confirmed activity. Success is a group visibly locking an activity only after enough eligible people agree, then automatically reopening when a required person drops out.
 
 ## Positioning
 
@@ -37,7 +37,7 @@ Six friends use the same Saturday room. Bowling costs INR 400 and needs four peo
 
 ## Brand Commitments
 
-The product name is Pick & Lock. Voice is direct, social, and concrete. The UI must make the lock and reopen state change unmistakable across two phones or browser tabs.
+The product name is Sorted (formerly Pick & Lock). Voice is direct, social, and concrete. The UI must make the lock and reopen state change unmistakable across two phones or browser tabs. Approved app icon: a dark navy rounded-square mark with a yellow bird and three stacked pill/bar shapes in grey, amber, and teal — see `client/public/` once the rebrand lands.
 
 ## Evidence on Hand
 
@@ -56,7 +56,7 @@ Mobile-first web UI. Keyboard focus, text equivalents for status colour, 44px mi
 
 ## Planned expansion — consented decision assistance
 
-After the live hosted version is proven, Pick & Lock may add participant-controlled preference memory and a non-authoritative decision assistant. The assistant can identify trade-offs in consented, room-scoped data, but it never votes, locks, closes, or mutates a room. See `docs/project-handoff.md` for the privacy boundary and implementation sequence.
+After the live hosted version is proven, Sorted may add participant-controlled preference memory and a non-authoritative decision assistant. The assistant can identify trade-offs in consented, room-scoped data, but it never votes, locks, closes, or mutates a room. See `docs/project-handoff.md` for the privacy boundary and implementation sequence.
 
 ## Planned expansion — private custom rooms
 

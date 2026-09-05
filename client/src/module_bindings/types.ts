@@ -317,3 +317,4 @@ export const RoomSchedule = __t.object("RoomSchedule", {
   timezone: __t.string(),
 });
 export type RoomSchedule = __Infer<typeof RoomSchedule>;
+
