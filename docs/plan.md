@@ -1,5 +1,17 @@
 # Active execution plan — 2026-09-06 checkpoint (most recent, read this first)
 
+## Task block: kill hardcoded seed data, real date/time, bot hardening (2026-09-06)
+
+Issues #20 and #21 both merged and independently re-verified; live-testing them together on production found and fixed three real bugs directly (mechanical, not new feature work): (1) SpacetimeDB requires `#[default(...)]` on new columns added to an existing table — publish failed without it on `Activity.distance_km`/`time_minutes`; (2) `planSelectors.ts` never copied the new distance/time fields into `ActivityView`, so they never displayed despite the form/reducer/display code all being wired; (3) `my_room_chat`/`my_room_preferences` are views scoped to every room the caller has ever joined, not the room being viewed — the client never filtered by current `plan_id`, so a caller in multiple rooms saw all their chats mixed together. All three fixed, verified, published/deployed.
+
+Owner also flagged: every new room was getting hardcoded "Bowling/Escape room/Game night" activities (from `create_room` calling `seed_activities`) — removed, since activities should only come from manual entry or the bot, never hardcoded. Fixed, verified (no schema change, clean republish), deployed.
+
+Two new disjoint lanes opened for the next round, both builders idle and ready:
+- **Issue #25, branch `client/room-datetime`:** replace the free-text "When?" field with a real `<input type="datetime-local">`, add `Plan.scheduled_at: Option<Timestamp>` (additive, needs `#[default(None)]`), `create_room` gets a new required `scheduled_at` param. Touches server `Plan`/`create_room` + `CreateRoomPage.tsx` + `spacetime.ts`'s `createRoom` action only.
+- **Issue #26, branch `bot/hardening`:** strengthen the bot's system prompt against off-topic/role-play/jailbreak requests, tune `speakGate.ts`'s triggers to reduce unnecessary chatter, and tighten debounce/timeout values to reduce latency where safe. `api/bot-service/**` only.
+
+These two lanes are fully disjoint from each other (no shared files) — no merge-conflict risk expected. Neither merges into `main` until independently re-verified, same discipline as every prior lane. The `#[default(...)]` requirement and the "will disconnect clients" migration warning are now known patterns for any future additive schema change — check for both before publishing.
+
 ## Task block: beyond-core-loop merge, ship, and two new parallel lanes (2026-09-06)
 
 Owner decision: get the verified core loop + chat feature in front of real testers now rather than gating on more feature work — tester feedback has latency, so start that clock early. In parallel, two genuinely disjoint new lanes proceed on their own branches (never merged until independently re-verified, same as every prior lane).
@@ -143,3 +155,17 @@ Scope: server/spacetimedb/src/lib.rs, regenerated client/src/module_bindings/**,
 - [x] Update status/changelog, commit, push the existing branch, and comment on issue #20.
 
 Assumptions: blank optional form fields become undefined; distance/time are display metadata only, not per-friend feasibility constraints.
+
+## Room creation date/time picker (2026-09-06)
+
+Goal: replace the free-text room date with a browser-local datetime picker while storing the real scheduled timestamp and retaining a human-readable date label.
+
+Scope: server/spacetimedb/src/lib.rs, regenerated client/src/module_bindings/**, client/src/pages/CreateRoomPage.tsx, client/src/pages/CreateRoomPage.test.tsx, client/src/data/spacetime.ts, and required project logs. Do not touch RoomPage, chat, or activity-form code.
+
+- [x] Append Plan.scheduled_at with its required default and update create_room/seed construction.
+- [x] Run server fmt/build, regenerate bindings, and update the createRoom client action.
+- [x] Replace the free-text field with datetime-local, derive Timestamp/dateLabel, and update tests.
+- [x] Run all requested verification and confirm the origin/main Plan diff is additive-only.
+- [x] Update status/changelog, commit, push the existing branch, and comment on issue #25.
+
+Assumptions: `datetime-local` uses the browser's local timezone; the client sends both `Timestamp.fromDate(date)` and a label shorter than 40 characters.

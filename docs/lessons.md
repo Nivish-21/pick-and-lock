@@ -91,3 +91,7 @@ The initial Sorted icon swap passed lint, tests, build, and whitespace checks, b
 ## 2026-09-05 — Onboarding test worktree lacked dependencies
 
 `npm run test --prefix client -- --run src/pages/CreateRoomPage.test.tsx src/App.test.tsx` failed before Vitest discovery with `vitest: command not found`; the onboarding worktree had no `client/node_modules`. Install from `client/package-lock.json` before evaluating the new tests.
+
+## 2026-09-06 — Date/time picker test retained the old date fixture shape
+
+`client/src/pages/CreateRoomPage.test.tsx` passed `"Tonight"` as the second argument to the invalid-host helper after the field changed from free text to `datetime-local`. The helper interpreted it as an empty/invalid datetime in the browser, so date validation ran before host validation. Update callers whenever a test helper's parameter meaning changes.

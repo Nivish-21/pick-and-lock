@@ -33,6 +33,8 @@ pub struct Plan {
     pub status: PlanStatus,
     pub locked_activity_id: Option<u32>,
     pub version: u64,
+    #[default(None)]
+    pub scheduled_at: Option<Timestamp>,
 }
 #[spacetimedb::table(accessor = activity, public)]
 pub struct Activity {
@@ -1041,6 +1043,7 @@ pub fn init(ctx: &ReducerContext) {
         status: PlanStatus::Open,
         locked_activity_id: None,
         version: 0,
+        scheduled_at: None,
     });
     seed_activities(ctx, p.id);
 }
@@ -1221,6 +1224,7 @@ pub fn create_room(
     share_code: String,
     title: String,
     date_label: String,
+    scheduled_at: Timestamp,
 ) -> Result<(), String> {
     let share_code = share_code.trim().to_ascii_uppercase();
     let title = title.trim().to_string();
@@ -1247,6 +1251,7 @@ pub fn create_room(
         status: PlanStatus::Open,
         locked_activity_id: None,
         version: 0,
+        scheduled_at: Some(scheduled_at),
     });
     event(ctx, plan.id, "created", None, None, "Room created".into());
     Ok(())
