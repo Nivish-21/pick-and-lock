@@ -1036,6 +1036,20 @@ pub fn create_private_room(
         role: RoomMembershipRole::Creator,
         left_at: None,
     });
+    if let Some(bot_identity) = configured_bot_identity()
+        && bot_identity != ctx.sender()
+    {
+        ctx.db.room_membership().insert(RoomMembership {
+            id: 0,
+            room_id: room.id,
+            identity: bot_identity,
+            membership_key: membership_key(room.id, bot_identity),
+            display_name: "AI Concierge".into(),
+            joined_at: ctx.timestamp,
+            role: RoomMembershipRole::Member,
+            left_at: None,
+        });
+    }
     insert_invite(
         ctx,
         room.id,

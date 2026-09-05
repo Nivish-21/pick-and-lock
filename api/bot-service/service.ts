@@ -19,6 +19,7 @@ type CachedLocation = {
 };
 
 type CachedPreference = {
+  id: number;
   friendName: string;
   statement: string;
   category: string;
@@ -97,6 +98,7 @@ export class RoomBotService {
         sentAt: timestampMs(row.sentAt),
       };
       const roomMessages = this.messages.get(row.roomId) ?? [];
+      if (roomMessages.some((message) => message.id === numeric(row.id))) return;
       roomMessages.push(message);
         this.messages.set(row.roomId, roomMessages);
       this.lastActivity.set(row.roomId, message.sentAt);
@@ -110,12 +112,15 @@ export class RoomBotService {
     });
     connection.db.myRoomPreferences.onInsert((_context, row) => {
       const roomPreferences = this.preferences.get(row.roomId) ?? [];
-      roomPreferences.push({ friendName: row.friendName, statement: row.statement, category: row.category });
+      const id = numeric(row.id);
+      if (roomPreferences.some((preference) => preference.id === id)) return;
+      roomPreferences.push({ id, friendName: row.friendName, statement: row.statement, category: row.category });
       this.preferences.set(row.roomId, roomPreferences);
     });
     connection.db.myRoomLocations.onInsert((_context, row) => {
       const roomLocations = this.locations.get(row.roomId) ?? [];
       const location = { id: numeric(row.id), roomId: row.roomId, lat: row.lat, lng: row.lng };
+      if (roomLocations.some((existing) => existing.id === location.id)) return;
       roomLocations.push(location);
       this.locations.set(row.roomId, roomLocations);
       this.lastActivity.set(row.roomId, Date.now());
@@ -132,6 +137,7 @@ export class RoomBotService {
         this.lastActivity.clear();
         for (const row of connection.db.myRoomChat) {
           const roomMessages = this.messages.get(row.roomId) ?? [];
+          if (roomMessages.some((message) => message.id === numeric(row.id))) continue;
           roomMessages.push({
             id: numeric(row.id),
             roomId: row.roomId,
@@ -146,11 +152,14 @@ export class RoomBotService {
         }
         for (const row of connection.db.myRoomPreferences) {
           const roomPreferences = this.preferences.get(row.roomId) ?? [];
-          roomPreferences.push({ friendName: row.friendName, statement: row.statement, category: row.category });
+          const id = numeric(row.id);
+          if (roomPreferences.some((preference) => preference.id === id)) continue;
+          roomPreferences.push({ id, friendName: row.friendName, statement: row.statement, category: row.category });
           this.preferences.set(row.roomId, roomPreferences);
         }
         for (const row of connection.db.myRoomLocations) {
           const roomLocations = this.locations.get(row.roomId) ?? [];
+          if (roomLocations.some((location) => location.id === numeric(row.id))) continue;
           roomLocations.push({ id: numeric(row.id), roomId: row.roomId, lat: row.lat, lng: row.lng });
           this.locations.set(row.roomId, roomLocations);
         }
@@ -220,13 +229,18 @@ export class RoomBotService {
     });
 
     for (const preference of result.extracted_preferences) {
+      if (!Number.isInteger(preference.friend_id) || preference.friend_id <= 0
+        || typeof preference.statement !== "string"
+        || !["dietary", "budget", "timing", "access", "other"].includes(preference.category)) {
+        continue;
+      }
       await this.connection.reducers.recordPreference({
         roomId,
         friendId: preference.friend_id,
         statement: preference.statement,
         category: preference.category,
         sourceMessageId: BigInt(newMessages.at(-1)?.id ?? 0),
-      });
+      }).catch(() => undefined);
     }
     if (result.reply_text && gate.allowed) {
       await this.connection.reducers.sendBotMessage({
@@ -237,7 +251,11 @@ export class RoomBotService {
       }).catch(() => undefined);
     }
 
-    const location = (this.locations.get(roomId) ?? []).at(-1);
+    const submittedLocationIds = new Set(
+      batch.filter((entry) => entry.type === "location").map((entry) => entry.id),
+    );
+    const locations = this.locations.get(roomId) ?? [];
+    const location = [...locations].reverse().find((candidate) => submittedLocationIds.has(candidate.id));
     if (location && this.config.placesKey && (result.place_query_needed || gate.trigger === "location-submitted")) {
       try {
         const places = await findNearbyPlaces(this.config.placesKey, location, "group-friendly venue");
@@ -257,7 +275,10 @@ export class RoomBotService {
       }
     }
 
-    const latestId = messages.at(-1)?.id ?? previousState.lastProcessedMessageId;
+    const latestId = messages.reduce(
+      (latest, message) => Math.max(latest, message.id),
+      previousState.lastProcessedMessageId,
+    );
     if (latestId > previousState.lastProcessedMessageId) {
       await this.connection.reducers.advanceBotWatermark({ roomId, lastProcessedMessageId: BigInt(latestId) });
     }
