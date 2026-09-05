@@ -23,9 +23,12 @@ export function RoomDataBridge({ children }: Props) {
         if (!active) return;
         setConnection(connected);
         setIdentity(connected.identity);
-        connected.db.plan.onInsert(refresh);
-        connected.db.plan.onUpdate(refresh);
-        connected.db.plan.onDelete(refresh);
+        const cache = connected.db as unknown as Record<string, { onInsert: (callback: () => void) => void; onUpdate?: (callback: () => void) => void; onDelete?: (callback: () => void) => void }>;
+        for (const table of ["plan", "activity", "friend", "answer", "proposal", "acceptance", "eventLog"]) {
+          cache[table]?.onInsert(refresh);
+          cache[table]?.onUpdate?.(refresh);
+          cache[table]?.onDelete?.(refresh);
+        }
         connected.subscriptionBuilder()
           .onApplied((ctx) => {
             const plans = [...ctx.db.plan].filter((plan) => plan.shareCode === shareCode);
