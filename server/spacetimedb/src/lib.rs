@@ -233,6 +233,28 @@ pub struct RoomChoice {
     pub sort_order: u32,
 }
 
+#[spacetimedb::table(accessor = room_public_share, private)]
+pub struct RoomPublicShare {
+    #[primary_key]
+    pub room_id: u32,
+    pub show_schedule: bool,
+}
+
+#[spacetimedb::table(accessor = shared_room_story, public)]
+pub struct SharedRoomStory {
+    #[primary_key]
+    pub id: String,
+    pub title: String,
+    pub status: PrivateRoomStatus,
+    pub choice_labels: Vec<String>,
+    pub selected_choice_label: Option<String>,
+    pub decision_count: u32,
+    pub published_at: Timestamp,
+    pub updated_at: Timestamp,
+    pub starts_at: Option<Timestamp>,
+    pub timezone: Option<String>,
+}
+
 #[spacetimedb::table(accessor = room_membership, private)]
 pub struct RoomMembership {
     #[primary_key]
@@ -738,6 +760,121 @@ fn private_choice_for(ctx: &ReducerContext, choice_id: u32) -> Result<RoomChoice
         .id()
         .find(choice_id)
         .ok_or_else(|| "Choice not found".into())
+}
+
+fn require_story_creator(sender: Identity, creator: Identity) -> Result<(), String> {
+    if sender == creator {
+        Ok(())
+    } else {
+        Err("Only the room creator can publish a story".into())
+    }
+}
+
+fn creator_private_room_for_id(ctx: &ReducerContext, room_id: u32) -> Result<PrivateRoom, String> {
+    let room = private_room_for(ctx, room_id)?;
+    require_story_creator(ctx.sender(), room.creator_identity)?;
+    Ok(room)
+}
+
+fn shared_story_from_parts(
+    id: String,
+    title: String,
+    status: PrivateRoomStatus,
+    choice_labels: Vec<String>,
+    selected_choice_label: Option<String>,
+    decision_count: u32,
+    published_at: Timestamp,
+    updated_at: Timestamp,
+    schedule: Option<(Timestamp, String)>,
+) -> SharedRoomStory {
+    let (starts_at, timezone) = schedule
+        .map(|(starts_at, timezone)| (Some(starts_at), Some(timezone)))
+        .unwrap_or((None, None));
+    SharedRoomStory {
+        id,
+        title,
+        status,
+        choice_labels,
+        selected_choice_label,
+        decision_count,
+        published_at,
+        updated_at,
+        starts_at,
+        timezone,
+    }
+}
+
+fn story_id_to_unpublish(story_id: &str, room_id: &str) -> Option<String> {
+    (story_id == room_id).then(|| story_id.to_string())
+}
+
+fn shared_story_for(
+    ctx: &ReducerContext,
+    room: &PrivateRoom,
+    show_schedule: bool,
+    published_at: Timestamp,
+) -> SharedRoomStory {
+    let mut choices: Vec<RoomChoice> = ctx.db.room_choice().room_id().filter(room.id).collect();
+    choices.sort_by_key(|choice| choice.sort_order);
+    let selected_choice_label = room.locked_choice_id.and_then(|choice_id| {
+        choices
+            .iter()
+            .find(|choice| choice.id == choice_id)
+            .map(|choice| choice.label.clone())
+    });
+    let decision_count = ctx
+        .db
+        .room_metrics()
+        .room_id()
+        .find(room.id)
+        .map(|metrics| metrics.decision_count)
+        .unwrap_or(0);
+    let schedule = if show_schedule {
+        ctx.db
+            .room_schedule()
+            .room_id()
+            .find(room.id)
+            .map(|schedule| (schedule.starts_at, schedule.timezone))
+    } else {
+        None
+    };
+    shared_story_from_parts(
+        room.public_room_id.clone(),
+        room.title.clone(),
+        room.status,
+        choices.into_iter().map(|choice| choice.label).collect(),
+        selected_choice_label,
+        decision_count,
+        published_at,
+        ctx.timestamp,
+        schedule,
+    )
+}
+
+fn save_shared_story(ctx: &ReducerContext, story: SharedRoomStory) {
+    if ctx
+        .db
+        .shared_room_story()
+        .id()
+        .find(story.id.clone())
+        .is_some()
+    {
+        ctx.db.shared_room_story().id().update(story);
+    } else {
+        ctx.db.shared_room_story().insert(story);
+    }
+}
+
+fn save_public_share_settings(ctx: &ReducerContext, room_id: u32, show_schedule: bool) {
+    if let Some(mut settings) = ctx.db.room_public_share().room_id().find(room_id) {
+        settings.show_schedule = show_schedule;
+        ctx.db.room_public_share().room_id().update(settings);
+    } else {
+        ctx.db.room_public_share().insert(RoomPublicShare {
+            room_id,
+            show_schedule,
+        });
+    }
 }
 
 fn private_eligible_vote_count(ctx: &ReducerContext, choice: &RoomChoice) -> u32 {
@@ -1776,6 +1913,55 @@ pub fn leave_private_room(ctx: &ReducerContext, room_id: u32) -> Result<(), Stri
 }
 
 #[spacetimedb::reducer]
+pub fn publish_room(ctx: &ReducerContext, room_id: u32, show_schedule: bool) -> Result<(), String> {
+    let room = creator_private_room_for_id(ctx, room_id)?;
+    save_public_share_settings(ctx, room_id, show_schedule);
+    let published_at = ctx
+        .db
+        .shared_room_story()
+        .id()
+        .find(room.public_room_id.clone())
+        .map(|story| story.published_at)
+        .unwrap_or(ctx.timestamp);
+    save_shared_story(
+        ctx,
+        shared_story_for(ctx, &room, show_schedule, published_at),
+    );
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+pub fn set_public_share_settings(
+    ctx: &ReducerContext,
+    room_id: u32,
+    show_schedule: bool,
+) -> Result<(), String> {
+    let room = creator_private_room_for_id(ctx, room_id)?;
+    save_public_share_settings(ctx, room_id, show_schedule);
+    if let Some(story) = ctx
+        .db
+        .shared_room_story()
+        .id()
+        .find(room.public_room_id.clone())
+    {
+        save_shared_story(
+            ctx,
+            shared_story_for(ctx, &room, show_schedule, story.published_at),
+        );
+    }
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+pub fn unpublish_room(ctx: &ReducerContext, room_id: u32) -> Result<(), String> {
+    let room = creator_private_room_for_id(ctx, room_id)?;
+    if let Some(story_id) = story_id_to_unpublish(&room.public_room_id, &room.public_room_id) {
+        ctx.db.shared_room_story().id().delete(story_id);
+    }
+    Ok(())
+}
+
+#[spacetimedb::reducer]
 pub fn create_room(
     ctx: &ReducerContext,
     share_code: String,
@@ -2369,5 +2555,46 @@ mod tests {
             reopened_private_room_status(PrivateRoomStatus::Locked, true)
                 == PrivateRoomStatus::Open
         );
+    }
+
+    #[test]
+    fn non_creator_publish_returns_an_explicit_error() {
+        let error = require_story_creator(identity(2), identity(1)).unwrap_err();
+
+        assert_eq!(error, "Only the room creator can publish a story");
+    }
+
+    #[test]
+    fn published_locked_story_contains_only_safe_projection_fields() {
+        let locked_at = Timestamp::from_micros_since_unix_epoch(3_500_000);
+        let story = shared_story_from_parts(
+            "DINNER1".into(),
+            "Dinner plan".into(),
+            PrivateRoomStatus::Locked,
+            vec!["Bowling".into(), "Museum".into()],
+            Some("Bowling".into()),
+            1,
+            locked_at,
+            locked_at,
+            None,
+        );
+
+        assert_eq!(story.id, "DINNER1");
+        assert_eq!(story.title, "Dinner plan");
+        assert!(matches!(story.status, PrivateRoomStatus::Locked));
+        assert_eq!(story.choice_labels, ["Bowling", "Museum"]);
+        assert_eq!(story.selected_choice_label.as_deref(), Some("Bowling"));
+        assert_eq!(story.decision_count, 1);
+        assert_eq!(story.starts_at, None);
+        assert_eq!(story.timezone, None);
+    }
+
+    #[test]
+    fn unpublishing_removes_the_story_row_for_its_room() {
+        assert_eq!(
+            story_id_to_unpublish("DINNER1", "DINNER1"),
+            Some("DINNER1".to_string())
+        );
+        assert_eq!(story_id_to_unpublish("DINNER1", "OTHER1"), None);
     }
 }

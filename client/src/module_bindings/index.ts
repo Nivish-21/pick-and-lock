@@ -51,6 +51,7 @@ import LeaveReducer from "./leave_reducer";
 import LeavePrivateRoomReducer from "./leave_private_room_reducer";
 import ProposeReducer from "./propose_reducer";
 import ProposePrivateChoiceReducer from "./propose_private_choice_reducer";
+import PublishRoomReducer from "./publish_room_reducer";
 import RecordPreferenceReducer from "./record_preference_reducer";
 import RegenerateInviteReducer from "./regenerate_invite_reducer";
 import RevokeInviteReducer from "./revoke_invite_reducer";
@@ -58,7 +59,9 @@ import SendBotMessageReducer from "./send_bot_message_reducer";
 import SendChatMessageReducer from "./send_chat_message_reducer";
 import SetAnswerReducer from "./set_answer_reducer";
 import SetPrivateVoteReducer from "./set_private_vote_reducer";
+import SetPublicShareSettingsReducer from "./set_public_share_settings_reducer";
 import SubmitLocationReducer from "./submit_location_reducer";
+import UnpublishRoomReducer from "./unpublish_room_reducer";
 
 // Import all procedure arg schemas
 
@@ -83,6 +86,7 @@ import MyRoomVotesRow from "./my_room_votes_table";
 import MyRoomsRow from "./my_rooms_table";
 import PlanRow from "./plan_table";
 import ProposalRow from "./proposal_table";
+import SharedRoomStoryRow from "./shared_room_story_table";
 
 /** Type-only namespace exports for generated type groups. */
 
@@ -199,6 +203,17 @@ const tablesSchema = __schema({
       { name: 'proposal_id_key', constraint: 'unique', columns: ['id'] },
     ],
   }, ProposalRow),
+  sharedRoomStory: __table({
+    name: 'shared_room_story',
+    indexes: [
+      { accessor: 'id', name: 'shared_room_story_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+    ],
+    constraints: [
+      { name: 'shared_room_story_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, SharedRoomStoryRow),
   myBotRoomState: __table({
     name: 'my_bot_room_state',
     indexes: [
@@ -311,6 +326,7 @@ const reducersSchema = __reducers(
   __reducerSchema("leave_private_room", LeavePrivateRoomReducer),
   __reducerSchema("propose", ProposeReducer),
   __reducerSchema("propose_private_choice", ProposePrivateChoiceReducer),
+  __reducerSchema("publish_room", PublishRoomReducer),
   __reducerSchema("record_preference", RecordPreferenceReducer),
   __reducerSchema("regenerate_invite", RegenerateInviteReducer),
   __reducerSchema("revoke_invite", RevokeInviteReducer),
@@ -318,7 +334,9 @@ const reducersSchema = __reducers(
   __reducerSchema("send_chat_message", SendChatMessageReducer),
   __reducerSchema("set_answer", SetAnswerReducer),
   __reducerSchema("set_private_vote", SetPrivateVoteReducer),
+  __reducerSchema("set_public_share_settings", SetPublicShareSettingsReducer),
   __reducerSchema("submit_location", SubmitLocationReducer),
+  __reducerSchema("unpublish_room", UnpublishRoomReducer),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */
@@ -329,6 +347,8 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
   tables: typeof tablesSchema.schemaType.tables & {
     /** @deprecated Use `eventLog` instead. This alias will be removed in the next major version. */
     readonly "event_log": Omit<typeof tablesSchema.schemaType.tables["eventLog"], "accessorName"> & { readonly accessorName: "event_log" };
+    /** @deprecated Use `sharedRoomStory` instead. This alias will be removed in the next major version. */
+    readonly "shared_room_story": Omit<typeof tablesSchema.schemaType.tables["sharedRoomStory"], "accessorName"> & { readonly accessorName: "shared_room_story" };
     /** @deprecated Use `myBotRoomState` instead. This alias will be removed in the next major version. */
     readonly "my_bot_room_state": Omit<typeof tablesSchema.schemaType.tables["myBotRoomState"], "accessorName"> & { readonly accessorName: "my_bot_room_state" };
     /** @deprecated Use `myRoomAcceptances` instead. This alias will be removed in the next major version. */
@@ -374,6 +394,7 @@ const REMOTE_MODULE = {
 
 const tableAccessorAliases = {
   "event_log": "eventLog",
+  "shared_room_story": "sharedRoomStory",
   "my_bot_room_state": "myBotRoomState",
   "my_room_acceptances": "myRoomAcceptances",
   "my_room_chat": "myRoomChat",
@@ -404,11 +425,12 @@ function __withTableAccessorAliases<T extends object>(target: T, freeze = false)
   }
   return freeze ? Object.freeze(out) : out;
 }
-
 type __DbViewBase = __DbConnectionImpl<typeof REMOTE_MODULE>["db"];
 export type DbView = __DbViewBase & {
   /** @deprecated Use `eventLog` instead. This alias will be removed in the next major version. */
   readonly "event_log": __DbViewBase["eventLog"];
+  /** @deprecated Use `sharedRoomStory` instead. This alias will be removed in the next major version. */
+  readonly "shared_room_story": __DbViewBase["sharedRoomStory"];
   /** @deprecated Use `myBotRoomState` instead. This alias will be removed in the next major version. */
   readonly "my_bot_room_state": __DbViewBase["myBotRoomState"];
   /** @deprecated Use `myRoomAcceptances` instead. This alias will be removed in the next major version. */
@@ -441,6 +463,8 @@ type __TablesBase = __QueryBuilder<typeof tablesSchema.schemaType>;
 export type Tables = __TablesBase & {
   /** @deprecated Use `eventLog` instead. This alias will be removed in the next major version. */
   readonly "event_log": __TablesBase["eventLog"];
+  /** @deprecated Use `sharedRoomStory` instead. This alias will be removed in the next major version. */
+  readonly "shared_room_story": __TablesBase["sharedRoomStory"];
   /** @deprecated Use `myBotRoomState` instead. This alias will be removed in the next major version. */
   readonly "my_bot_room_state": __TablesBase["myBotRoomState"];
   /** @deprecated Use `myRoomAcceptances` instead. This alias will be removed in the next major version. */

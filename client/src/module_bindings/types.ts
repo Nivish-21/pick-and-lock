@@ -405,6 +405,12 @@ export const RoomProposal = __t.object("RoomProposal", {
 });
 export type RoomProposal = __Infer<typeof RoomProposal>;
 
+export const RoomPublicShare = __t.object("RoomPublicShare", {
+  roomId: __t.u32(),
+  showSchedule: __t.bool(),
+});
+export type RoomPublicShare = __Infer<typeof RoomPublicShare>;
+
 export const RoomSchedule = __t.object("RoomSchedule", {
   id: __t.u32(),
   roomId: __t.u32(),
@@ -426,3 +432,19 @@ export const RoomVote = __t.object("RoomVote", {
   voteKey: __t.string(),
 });
 export type RoomVote = __Infer<typeof RoomVote>;
+
+export const SharedRoomStory = __t.object("SharedRoomStory", {
+  id: __t.string(),
+  title: __t.string(),
+  get status() {
+    return PrivateRoomStatus;
+  },
+  choiceLabels: __t.array(__t.string()),
+  selectedChoiceLabel: __t.option(__t.string()),
+  decisionCount: __t.u32(),
+  publishedAt: __t.timestamp(),
+  updatedAt: __t.timestamp(),
+  startsAt: __t.option(__t.timestamp()),
+  timezone: __t.option(__t.string()),
+});
+export type SharedRoomStory = __Infer<typeof SharedRoomStory>;
