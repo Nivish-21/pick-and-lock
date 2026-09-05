@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     region: oregon
-    buildCommand: cd api/bot-service && npm ci
+    buildCommand: cd api/bot-service && npm ci && cp -r node_modules ../../node_modules
     startCommand: cd api/bot-service && npm start
     healthCheckPath: /
     envVars:
