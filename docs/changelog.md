@@ -11,3 +11,4 @@
 - Recorded successful Maincloud owner authentication; database creation remains correctly deferred until the tested server module is merged and published.
 - Started the resumable UI execution lane with an explicit six-subtask log and durable product context for the selected design workflow.
 - Completed UI U1: created the React/Vite client, removed the visible starter experience, added departure-board semantic tokens, and verified lint plus production build.
+- Completed UI U2: added frozen-contract TypeScript types and deterministic Saturday room fixtures for open, pending, locked, and reopened UI states.

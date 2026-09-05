@@ -27,3 +27,7 @@ A repository-comparison call tried to read `r.content` without inspecting the wr
 ## 2026-09-05 — Text patch attempted a binary asset deletion
 
 An `apply_patch` batch included Vite's PNG asset, which cannot be read as UTF-8 patch context and caused the entire batch to abort. Keep binary deletion out of text patches and stage only the needed source files until explicit asset cleanup is handled separately.
+
+## 2026-09-05 — Fixture briefly contradicted the demo activity minimum
+
+`client/src/fixtures/room.ts` initially set Escape room to three people rather than the authoritative minimum of five. Re-read every fixed demo value against `docs/source/pick-and-lock-build-spec.md` before committing fixtures.

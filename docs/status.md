@@ -21,3 +21,5 @@ Maincloud owner authentication completed successfully on 2026-09-05. The next ow
 UI implementation is authorised and starts with U1 in `docs/ui-execution-log.md`. Every completed UI subtask is committed and pushed before the next starts. The server lane remains independent until U6.
 
 U1 completed successfully: the React/Vite workspace, semantic token system, and durable product context are ready. `npm run lint --prefix client` and `npm run build --prefix client` pass. Next: U2 fixtures and the frozen presentational contract.
+
+U2 completed successfully: UI fixtures cover each core room lifecycle state and expose the contract action surface without importing SpacetimeDB. Next: U3 landing page and name-only join flow.
