@@ -43,3 +43,15 @@ The U4 multi-file patch again assumed single-quoted imports while the formatter 
 ## 2026-09-05 — UI tests leaked mounted DOM between cases
 
 `client/src/pages/LandingPage.test.tsx` rendered twice without cleanup, so the second case found two `Join Saturday room` buttons. Register explicit `afterEach(cleanup)` in React DOM test files rather than relying on runner-specific automatic cleanup.
+
+## 2026-09-05 — Server validation lacked a Rust toolchain
+
+The isolated server-branch validation could not invoke `cargo`, and `spacetime build` then failed because `wasm32-unknown-unknown` was not installed. Verify the Rust compiler and required WASM target before treating a SpacetimeDB module handoff as buildable.
+
+## 2026-09-05 — Subagent dispatch used the wrong input field
+
+The multi-agent tool rejected `prompt`; its schema requires `message` or structured `items`. Inspect a dynamically discovered tool schema before the first invocation rather than inferring its request field.
+
+## 2026-09-05 — Generated bindings failed the whitespace gate
+
+SpacetimeDB code generation left extra blank lines at EOF in four TypeScript binding files, causing `git diff --check` to fail. Run the diff gate after generation and remove only generated trailing blank lines before committing.

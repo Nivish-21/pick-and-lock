@@ -143,3 +143,9 @@ type RoomActions = {
 `RoomActions` is the UI-facing façade. It maps its positional UI arguments to the object-shaped reducer inputs shown under **Exact client action signatures**; it must not expose generated binding types to components. `sendJoinEmail(email, shareCode)` is the sole non-reducer action: it is optional, non-authoritative, and cannot mutate plan state. It accepts a share code, not a caller-provided URL. The Vercel function derives the canonical room URL from `PUBLIC_APP_ORIGIN` and the validated share code.
 
 `plan.share_code` is also a `#[unique]` database column. The bridge still treats zero or multiple matches as an error state rather than selecting one arbitrarily.
+
+## 15-minute MVP amendment — multiple rooms
+
+The initial seeded-only scope is superseded for this delivery. `createRoom({ shareCode, title, dateLabel })` creates a room with the three fixed activities. `shareCode` remains client-generated, uppercase ASCII `A-Z0-9`, six to twelve characters, and reducer-validated for uniqueness. The bridge supplies its resolved `planId` to server reducers for `dropOut(planId)` and `leave(planId)` while retaining the zero-argument UI facade. Friend uniqueness is scoped by a `friend_key = "{plan_id}:{identity}"` database key, so one browser identity can join separate room links safely.
+
+All seven subscribed tables are room-scoped. `acceptance.plan_id` is indexed and populated by `accept`, allowing the bridge to subscribe to acceptance rows with the resolved `planId` without loading another room's rows.

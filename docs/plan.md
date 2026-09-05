@@ -13,3 +13,28 @@ Goal: make the fixture-driven UI checks repeatable without changing production b
 - [x] Registered explicit React DOM cleanup, added four fixture-driven component checks, and ran the full quality gate.
 - [x] Browser accessibility smoke check confirms the name field, join action, labelled regions, headings, and answer controls remain exposed at 390px.
 - [x] U5 checkpoint is ready to commit and push.
+
+## U6 — Server handoff and real-time bridge
+
+Goal: integrate the collaborator's SpacetimeDB core without importing unrelated repository instructions or machine-local configuration.
+
+- [ ] Validate the server branch in an isolated disposable checkout and compare its public schema and reducers to the frozen contract.
+- [ ] Selectively integrate only `server/spacetimedb/**`, the generated bindings, and essential ignore rules; exclude duplicate agent-instruction files and `server/spacetime.local.json`.
+- [ ] Repair any proven module or contract failures, then build the UI-facing bridge in server-owned data paths without changing visual components.
+- [ ] Verify server build, client tests/lint/build, and an end-to-end local connection when a confirmed Maincloud database name is available.
+- [ ] Append the handoff result to the execution log, status, and changelog; commit and push each completed checkpoint.
+
+### U6 validation recovery
+
+- [ ] Install the missing Rust toolchain and `wasm32-unknown-unknown` target, then rerun the isolated server build before integrating any branch file.
+
+### 15-minute MVP amendment
+
+- [ ] Support creator-supplied share codes, seeded activities per new room, and a route-aware room creation/join flow.
+- [ ] Scope friend identity, drop-out, and leave behaviour to one room so distinct share links do not interfere.
+
+### U6 server checkpoint completed
+
+- [x] Validated the collaborator module in a disposable checkout, selectively integrated only product code and generated bindings, and excluded machine-local and duplicate instruction files.
+- [x] Added the multi-room amendment, creator-supplied share codes, room-scoped friends, corrected acceptance eligibility, and counted reopen events.
+- [x] Regenerated bindings; Rust format/build and client test/lint/build pass. Publishing is the next owner-authorised deployment action.
