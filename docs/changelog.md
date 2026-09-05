@@ -94,6 +94,12 @@
 - Verified on `main`: Rust format, 3 module tests, SpacetimeDB build, 23 client tests, lint, production build, and whitespace validation pass.
 - Kept Maincloud unpublished. Added the private decision-engine prerequisite (#10) because public sharing requires server-authoritative decision history and metrics.
 
+# 2026-09-06 — Onboarding and split-chat client lane
+
+- Added creator name collection and validation to room creation, pending host session storage, and automatic post-navigation joining.
+- Added responsive RoomPage two-column layout with mounted `RoomChat` and `GroupInputPanel` using empty issue #16 placeholder data and TODO wiring.
+- Added host validation/payload tests and a RoomSession pending-host integration test; full client verification passes.
+
 # 2026-09-05 — Lane B custom activity UI wired
 
 - Regenerated `client/src/module_bindings/` with the new `add_activity` reducer binding.

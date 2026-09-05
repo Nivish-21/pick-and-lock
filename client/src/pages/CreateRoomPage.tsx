@@ -5,6 +5,7 @@ export type CreateRoomInput = {
   shareCode: string;
   title: string;
   dateLabel: string;
+  hostName: string;
 };
 
 export type CreateRoomPageProps = {
@@ -40,6 +41,7 @@ function callbackError(error: unknown): string {
 export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
   const [title, setTitle] = useState("");
   const [dateLabel, setDateLabel] = useState("");
+  const [hostName, setHostName] = useState("");
   const [shareCode, setShareCode] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
@@ -62,6 +64,12 @@ export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
       return;
     }
 
+    const trimmedHostName = hostName.trim();
+    if (trimmedHostName.length < 2 || trimmedHostName.length > 40) {
+      setError("Use a name between 2 and 40 characters.");
+      return;
+    }
+
     let nextShareCode: string;
     try {
       nextShareCode = generateShareCode();
@@ -78,6 +86,7 @@ export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
         shareCode: nextShareCode,
         title: trimmedTitle,
         dateLabel: trimmedDateLabel,
+        hostName: trimmedHostName,
       });
       setShareCode(nextShareCode);
       setCreated(true);
@@ -150,6 +159,20 @@ export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
               maxLength={40}
               autoComplete="off"
               aria-invalid={Boolean(error && !dateLabel.trim())}
+            />
+          </div>
+
+          <div className="create-room-field">
+            <label htmlFor="host-name">Your name</label>
+            <input
+              id="host-name"
+              name="hostName"
+              value={hostName}
+              onChange={(event) => setHostName(event.target.value)}
+              placeholder="Your name"
+              maxLength={40}
+              autoComplete="name"
+              aria-invalid={Boolean(error && !hostName.trim())}
             />
           </div>
 
