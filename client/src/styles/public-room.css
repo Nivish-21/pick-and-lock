@@ -1,0 +1,144 @@
+.public-room-shell {
+  width: min(100%, 48rem);
+  min-height: 100dvh;
+  margin-inline: auto;
+  padding: 1.5rem;
+}
+
+.public-room-header,
+.public-room-panel,
+.public-room-result,
+.public-room-cta,
+.public-share-settings {
+  max-width: 40rem;
+  margin-bottom: 1rem;
+}
+
+.public-room-header {
+  margin-top: 4rem;
+  margin-bottom: 2rem;
+}
+
+.public-room-kicker {
+  margin: 0 0 0.65rem;
+  color: var(--signal-strong);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.public-room-header h1,
+.public-share-settings h2 {
+  margin: 0;
+  letter-spacing: -0.04em;
+}
+
+.public-room-header h1 {
+  font-size: clamp(2.5rem, 9vw, 5.5rem);
+}
+
+.public-room-summary,
+.public-room-panel p,
+.public-room-panel time,
+.public-share-preview p {
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+.public-room-panel,
+.public-room-result,
+.public-share-settings {
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.public-room-panel h2 {
+  margin-top: 0;
+}
+
+.public-room-panel ul {
+  display: grid;
+  gap: 0.5rem;
+  padding-left: 1.2rem;
+}
+
+.public-room-result strong {
+  font-size: 1.5rem;
+}
+
+.public-room-cta {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 2.5rem;
+}
+
+.public-room-cta p {
+  margin: 0;
+  font-weight: 700;
+}
+
+.public-room-cta a,
+.public-share-actions button,
+.public-share-settings > button {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 2.75rem;
+  align-items: center;
+  padding-inline: 1rem;
+  border: 1px solid var(--signal-strong);
+  border-radius: var(--radius-control);
+  background: var(--signal);
+  color: #16120b;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.public-share-settings {
+  display: grid;
+  gap: 1rem;
+}
+
+.public-share-toggle {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.public-share-preview {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: var(--surface-muted);
+}
+
+.public-share-preview p {
+  margin: 0;
+}
+
+.public-share-preview code {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+.public-share-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.public-share-actions button:last-child {
+  border-color: var(--danger);
+  background: transparent;
+  color: var(--danger);
+}
+
+@media (min-width: 42rem) {
+  .public-room-shell {
+    padding: 2.5rem;
+  }
+}
