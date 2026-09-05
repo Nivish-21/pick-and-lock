@@ -213,6 +213,7 @@ export const Plan = __t.object("Plan", {
   },
   lockedActivityId: __t.option(__t.u32()),
   version: __t.u64(),
+  scheduledAt: __t.option(__t.timestamp()),
 });
 export type Plan = __Infer<typeof Plan>;
 

@@ -14,4 +14,5 @@ export default {
   shareCode: __t.string(),
   title: __t.string(),
   dateLabel: __t.string(),
+  scheduledAt: __t.timestamp(),
 };
