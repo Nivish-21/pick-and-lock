@@ -93,3 +93,58 @@
 - Reviewed and merged PR #9 as `dcd5ac5`; private rooms, schedules, choices, membership, hash-only invites, and caller-filtered foundational views now exist locally in the module and bindings.
 - Verified on `main`: Rust format, 3 module tests, SpacetimeDB build, 23 client tests, lint, production build, and whitespace validation pass.
 - Kept Maincloud unpublished. Added the private decision-engine prerequisite (#10) because public sharing requires server-authoritative decision history and metrics.
+
+# 2026-09-06 — Onboarding and split-chat client lane
+
+- Added creator name collection and validation to room creation, pending host session storage, and automatic post-navigation joining.
+- Added responsive RoomPage two-column layout with mounted `RoomChat` and `GroupInputPanel` using empty issue #16 placeholder data and TODO wiring.
+- Added host validation/payload tests and a RoomSession pending-host integration test; full client verification passes.
+
+# 2026-09-05 — Lane B custom activity UI wired
+
+- Regenerated `client/src/module_bindings/` with the new `add_activity` reducer binding.
+- Added `RoomActions.addActivity`, live `actionsFor` wiring, fixture no-op support, and an open-room form in `RoomPage` for name, price, and minimum people.
+- Added success and reducer-error React Testing Library coverage. All requested Rust/client verification commands pass.
+
+# 2026-09-05 — Sorted brand rebrand
+
+- Added the supplied Sorted icon plus 32px favicon and 180px Apple touch icon assets.
+- Updated browser metadata, accessibility labels, and landing, room, and create-room wordmarks to Sorted.
+- Kept the live SpacetimeDB database name, README, AGENTS, and internal fixture URLs unchanged.
+
+# 2026-09-06 — Integration, Maincloud publish, and schema-mismatch fix
+
+- Merged PRs #13 (Lane B), #14 (Sorted rebrand), #8 (calendar-event builder), #15 (chat-agent), and #18 (onboarding/split-chat) into `main`; independently re-ran full verification on each merge commit rather than trusting each agent's self-report.
+- Fixed a merge mistake: `api/bot-service/node_modules` was briefly staged via `git add -A`; added `api/bot-service/.gitignore`, recommitted clean before pushing.
+- Renamed the Vercel project `pick-and-lock` → `sorted`; production domain unchanged (still `pick-and-lock.vercel.app`) pending a Deployment Protection dashboard change the owner hasn't made yet.
+- Published the additive schema (verified no existing-table columns changed) to Maincloud with explicit owner confirmation: `spacetime publish pick-and-lock --module-path server/spacetimedb --yes=remote`.
+- Live browser testing against production found `add_activity` was unreachable (module not republished) and that chat/location/bot tables were built against `PrivateRoom.id` instead of `Plan.id`, and that `RoomChat`/`GroupInputPanel` were never mounted anywhere. Recorded the root cause and owner-confirmed fix in the design spec (section 8) and opened issues #16 (server retarget) and #17 (client onboarding/layout).
+
+# 2026-09-06 — Chat schema retarget merged (issue #16)
+
+- Merged PR #19 (`70e0ca5`) into `main`: chat/preference/bot-state/location views and reducers retargeted from `PrivateRoom.id` to `Plan.id` via `Friend`; added `bot_add_activity` (bot-gated autonomous poll-option authoring) and `ensure_bot_friend` reducers; added poll-authoring extraction with confidence filtering and case-insensitive dedup wired into the existing debounce cycle; broadened the speak-gate to recognize `@sorted`.
+- The branch was forked before PR #18 (onboarding/split-chat) merged; merged `main` into the branch first and independently re-verified the result rather than trusting the merge or the agent's self-report: confirmed no existing table columns removed/changed (only a new index attribute on `Friend.identity`), confirmed `docs/status.md`/`docs/changelog.md`/`docs/plan.md` came out identical to main's checkpoint, then re-ran Rust fmt/build, 8/8 bot-service tests, bot-service `tsc --noEmit`, 39/39 client tests, client lint, and client production build myself.
+- `RoomPage.tsx` still has the `TODO(issue #16)` placeholder chat wiring (`messages={[]}`, `placeholderSendChat`) — client wiring to the real `my_room_chat`/`sendChatMessage` plumbing is the next open task, not yet filed as an issue.
+
+# 2026-09-06 — Beyond-core-loop merged, Maincloud republished, live-tested, shipped
+
+- Cherry-picked the isolated `pick-and-lock-beyond-core-loop` feature (PWA manifest/icons/OG tags, app-wide `/insights` route, `/api/capture-email` Resend endpoint) onto current `main` as PR #22 (`ebd12c9`). Independently re-verified after the cherry-pick, not just trusting the original commit: server untouched (cargo fmt/build), 44/44 client tests (39 existing + 5 new insights), lint clean, build clean, `vercel.json` rewrite confirmed to exclude `/api/*`, `capture-email.ts` confirmed to degrade to 501 without a key.
+- Opened issues #20 (price/distance/time activity constraints, owner chose display/filter attributes over a full feasibility-matching engine) and #21 (real chat wiring to replace the issue #16 placeholder) with self-contained prompts and disjoint `RoomPage.tsx` region ownership (form block vs. sidebar block), and set up their branches/worktrees so both builders can start in parallel without blocking on this integration pass.
+- Republished the Maincloud module (owner-confirmed) — the live database had predated PR #19's chat-schema retarget; migration plan showed only the expected additive index (`friend_identity_idx_btree`), no column changes.
+- Live-tested the fully integrated `main` end-to-end on production: created a room with the new host-name-on-creation flow, joined, answered an activity, added a custom activity live (confirms Lane B + the republished module both work together), and loaded `/insights`.
+- That live test found a real bug: every event timestamp on `/insights` rendered "Invalid Date" — `new Date(Number(timestamp))` doesn't work on the generated `Timestamp` class (no numeric coercion), it needs `.toDate()`. The same bug existed in `planSelectors.ts` but never surfaced because `RoomPage` never renders `latestEvent.at`. Fixed both directly (trivial, pre-existing bug found during verification, not new feature work) as `f2abb8f`, updated the one test that mocked `at` as a raw bigint to use a real `Timestamp` instance, re-verified (44/44 tests, lint, build), redeployed, and confirmed live: real timestamps now render correctly.
+- Confirmed `pick-and-lock.vercel.app` is aliased to the latest deployment. Product is ready for real testers.
+
+# 2026-09-06 — Issues #20/#21 merged, three live-found bugs fixed, hardcoded seed removed
+
+- Merged PR #23 (issue #20, activity constraints) and PR #24 (issue #21, real chat wiring) into `main`; both branches had forked before the beyond-core-loop merge, so `main` was merged into each first and independently re-verified (not the builders' self-reports) before merging.
+- Live-testing both together on production found and fixed three real bugs, each mechanical enough to fix directly rather than route back to a builder: (1) `spacetime publish` rejected the new `Activity.distance_km`/`time_minutes` columns — SpacetimeDB requires an explicit `#[default(...)]` annotation on new columns added to an existing table, even `Option<T>` ones; (2) `planSelectors.ts` never copied `distanceKm`/`timeMinutes` from the raw subscription into `ActivityView`, so the fields never displayed despite the form/reducer/display code all being correctly wired — no test caught it since only fixture-driven tests exercised the display path; (3) `my_room_chat`/`my_room_preferences` are views scoped to every room the caller has an active `Friend` row in, not the room being viewed — the client never filtered by the current `plan_id`, so a caller in multiple rooms saw all their rooms' chat mixed together (found by testing two rooms back to back with the same browser identity).
+- Removed the hardcoded `seed_activities` call from `create_room` (owner: "we don't have to add the static ones... don't do any hard-coded stuff anymore") — new rooms now start empty; activities come from manual entry or the bot. `seed_activities` itself stays for the one-time legacy `SATURDAY` demo room.
+- Republished Maincloud twice more (owner-confirmed each time): once requiring `--yes=break-clients` (the `#[default(...)]` fix's migration disconnects active clients, no data loss), once with no migration needed (pure behavior change). Redeployed the client three times total across this round, re-verifying live after each fix.
+- Opened issues #25 (real date/time picker, stored as `Timestamp` not free text) and #26 (bot role guardrails, chatter reduction, latency) as two new fully-disjoint lanes — no shared files between them, so no merge-conflict risk expected next round.
+
+# 2026-09-06 — Issues #25/#26 merged; bot-enablement gap discovered
+
+- Merged PR #27 (issue #25, `Plan.scheduled_at`) and PR #28 (issue #26, bot hardening) into `main`; both branches had forked before prior merges, merged `main` in first (clean, zero conflicts — fully disjoint files as designed), independently re-verified before merging.
+- Republished Maincloud (owner-confirmed, `--yes=break-clients` — additive column, no data loss) and redeployed. Live-tested the new date/time picker end-to-end: room header correctly shows "Sun, Sep 6 · 7:00 PM" computed from the real `Timestamp`, room starts empty (seed-removal fix still holds), chat correctly scoped to the new room only.
+- **Discovered the bot has never actually been enabled in production**: `require_bot()` checks `option_env!("BOT_IDENTITY")`, which is a Rust compile-time env var never set on any build/publish this session — so it's always `None` and every bot-authenticated reducer call (`send_bot_message`, `bot_add_activity`, `ensure_bot_friend`, `record_preference`, `advance_bot_watermark`) has been silently rejecting all along. Separately, `api/bot-service` is a long-running Node process (`npm start` → `tsx index.ts`), not a serverless function — it has never been started anywhere, and there's no `BOT_SPACETIME_TOKEN` in `.env`/`.env.example` at all. All the chat/poll-authoring UI and schema work is real and tested, but the bot itself has been inert in production this entire session. Flagged to the owner before further tester invites.

@@ -98,4 +98,82 @@ describe("RoomPage", () => {
       "Could not copy room link.",
     );
   });
+
+  it("adds a custom activity with the entered values", async () => {
+    const addActivity = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <RoomPage
+        view={saturdayOpenView}
+        actions={actionsWith({ addActivity })}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("Activity name"), {
+      target: { value: "Picnic" },
+    });
+    fireEvent.change(screen.getByLabelText("Price in INR"), {
+      target: { value: "250" },
+    });
+    fireEvent.change(screen.getByLabelText("Minimum people"), {
+      target: { value: "3" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add activity" }));
+
+    await waitFor(() => {
+      expect(addActivity).toHaveBeenCalledWith(
+        "Picnic",
+        250,
+        3,
+        undefined,
+        undefined,
+      );
+    });
+  });
+
+  it("adds optional distance and time metadata", async () => {
+    const addActivity = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <RoomPage
+        view={saturdayOpenView}
+        actions={actionsWith({ addActivity })}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("Activity name"), {
+      target: { value: "Museum" },
+    });
+    fireEvent.change(screen.getByLabelText("Distance in km (optional)"), {
+      target: { value: "5" },
+    });
+    fireEvent.change(
+      screen.getByLabelText("Time budget in minutes (optional)"),
+      { target: { value: "60" } },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Add activity" }));
+
+    await waitFor(() => {
+      expect(addActivity).toHaveBeenCalledWith("Museum", 0, 1, 5, 60);
+    });
+  });
+
+  it("shows the reducer error when adding an activity fails", async () => {
+    const addActivity = vi
+      .fn()
+      .mockRejectedValue(new Error("That option already exists"));
+
+    render(
+      <RoomPage
+        view={saturdayOpenView}
+        actions={actionsWith({ addActivity })}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("Activity name"), {
+      target: { value: "Bowling" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add activity" }));
+
+    expect(
+      await screen.findByText("Action not applied: That option already exists"),
+    ).toBeTruthy();
+  });
 });

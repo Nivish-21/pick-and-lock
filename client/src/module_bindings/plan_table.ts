@@ -24,4 +24,5 @@ export default __t.row({
   },
   lockedActivityId: __t.option(__t.u32()).name("locked_activity_id"),
   version: __t.u64(),
+  scheduledAt: __t.option(__t.timestamp()).name("scheduled_at"),
 });

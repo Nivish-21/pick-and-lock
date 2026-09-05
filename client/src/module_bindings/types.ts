@@ -26,6 +26,8 @@ export const Activity = __t.object("Activity", {
   name: __t.string(),
   price: __t.u32(),
   minPeople: __t.u32(),
+  distanceKm: __t.option(__t.u32()),
+  timeMinutes: __t.option(__t.u32()),
 });
 export type Activity = __Infer<typeof Activity>;
 
@@ -50,6 +52,28 @@ export const AnswerState = __t.enum("AnswerState", {
 });
 export type AnswerState = __Infer<typeof AnswerState>;
 
+export const BotRoomState = __t.object("BotRoomState", {
+  roomId: __t.u32(),
+  lastBotMessageAt: __t.option(__t.timestamp()),
+  botMessagesInCurrentMinute: __t.u32(),
+  minuteWindowStartedAt: __t.timestamp(),
+  lastProcessedMessageId: __t.u64(),
+});
+export type BotRoomState = __Infer<typeof BotRoomState>;
+
+export const ChatMessage = __t.object("ChatMessage", {
+  id: __t.u64(),
+  roomId: __t.u32(),
+  senderIdentity: __t.identity(),
+  senderName: __t.string(),
+  isBot: __t.bool(),
+  body: __t.string(),
+  kind: __t.string(),
+  payloadJson: __t.string(),
+  sentAt: __t.timestamp(),
+});
+export type ChatMessage = __Infer<typeof ChatMessage>;
+
 export const EventLog = __t.object("EventLog", {
   id: __t.u64(),
   planId: __t.u32(),
@@ -73,6 +97,37 @@ export const Friend = __t.object("Friend", {
 });
 export type Friend = __Infer<typeof Friend>;
 
+export const LocationSubmission = __t.object("LocationSubmission", {
+  id: __t.u64(),
+  roomId: __t.u32(),
+  friendId: __t.u32(),
+  lat: __t.f64(),
+  lng: __t.f64(),
+  submittedAt: __t.timestamp(),
+});
+export type LocationSubmission = __Infer<typeof LocationSubmission>;
+
+export const MemberPreference = __t.object("MemberPreference", {
+  id: __t.u64(),
+  roomId: __t.u32(),
+  friendId: __t.u32(),
+  friendName: __t.string(),
+  statement: __t.string(),
+  category: __t.string(),
+  sourceMessageId: __t.u64(),
+  recordedAt: __t.timestamp(),
+});
+export type MemberPreference = __Infer<typeof MemberPreference>;
+
+export const MyBotRoomState = __t.object("MyBotRoomState", {
+  roomId: __t.u32(),
+  lastBotMessageAt: __t.option(__t.timestamp()),
+  botMessagesInCurrentMinute: __t.u32(),
+  minuteWindowStartedAt: __t.timestamp(),
+  lastProcessedMessageId: __t.u64(),
+});
+export type MyBotRoomState = __Infer<typeof MyBotRoomState>;
+
 export const MyRoom = __t.object("MyRoom", {
   roomId: __t.u32(),
   publicRoomId: __t.string(),
@@ -92,6 +147,19 @@ export const MyRoomAcceptance = __t.object("MyRoomAcceptance", {
   acceptedAt: __t.timestamp(),
 });
 export type MyRoomAcceptance = __Infer<typeof MyRoomAcceptance>;
+
+export const MyRoomChat = __t.object("MyRoomChat", {
+  id: __t.u64(),
+  roomId: __t.u32(),
+  senderIdentity: __t.identity(),
+  senderName: __t.string(),
+  isBot: __t.bool(),
+  body: __t.string(),
+  kind: __t.string(),
+  payloadJson: __t.string(),
+  sentAt: __t.timestamp(),
+});
+export type MyRoomChat = __Infer<typeof MyRoomChat>;
 
 export const MyRoomChoice = __t.object("MyRoomChoice", {
   choiceId: __t.u32(),
@@ -113,6 +181,16 @@ export const MyRoomDecision = __t.object("MyRoomDecision", {
 });
 export type MyRoomDecision = __Infer<typeof MyRoomDecision>;
 
+export const MyRoomLocation = __t.object("MyRoomLocation", {
+  id: __t.u64(),
+  roomId: __t.u32(),
+  friendId: __t.u32(),
+  lat: __t.f64(),
+  lng: __t.f64(),
+  submittedAt: __t.timestamp(),
+});
+export type MyRoomLocation = __Infer<typeof MyRoomLocation>;
+
 export const MyRoomMember = __t.object("MyRoomMember", {
   membershipId: __t.u32(),
   roomId: __t.u32(),
@@ -131,6 +209,18 @@ export const MyRoomMetrics = __t.object("MyRoomMetrics", {
   latestLockedAt: __t.option(__t.timestamp()),
 });
 export type MyRoomMetrics = __Infer<typeof MyRoomMetrics>;
+
+export const MyRoomPreference = __t.object("MyRoomPreference", {
+  id: __t.u64(),
+  roomId: __t.u32(),
+  friendId: __t.u32(),
+  friendName: __t.string(),
+  statement: __t.string(),
+  category: __t.string(),
+  sourceMessageId: __t.u64(),
+  recordedAt: __t.timestamp(),
+});
+export type MyRoomPreference = __Infer<typeof MyRoomPreference>;
 
 export const MyRoomProposal = __t.object("MyRoomProposal", {
   proposalId: __t.u32(),
@@ -174,6 +264,7 @@ export const Plan = __t.object("Plan", {
   },
   lockedActivityId: __t.option(__t.u32()),
   version: __t.u64(),
+  scheduledAt: __t.option(__t.timestamp()),
 });
 export type Plan = __Infer<typeof Plan>;
 

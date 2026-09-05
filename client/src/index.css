@@ -42,6 +42,12 @@ body {
   letter-spacing: -0.12em;
 }
 
+.wordmark-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+}
+
 button,
 input {
   font: inherit;

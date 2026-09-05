@@ -1,8 +1,20 @@
 .room-shell {
-  width: min(100%, 48rem);
+  width: min(100%, 78rem);
   min-height: 100dvh;
   margin-inline: auto;
   padding: 1.25rem;
+}
+.room-layout {
+  display: grid;
+  gap: 1.5rem;
+}
+.room-main-column {
+  min-width: 0;
+}
+.room-sidebar {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
 }
 .room-header {
   display: flex;
@@ -147,6 +159,41 @@
   display: grid;
   gap: 0.9rem;
 }
+.add-activity {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1.5rem;
+  padding: 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--surface-muted);
+}
+.add-activity h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.add-activity label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+}
+.add-activity input {
+  min-height: 2.75rem;
+  padding-inline: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--ink);
+}
+.add-activity button {
+  min-height: 2.75rem;
+  border: 1px solid var(--signal-strong);
+  border-radius: var(--radius-control);
+  background: var(--signal);
+  color: #16120b;
+  font-weight: 800;
+}
 .activity-card {
   padding: 1.1rem;
 }
@@ -285,6 +332,14 @@
 @media (min-width: 42rem) {
   .room-shell {
     padding: 1.75rem 2.5rem;
+  }
+  .room-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
+    align-items: start;
+  }
+  .room-sidebar {
+    position: sticky;
+    top: 1.25rem;
   }
   .group-grid {
     grid-template-columns: 1.1fr 0.9fr;

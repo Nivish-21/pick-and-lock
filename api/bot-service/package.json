@@ -1,0 +1,19 @@
+{
+  "name": "pick-and-lock-bot-service",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx index.ts",
+    "generate-identity": "tsx generate-identity.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "spacetimedb": "^2.10.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.1",
+    "tsx": "^4.19.2",
+    "typescript": "~6.0.2",
+    "vitest": "^5.0.0"
+  }
+}

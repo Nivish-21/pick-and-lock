@@ -1,4 +1,5 @@
 import { DbConnection } from "../module_bindings";
+import { Timestamp } from "spacetimedb";
 import type { AnswerState, RoomActions } from "../fixtures/room";
 
 const DEFAULT_HOST = "https://maincloud.spacetimedb.com";
@@ -21,9 +22,16 @@ export function shareCodeFromLocation(location = window.location): string {
   return match?.[1].toUpperCase() ?? "SATURDAY";
 }
 
-export function createConnection(onError: (error: Error) => void, onConnect: (connection: DbConnection) => void): DbConnection {
-  const host = (import.meta.env.VITE_SPACETIMEDB_HOST as string | undefined)?.trim() || DEFAULT_HOST;
-  const database = (import.meta.env.VITE_SPACETIMEDB_DATABASE as string | undefined)?.trim() || DEFAULT_DATABASE;
+export function createConnection(
+  onError: (error: Error) => void,
+  onConnect: (connection: DbConnection) => void,
+): DbConnection {
+  const host =
+    (import.meta.env.VITE_SPACETIMEDB_HOST as string | undefined)?.trim() ||
+    DEFAULT_HOST;
+  const database =
+    (import.meta.env.VITE_SPACETIMEDB_DATABASE as string | undefined)?.trim() ||
+    DEFAULT_DATABASE;
   const token = window.localStorage.getItem(TOKEN_KEY) ?? undefined;
   const connection = DbConnection.builder()
     .withUri(host)
@@ -35,42 +43,89 @@ export function createConnection(onError: (error: Error) => void, onConnect: (co
       onConnect(connection);
     })
     .onConnectError((_context, error) => onError(error))
-    .onDisconnect((_context, error) => onError(error ?? new Error("Disconnected from SpacetimeDB")))
+    .onDisconnect((_context, error) =>
+      onError(error ?? new Error("Disconnected from SpacetimeDB")),
+    )
     .build();
   return connection;
 }
 
-export function actionsFor(connection: DbConnection, planId: number): BridgeActions {
+export function actionsFor(
+  connection: DbConnection,
+  planId: number,
+): BridgeActions {
   const joinRoom = (name: string) => connection.reducers.join({ planId, name });
-  const setAnswer = (activityId: number, state: AnswerState, maxPrice?: number) => connection.reducers.setAnswer({ activityId, state: answerStateValue(state), maxPrice: maxPrice ?? undefined });
-  const proposeActivity = (activityId: number) => connection.reducers.propose({ activityId });
-  const acceptProposal = (proposalId: number) => connection.reducers.accept({ proposalId });
+  const addActivity = (
+    name: string,
+    price: number,
+    minPeople: number,
+    distanceKm?: number,
+    timeMinutes?: number,
+  ) =>
+    connection.reducers.addActivity({
+      planId,
+      name,
+      price,
+      minPeople,
+      distanceKm,
+      timeMinutes,
+    });
+  const setAnswer = (
+    activityId: number,
+    state: AnswerState,
+    maxPrice?: number,
+  ) =>
+    connection.reducers.setAnswer({
+      activityId,
+      state: answerStateValue(state),
+      maxPrice: maxPrice ?? undefined,
+    });
+  const proposeActivity = (activityId: number) =>
+    connection.reducers.propose({ activityId });
+  const acceptProposal = (proposalId: number) =>
+    connection.reducers.accept({ proposalId });
   const dropOut = () => connection.reducers.dropOut({ planId });
   const leaveRoom = () => connection.reducers.leave({ planId });
   return {
     join: joinRoom,
     joinRoom,
+    addActivity,
     setAnswer,
     propose: proposeActivity,
     proposeActivity,
     accept: acceptProposal,
     acceptProposal,
-    cancelProposal: (proposalId) => connection.reducers.cancelProposal({ proposalId }),
+    cancelProposal: (proposalId) =>
+      connection.reducers.cancelProposal({ proposalId }),
     dropOut,
     leave: leaveRoom,
     leaveRoom,
     sendJoinEmail: async (email, shareCode) => {
-      const response = await fetch("/api/capture-email", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, shareCode }) });
-      if (!response.ok) throw new Error((await response.text()) || "Email could not be sent");
+      const response = await fetch("/api/capture-email", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email, shareCode }),
+      });
+      if (!response.ok)
+        throw new Error((await response.text()) || "Email could not be sent");
     },
   };
 }
 
-export async function createRoom(input: { shareCode: string; title: string; dateLabel: string }): Promise<void> {
+export async function createRoom(input: {
+  shareCode: string;
+  title: string;
+  dateLabel: string;
+  scheduledAt: Timestamp;
+}): Promise<void> {
   if (!activeConnection) throw new Error("SpacetimeDB is not connected");
   return activeConnection.reducers.createRoom(input);
 }
 
 function answerStateValue(state: AnswerState) {
-  return state === "in" ? { tag: "In" as const } : state === "out" ? { tag: "Out" as const } : { tag: "Conditional" as const };
+  return state === "in"
+    ? { tag: "In" as const }
+    : state === "out"
+      ? { tag: "Out" as const }
+      : { tag: "Conditional" as const };
 }

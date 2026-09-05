@@ -32,6 +32,18 @@ function actionsWith(overrides: Partial<RoomActions>): RoomActions {
 }
 
 describe("ActivityCard", () => {
+  it("shows optional distance and time metadata", () => {
+    render(
+      <ActivityCard
+        activity={{ ...possibleActivity, distanceKm: 5, timeMinutes: 90 }}
+        actions={fixtureActions}
+        onError={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/INR 400 · minimum 4 · 5 km · back in 1h 30m/)).toBeTruthy();
+  });
+
   it("proposes a possible activity", async () => {
     const propose = vi.fn().mockResolvedValue(undefined);
 

@@ -7,6 +7,13 @@ type ActivityCardProps = {
   onError: (message: string) => void;
 };
 
+function formatTime(minutes: number): string {
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const remainder = minutes % 60;
+  return remainder === 0 ? `${hours}h` : `${hours}h ${remainder}m`;
+}
+
 export function ActivityCard({
   activity,
   actions,
@@ -45,6 +52,12 @@ export function ActivityCard({
           <p>
             {activity.price === 0 ? "Free" : `INR ${activity.price}`} · minimum{" "}
             {activity.minPeople}
+            {activity.distanceKm !== undefined
+              ? ` · ${activity.distanceKm} km`
+              : ""}
+            {activity.timeMinutes !== undefined
+              ? ` · back in ${formatTime(activity.timeMinutes)}`
+              : ""}
           </p>
         </div>
         <div

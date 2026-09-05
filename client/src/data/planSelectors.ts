@@ -38,6 +38,8 @@ export function buildRoomView(db: DbView, planId: number, identity?: { toHexStri
       name: activity.name,
       price: activity.price,
       minPeople: activity.minPeople,
+      distanceKm: activity.distanceKm,
+      timeMinutes: activity.timeMinutes,
       eligibleCount,
       possible: eligibleCount >= activity.minPeople,
       callerAnswer: state === "In" ? { state: "in" as const } : state === "Out" ? { state: "out" as const } : state === "Conditional" ? { state: "conditional" as const, ...(answer?.maxPrice == null ? {} : { maxPrice: answer.maxPrice }) } : null,
@@ -64,6 +66,6 @@ export function buildRoomView(db: DbView, planId: number, identity?: { toHexStri
     pendingProposal: pending && pendingActivity ? { id: pending.id, activityId: pending.activityId, activityName: pendingActivity.name, acceptedCount: pendingAcceptances.length, requiredCount: pendingActivity.minPeople, callerCanAccept: Boolean(callerEligible), callerHasAccepted } : null,
     lockedActivityId: plan.lockedActivityId ?? null,
     lockedAcceptors: lockedAcceptances.map((acceptance) => friends.find((friend) => friend.id === acceptance.friendId)).filter((friend): friend is Friend => Boolean(friend)).map((friend) => ({ id: friend.id, name: friend.name })),
-    latestEvent: latestEvent ? { kind: latestEvent.kind, message: latestEvent.message, at: new Date(Number(latestEvent.at)) } : null,
+    latestEvent: latestEvent ? { kind: latestEvent.kind, message: latestEvent.message, at: latestEvent.at.toDate() } : null,
   };
 }

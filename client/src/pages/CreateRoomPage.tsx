@@ -1,10 +1,13 @@
 import { useState, type FormEvent } from "react";
+import { Timestamp } from "spacetimedb";
 import "../styles/create-room.css";
 
 export type CreateRoomInput = {
   shareCode: string;
   title: string;
   dateLabel: string;
+  scheduledAt: Timestamp;
+  hostName: string;
 };
 
 export type CreateRoomPageProps = {
@@ -37,9 +40,23 @@ function callbackError(error: unknown): string {
   return "The room could not be created. Try again.";
 }
 
+function formatDateLabel(date: Date): string {
+  const datePart = new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).format(date);
+  const timePart = new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+  return `${datePart} · ${timePart}`;
+}
+
 export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
   const [title, setTitle] = useState("");
-  const [dateLabel, setDateLabel] = useState("");
+  const [scheduledAtValue, setScheduledAtValue] = useState("");
+  const [hostName, setHostName] = useState("");
   const [shareCode, setShareCode] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
@@ -50,15 +67,27 @@ export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
     if (pending) return;
 
     const trimmedTitle = title.trim();
-    const trimmedDateLabel = dateLabel.trim();
+    const trimmedScheduledAtValue = scheduledAtValue.trim();
 
     if (trimmedTitle.length < 1 || trimmedTitle.length > 60) {
       setError("Add a decision between 1 and 60 characters.");
       return;
     }
 
-    if (trimmedDateLabel.length < 1 || trimmedDateLabel.length > 40) {
-      setError("Add a time between 1 and 40 characters.");
+    if (!trimmedScheduledAtValue) {
+      setError("Choose a date and time.");
+      return;
+    }
+
+    const scheduledDate = new Date(trimmedScheduledAtValue);
+    if (Number.isNaN(scheduledDate.getTime())) {
+      setError("Choose a valid date and time.");
+      return;
+    }
+
+    const trimmedHostName = hostName.trim();
+    if (trimmedHostName.length < 2 || trimmedHostName.length > 40) {
+      setError("Use a name between 2 and 40 characters.");
       return;
     }
 
@@ -77,7 +106,9 @@ export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
       await onCreate({
         shareCode: nextShareCode,
         title: trimmedTitle,
-        dateLabel: trimmedDateLabel,
+        dateLabel: formatDateLabel(scheduledDate),
+        scheduledAt: Timestamp.fromDate(scheduledDate),
+        hostName: trimmedHostName,
       });
       setShareCode(nextShareCode);
       setCreated(true);
@@ -91,14 +122,22 @@ export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
   return (
     <main className="create-room-shell">
       <header className="create-room-header">
-        <a className="wordmark" href="/" aria-label="Pick and Lock home">
-          <span aria-hidden="true">P&amp;L</span>
-          <span>Pick &amp; Lock</span>
+        <a className="wordmark" href="/" aria-label="Sorted home">
+          <img
+            src="/sorted-icon.png"
+            alt=""
+            aria-hidden="true"
+            className="wordmark-icon"
+          />
+          <span>Sorted</span>
         </a>
         <p>New decision room</p>
       </header>
 
-      <section className="create-room-layout" aria-labelledby="create-room-title">
+      <section
+        className="create-room-layout"
+        aria-labelledby="create-room-title"
+      >
         <div className="create-room-intro">
           <p className="create-room-kicker">Start with a clear question</p>
           <h1 id="create-room-title">Get everyone on the same page.</h1>
@@ -126,39 +165,71 @@ export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
               autoComplete="off"
               aria-invalid={Boolean(error && !title.trim())}
             />
-            <span className="create-room-hint">Keep it to one clear question.</span>
+            <span className="create-room-hint">
+              Keep it to one clear question.
+            </span>
           </div>
 
           <div className="create-room-field">
             <label htmlFor="room-date">When?</label>
             <input
               id="room-date"
-              name="dateLabel"
-              value={dateLabel}
-              onChange={(event) => setDateLabel(event.target.value)}
-              placeholder="Tonight, Saturday 7pm…"
-              maxLength={40}
+              name="scheduledAt"
+              type="datetime-local"
+              value={scheduledAtValue}
+              onChange={(event) => setScheduledAtValue(event.target.value)}
               autoComplete="off"
-              aria-invalid={Boolean(error && !dateLabel.trim())}
+              aria-invalid={Boolean(error && !scheduledAtValue.trim())}
             />
           </div>
 
-          <div className="create-room-code" aria-label="Generated public room code">
-            <div>
-              <span className="create-room-code-label">Public room code</span>
-              <strong>{shareCode || "Generated when you create the room"}</strong>
-            </div>
-            <span className="create-room-code-mark" aria-hidden="true">Open</span>
+          <div className="create-room-field">
+            <label htmlFor="host-name">Your name</label>
+            <input
+              id="host-name"
+              name="hostName"
+              value={hostName}
+              onChange={(event) => setHostName(event.target.value)}
+              placeholder="Your name"
+              maxLength={40}
+              autoComplete="name"
+              aria-invalid={Boolean(error && !hostName.trim())}
+            />
           </div>
 
-          <p className="create-room-feedback" role="alert" aria-live="assertive">
+          <div
+            className="create-room-code"
+            aria-label="Generated public room code"
+          >
+            <div>
+              <span className="create-room-code-label">Public room code</span>
+              <strong>
+                {shareCode || "Generated when you create the room"}
+              </strong>
+            </div>
+            <span className="create-room-code-mark" aria-hidden="true">
+              Open
+            </span>
+          </div>
+
+          <p
+            className="create-room-feedback"
+            role="alert"
+            aria-live="assertive"
+          >
             {error}
           </p>
 
           {created ? (
-            <div className="create-room-success" role="status" aria-live="polite">
+            <div
+              className="create-room-success"
+              role="status"
+              aria-live="polite"
+            >
               <strong>Room created.</strong>
-              <span>Share code {shareCode} with your group to get started.</span>
+              <span>
+                Share code {shareCode} with your group to get started.
+              </span>
             </div>
           ) : null}
 

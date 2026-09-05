@@ -7,6 +7,8 @@ export type ActivityView = {
   name: string;
   price: number;
   minPeople: number;
+  distanceKm?: number;
+  timeMinutes?: number;
   eligibleCount: number;
   possible: boolean;
   callerAnswer: { state: AnswerState; maxPrice?: number } | null;
@@ -44,6 +46,13 @@ export type RoomView = {
 
 export type RoomActions = {
   join: (name: string) => Promise<void>;
+  addActivity: (
+    name: string,
+    price: number,
+    minPeople: number,
+    distanceKm?: number,
+    timeMinutes?: number,
+  ) => Promise<void>;
   setAnswer: (
     activityId: number,
     state: AnswerState,
@@ -169,6 +178,7 @@ const noOp = async (): Promise<void> => undefined;
 
 export const fixtureActions: RoomActions = {
   join: noOp,
+  addActivity: noOp,
   setAnswer: noOp,
   propose: noOp,
   accept: noOp,
