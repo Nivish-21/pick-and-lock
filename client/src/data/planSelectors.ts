@@ -64,6 +64,6 @@ export function buildRoomView(db: DbView, planId: number, identity?: { toHexStri
     pendingProposal: pending && pendingActivity ? { id: pending.id, activityId: pending.activityId, activityName: pendingActivity.name, acceptedCount: pendingAcceptances.length, requiredCount: pendingActivity.minPeople, callerCanAccept: Boolean(callerEligible), callerHasAccepted } : null,
     lockedActivityId: plan.lockedActivityId ?? null,
     lockedAcceptors: lockedAcceptances.map((acceptance) => friends.find((friend) => friend.id === acceptance.friendId)).filter((friend): friend is Friend => Boolean(friend)).map((friend) => ({ id: friend.id, name: friend.name })),
-    latestEvent: latestEvent ? { kind: latestEvent.kind, message: latestEvent.message, at: new Date(Number(latestEvent.at)) } : null,
+    latestEvent: latestEvent ? { kind: latestEvent.kind, message: latestEvent.message, at: latestEvent.at.toDate() } : null,
   };
 }

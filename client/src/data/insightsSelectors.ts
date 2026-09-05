@@ -64,7 +64,7 @@ export function buildInsightsView(db: DbView): InsightsView {
   const latestEvents = [...events]
     .sort((a, b) => Number(b.id - a.id))
     .slice(0, 8)
-    .map((event) => ({ message: event.message, at: new Date(Number(event.at)) }));
+    .map((event) => ({ message: event.message, at: event.at.toDate() }));
 
   return {
     totalRooms,

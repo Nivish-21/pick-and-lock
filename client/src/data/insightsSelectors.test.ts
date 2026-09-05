@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { Timestamp } from "spacetimedb";
 import { buildInsightsView } from "./insightsSelectors";
 import type { DbView } from "../module_bindings";
 
@@ -76,10 +77,10 @@ describe("buildInsightsView", () => {
     const view = buildInsightsView(
       fakeDb({
         eventLog: [
-          { id: 1n, kind: "joined", message: "Ann joined", at: 1000n },
-          { id: 2n, kind: "reopened", message: "Plan reopened", at: 2000n },
-          { id: 3n, kind: "locked", message: "Bowling locked", at: 3000n },
-          { id: 4n, kind: "reopened", message: "Plan reopened again", at: 4000n },
+          { id: 1n, kind: "joined", message: "Ann joined", at: new Timestamp(1000n) },
+          { id: 2n, kind: "reopened", message: "Plan reopened", at: new Timestamp(2000n) },
+          { id: 3n, kind: "locked", message: "Bowling locked", at: new Timestamp(3000n) },
+          { id: 4n, kind: "reopened", message: "Plan reopened again", at: new Timestamp(4000n) },
         ],
       }),
     );
