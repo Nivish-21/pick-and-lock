@@ -72,3 +72,16 @@ Scope: `client/src/pages/**`, `client/src/components/**`, `client/src/data/**`, 
 - [x] Append completion state to `docs/status.md` and `docs/changelog.md`, commit, push, and comment on issue #12.
 
 Assumptions: the form is available on open joined rooms because `RoomPage` is only rendered after joining; no separate membership field exists in `RoomView`, so the server remains the authority for rejecting unauthorised calls. The required project logs are procedural files despite the source-only ownership boundary.
+
+## Sorted rebrand (2026-09-05)
+
+Goal: replace user-facing “Pick & Lock” branding with “Sorted” and install the supplied browser/app icons without changing the live SpacetimeDB database name or internal references.
+
+Scope: `client/public/`, `client/index.html`, `client/src/pages/LandingPage.tsx`, `client/src/pages/RoomPage.tsx`, `client/src/pages/CreateRoomPage.tsx`, and their existing landing/room stylesheets. Procedural project logs will also be updated; no server, connection string, README, AGENTS, or fixture URL changes.
+
+- [x] Copy the supplied PNG and generate 32px favicon and 180px Apple touch icon with `sips`.
+- [x] Update the browser title, favicon links, wordmarks, and user-facing accessibility labels to Sorted.
+- [x] Run the requested client tests, lint, build, and whitespace checks.
+- [ ] Update project status/changelog, commit, and push `ui/rebrand-sorted`.
+
+Assumption: the source icon is trusted as supplied and does not need visual editing; only the requested raster sizes are generated.
