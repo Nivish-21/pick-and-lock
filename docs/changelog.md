@@ -81,3 +81,9 @@
 - Added a root README with the live demo, current product state, architecture, active v2 lanes, local checks, safety constraints, and agent workflow.
 - Updated the docs index to route incoming contributors to the current handoff, v2 specifications, collaboration protocol, and execution plan.
 - Added an execution-plan rule requiring README status updates with every merge, publish, deployment, or lane-state change.
+
+# 2026-09-05 — Public-story UI merged
+
+- Reviewed and merged PR #7 as `9d82753`; the fixture-only public-story page and sharing settings component remain isolated from routing and SpacetimeDB.
+- Verified on `main`: 23 client tests, lint, production build, and `git diff --check` pass.
+- Updated the root README and execution plan to mark #3 merged; public projection/route work remains dependency-blocked.

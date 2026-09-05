@@ -25,7 +25,7 @@ The active parallel lanes are:
 | Issue                                                     | Status  | Scope                                                                                               |
 | --------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------- |
 | [#2](https://github.com/Nivish-21/pick-and-lock/issues/2) | Active  | Private SpacetimeDB room access core                                                                |
-| [#3](https://github.com/Nivish-21/pick-and-lock/issues/3) | Review  | Fixture-driven public decision-story UI; [PR #7](https://github.com/Nivish-21/pick-and-lock/pull/7) |
+| [#3](https://github.com/Nivish-21/pick-and-lock/issues/3) | Merged  | Fixture-driven public decision-story UI; [PR #7](https://github.com/Nivish-21/pick-and-lock/pull/7) |
 | [#6](https://github.com/Nivish-21/pick-and-lock/issues/6) | Ready   | Isolated RFC 5545 calendar-event helper                                                             |
 | [#1](https://github.com/Nivish-21/pick-and-lock/issues/1) | Blocked | Creator-controlled public-story projection; waits for #2                                            |
 | [#4](https://github.com/Nivish-21/pick-and-lock/issues/4) | Blocked | Public route and bridge; waits for #1 and #3                                                        |

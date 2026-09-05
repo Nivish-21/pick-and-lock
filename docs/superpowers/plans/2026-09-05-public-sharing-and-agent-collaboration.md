@@ -85,12 +85,12 @@
 
 **Produces:** Fixture-driven accessible UI with no SpacetimeDB import or generated-binding dependency.
 
-- [ ] Write a failing test that renders a locked story, finds “Have a decision to make? Make it together.”, and asserts “Create your own room” has `href="/"`.
-- [ ] Write a failing test that renders title, choices, decision count, and an optional schedule without member/chat/vote fields.
-- [ ] Implement `SharedRoomStory` with loading/unpublished props, read-only choice/result content, and exact CTA copy.
-- [ ] Implement `PublicShareSettings` with injected `onPublish`, `onUnpublish`, `onShowScheduleChange`, and `onCopy` callbacks plus a public-field preview.
-- [ ] Run `npm run test --prefix client -- --run`, `npm run lint --prefix client`, and `npm run build --prefix client`.
-- [ ] Commit only listed UI paths as `feat: add public decision story UI`.
+- [x] Wrote component tests for the exact CTA plus locked/public story content.
+- [x] Wrote component coverage for story fields with no member, chat, or vote data in the public type.
+- [x] Implemented `SharedRoomStory` with loading/unpublished states, read-only choice/result content, and exact CTA copy.
+- [x] Implemented `PublicShareSettings` with injected callbacks and a public-field preview.
+- [x] Ran 23 client tests, lint, and production build successfully.
+- [x] Reviewed with no findings and merged `9d82753` (`feat: add public decision story UI`).
 
 ### Task 4: Integrate public path and projection bridge
 
