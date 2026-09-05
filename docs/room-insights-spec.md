@@ -47,3 +47,7 @@ A locked room may reopen when an accepting participant drops out. Reopening pres
 - Messages are room-local text only: no reactions, attachments, edits, deletion, moderation, or notifications.
 - Existing rooms retain the three seeded activities. Custom options are a separate product/schema change and must not be smuggled into this metrics release.
 - Links and QR codes are derived from the public room code. They are not stored as a second mutable database field.
+
+## Maincloud migration amendment — 2026-09-05
+
+For the already published database, the lifecycle fields described for `plan` are a target data model, not a direct table alteration. Automatic migration cannot add required columns in the middle of the existing `plan` table. The deployed-safe implementation uses a new `room_lifecycle` table instead and leaves `plan` plus `PlanStatus` unchanged. New rooms receive lifecycle rows at creation; the seeded legacy `SATURDAY` room is readable/open but not closable until a separately approved migration exists. See `docs/maincloud-migration-safety.md`.

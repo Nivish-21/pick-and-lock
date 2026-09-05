@@ -15,3 +15,7 @@ Completed decisions must be auditable and quick to render. We will store each su
 ## 2026-09-05 — Preference memory requires opt-in, not browser fingerprinting
 
 The proposed assistant needs durable preference context, but a raw browser fingerprint is not an acceptable identity or memory key: it is opaque, unstable, difficult to revoke, and creates a privacy-sensitive tracking system. The future design will instead use explicit consent bound to the participant's SpacetimeDB identity, a participant-visible preference profile, room-specific sharing controls, correction, expiry, export, and deletion. Assistant output remains advisory; reducers retain all decision authority.
+
+## 2026-09-05 — Add room lifecycle beside the published plan table
+
+The live database already contains `plan` rows. SpacetimeDB cannot automatically migrate the proposed required lifecycle fields because they are non-default columns inserted into an existing table. We will preserve `Plan` and `PlanStatus` as published, introduce a separate `room_lifecycle` table for new rooms, and make close checks consult that table. This avoids data destruction and keeps the migration additive. The legacy seeded room remains non-closable until an owner explicitly approves a separate migration strategy.

@@ -30,7 +30,7 @@ No secret belongs in client code, Git, browser storage, screenshots, prompts, or
 | Maincloud server core | Published | `pick-and-lock` exists with `SATURDAY`, room-scoped members, answers, proposals, acceptances, events, and reducer authority. |
 | Generated client bindings | Complete for current schema | `client/src/module_bindings/**` is committed and must be regenerated after each server schema change. |
 | Real-time bridge | In progress by collaborator | Owns `client/src/data/**`; it will resolve share code first, then map room-scoped subscriptions to the UI facade. |
-| Metrics, chat, close schema | In progress in isolated branch | `server/room-insights`; changes are local until reviewed and explicitly approved for Maincloud publish. |
+| Metrics, chat, close schema | Blocked for migration correction | `server/room-insights` commit `3ee5a58` passed local gates but cannot publish because it alters existing `plan` rows incompatibly. See `docs/maincloud-migration-safety.md`. |
 | Share route | Ready for review | `origin/ui/room-route`, commit `4b7804032129e1c2a7c9f516fdfd14b3821db193`. |
 | QR component | Ready for review | `origin/ui/room-qr`, commit `3a0227d41ee976aae960fdeb18c20374c9266957`. |
 | Vercel SPA configuration | Ready for review | `origin/deploy/vercel-static`, commit `b5725762416e59c3393eabc134b5c49270f6abfc`. |
@@ -46,11 +46,11 @@ No secret belongs in client code, Git, browser storage, screenshots, prompts, or
 ## Exact integration order
 
 1. Review and merge the ready route, QR, and Vercel configuration commits one at a time; run the client test, lint, build, and `git diff --check` after each merge.
-2. Review the metrics branch against `docs/room-insights-spec.md`; run Rust format/build, regenerate bindings, and run client checks. Merge it, but do not deploy the schema yet.
+2. Rework the metrics branch to the safe `room_lifecycle`-table design in `docs/maincloud-migration-safety.md`; run Rust format/build, regenerate bindings, and run client checks. Do not merge or deploy `3ee5a58` as-is.
 3. Have the bridge agent rebase on the merged bindings and finish its room-specific subscriptions/actions.
 4. Mount the bridge and the create-room page in `App.tsx`; render the QR component from the canonical route URL.
 5. Test two browser contexts against Maincloud: joining, answers, proposal/accept, lock, reopening, decision metrics, chat, and creator-only close.
-6. Obtain explicit confirmation before publishing the Maincloud schema update. Publish without `--delete-data`, then verify rows with read-only queries.
+6. Obtain explicit confirmation before publishing the corrected Maincloud schema update. Publish without `--delete-data`, then verify rows with read-only queries.
 7. Link Vercel to the client project, set public SpacetimeDB variables, deploy, and test a direct `/r/<shareCode>` visit plus QR scan.
 8. Add the optional email endpoint only after the core hosted proof passes.
 

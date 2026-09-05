@@ -34,3 +34,9 @@
 - Added `docs/project-handoff.md` as the first-read document for future collaborators, with current branches, active work, integration order, version-1 outcome, and final verification sequence.
 - Updated product and execution documents for a later consented preference-memory and advisory decision-assistant phase.
 - Rejected raw browser fingerprinting as a memory key; documented explicit consent, visibility, correction, expiry, export, and deletion requirements before any AI/provider implementation.
+
+# 2026-09-05 — Maincloud migration correction
+
+- Added `docs/maincloud-migration-safety.md` after reviewing the local metrics branch against Maincloud's automatic-migration constraints.
+- Recorded that `server/room-insights` commit `3ee5a58` is not deployable because it changes the existing `plan` table incompatibly; no data-destroying workaround is authorised.
+- Amended the room-insights specification and plan to use an additive `room_lifecycle` table and leave the seeded legacy room readable but non-closable.

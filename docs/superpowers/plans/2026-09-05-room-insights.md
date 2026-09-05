@@ -40,6 +40,10 @@
 - [ ] Regenerate bindings and run `git diff --check`.
 - [ ] Commit: `feat(metrics): persist room lifecycle and insights`.
 
+### Task 1 amendment — live-schema compatibility
+
+The published database has existing `plan` rows. Do not add columns to `Plan` or add `PlanStatus::Closed` in this release. Instead, create a public `room_lifecycle` table keyed uniquely by `plan_id`; it stores `created_by`, `created_at`, optional `closed_by`, and optional `closed_at`. Keep lifecycle reads additive and treat no lifecycle row as an open legacy room. This is mandatory before any merge or publish; details are in `docs/maincloud-migration-safety.md`.
+
 ### Task 2: Make locks and closure measurable
 
 **Files:**

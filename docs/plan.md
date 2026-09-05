@@ -70,3 +70,9 @@ Goal: help a group recognise trade-offs from preferences they deliberately share
 - [ ] Use explicit participant identity and consented `preference_profile` rows; never use raw browser fingerprint data as a memory key.
 - [ ] Keep all model/provider calls server-side behind one adapter; pass only room-scoped, consented context and return suggestions only.
 - [ ] Give every preference and suggestion a visible source, correction path, expiry/retention policy, and delete action.
+
+## U7 migration correction — Maincloud compatibility
+
+- [ ] Reject the current `server/room-insights` implementation for deployment because it alters the existing `plan` table incompatibly.
+- [ ] Rework lifecycle as a new `room_lifecycle` table, retain the existing `Plan` schema/status, and preserve `SATURDAY` as a legacy readable room.
+- [ ] Regenerate bindings, re-run all gates, and review the corrected branch before asking for a publish confirmation.
