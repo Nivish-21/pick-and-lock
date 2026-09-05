@@ -5,12 +5,20 @@ import { LandingPage } from "./pages/LandingPage";
 import { CreateRoomPage } from "./pages/CreateRoomPage";
 import { RoomPage } from "./pages/RoomPage";
 import { InsightsPage } from "./pages/InsightsPage";
+import { PublicStoryBridge } from "./data/PublicStoryBridge";
+import { parsePublicShareRoute } from "./public-share-route";
 import { parseRoomRoute } from "./room-route";
 import type { RoomActions, RoomView } from "./fixtures/room";
 
 function App() {
   if (window.location.pathname.replace(/\/$/, "") === "/insights") {
     return <InsightsPage />;
+  }
+
+  const publicRoomId = parsePublicShareRoute(window.location.pathname);
+
+  if (publicRoomId !== null) {
+    return <PublicStoryBridge publicRoomId={publicRoomId} />;
   }
 
   const roomCode = parseRoomRoute(window.location.pathname);
