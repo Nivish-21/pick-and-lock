@@ -15,3 +15,4 @@
 - Completed UI U3 pending verification: added a mobile-first landing page, accessible name-only join form, and live Saturday fixture preview.
 - Verified UI U3 at desktop and 390px widths, including invalid-name rejection and successful name-only join.
 - Completed UI U4: added the fixture-driven room screen, answer controls, conditional price input, group-status panels, proposal acceptance state, locked-plan state, and reopened notice; moved the shared wordmark style into the base stylesheet so the room has no hidden page-style dependency.
+- Completed UI U5: added local Vitest and Testing Library coverage for join and room-critical actions, explicit test cleanup, the `npm run test` command, and passing mobile accessibility smoke, lint, production-build, and deterministic-design gates.

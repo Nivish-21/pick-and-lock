@@ -39,3 +39,7 @@ A U3 patch expected an App component without semicolons, but Prettier had reform
 ## 2026-09-05 — Repeated stale App import formatting in U4 patch
 
 The U4 multi-file patch again assumed single-quoted imports while the formatter had changed `client/src/App.tsx` to double quotes. Use standalone file additions first and a separate, exact-context App patch.
+
+## 2026-09-05 — UI tests leaked mounted DOM between cases
+
+`client/src/pages/LandingPage.test.tsx` rendered twice without cleanup, so the second case found two `Join Saturday room` buttons. Register explicit `afterEach(cleanup)` in React DOM test files rather than relying on runner-specific automatic cleanup.
