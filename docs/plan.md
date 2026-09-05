@@ -97,6 +97,6 @@ Scope: `client/src/pages/CreateRoomPage.tsx`, `client/src/pages/CreateRoomPage.t
 + [x] Add the responsive two-column room layout and mount `RoomChat` plus `GroupInputPanel` with empty placeholder props and an issue #16 TODO at the data boundary.
 + [x] Add tests for host-name validation and create payload; add a focused RoomSession integration test proving pending-host navigation skips LandingPage and renders RoomPage after join.
 + [x] Run client tests, lint, build, and `git diff --check`.
-- [ ] Update project status/changelog, commit incremental work, push `client/merged-onboarding-split-chat`, and comment on issue #17.
++ [x] Update project status/changelog, commit incremental work, push `client/merged-onboarding-split-chat`, and comment on issue #17.
 
 Assumptions: the existing `CreateRoomPage.onCreate` callback remains the create boundary, so the parent stores `pending-host-name:${shareCode}` after `createRoom` succeeds; the current RoomDataBridge provides the same `RoomActions` contract while issue #16 is unresolved.
