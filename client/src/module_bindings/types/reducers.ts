@@ -43,4 +43,3 @@ export type SendBotMessageParams = __Infer<typeof SendBotMessageReducer>;
 export type SendChatMessageParams = __Infer<typeof SendChatMessageReducer>;
 export type SetAnswerParams = __Infer<typeof SetAnswerReducer>;
 export type SubmitLocationParams = __Infer<typeof SubmitLocationReducer>;
-
