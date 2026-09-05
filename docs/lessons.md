@@ -83,3 +83,7 @@ The private decision-engine plan named issue `#7`, but pull requests and issues 
 ## 2026-09-05 — Client test command ran without worktree dependencies
 
 `npm run test --prefix client -- --run src/pages/RoomPage.test.tsx` failed before Vitest discovery with `vitest: command not found` because this Git worktree had no `client/node_modules`. The source test was not evaluated. Refresh the local dependency tree from `client/package-lock.json` before interpreting client test results.
+
+## 2026-09-05 — Rebrand JSX needed formatter pass
+
+The initial Sorted icon swap passed lint, tests, build, and whitespace checks, but `prettier --check` flagged `client/src/pages/RoomPage.tsx` and `client/src/pages/CreateRoomPage.tsx`. Run the repository formatter on modified JSX before the final gate.

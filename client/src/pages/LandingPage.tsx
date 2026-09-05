@@ -34,10 +34,15 @@ export function LandingPage({ view, onJoin }: LandingPageProps) {
         <a
           className="wordmark"
           href={window.location.pathname}
-          aria-label="Pick and Lock home"
+          aria-label="Sorted home"
         >
-          <span aria-hidden="true">P&amp;L</span>
-          <span>Pick &amp; Lock</span>
+          <img
+            src="/sorted-icon.png"
+            alt=""
+            aria-hidden="true"
+            className="wordmark-icon"
+          />
+          <span>Sorted</span>
         </a>
         <p className="header-note">{view.title}</p>
       </header>
@@ -114,7 +119,7 @@ export function LandingPage({ view, onJoin }: LandingPageProps) {
         </section>
       </section>
 
-      <section className="landing-proof" aria-label="How Pick and Lock works">
+      <section className="landing-proof" aria-label="How Sorted works">
         <p>Answer what works. Propose a feasible plan. Lock it together.</p>
       </section>
     </main>

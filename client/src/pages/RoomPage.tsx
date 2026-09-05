@@ -232,13 +232,14 @@ function RoomHeader({
 }) {
   return (
     <header className="room-header">
-      <a
-        className="wordmark"
-        href="/r/SATURDAY"
-        aria-label="Pick and Lock home"
-      >
-        <span aria-hidden="true">P&amp;L</span>
-        <span>Pick &amp; Lock</span>
+      <a className="wordmark" href="/r/SATURDAY" aria-label="Sorted home">
+        <img
+          src="/sorted-icon.png"
+          alt=""
+          aria-hidden="true"
+          className="wordmark-icon"
+        />
+        <span>Sorted</span>
       </a>
       <div className="room-header-actions">
         <p>{dateLabel}</p>

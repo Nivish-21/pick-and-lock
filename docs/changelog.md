@@ -99,3 +99,9 @@
 - Regenerated `client/src/module_bindings/` with the new `add_activity` reducer binding.
 - Added `RoomActions.addActivity`, live `actionsFor` wiring, fixture no-op support, and an open-room form in `RoomPage` for name, price, and minimum people.
 - Added success and reducer-error React Testing Library coverage. All requested Rust/client verification commands pass.
+
+# 2026-09-05 — Sorted brand rebrand
+
+- Added the supplied Sorted icon plus 32px favicon and 180px Apple touch icon assets.
+- Updated browser metadata, accessibility labels, and landing, room, and create-room wordmarks to Sorted.
+- Kept the live SpacetimeDB database name, README, AGENTS, and internal fixture URLs unchanged.
