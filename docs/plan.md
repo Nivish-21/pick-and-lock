@@ -52,3 +52,11 @@ Goal: persist complete room lifecycles, decision history, current metrics, and s
 - [ ] Add creator-authorised locked-room closure and active-member chat reducers.
 - [ ] Hand the new bindings to the data-bridge agent; mount visual insight, close, and chat controls only after its adapter handoff.
 - [ ] Obtain explicit approval before publishing the schema update to Maincloud, then verify real rows and deploy the client.
+
+## U8 — Optional room-link email confirmation
+
+Goal: send a non-authoritative email containing a validated room link without delaying room entry or persisting email addresses in SpacetimeDB.
+
+- [ ] Add a Vercel serverless `POST /api/capture-email` endpoint in the server-agent-owned `api/**` path using the configured Resend HTTP API and environment variables only.
+- [ ] Validate email and share code at the API boundary, derive the room URL from `PUBLIC_APP_ORIGIN`, and return short, explicit errors without logging email addresses.
+- [ ] Add isolated endpoint tests, then hand the endpoint contract to the bridge/UI lane without editing visual components.

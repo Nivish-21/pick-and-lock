@@ -94,6 +94,23 @@
 - [ ] Deploy the client to Vercel with only `VITE_SPACETIMEDB_HOST` and `VITE_SPACETIMEDB_DATABASE` public configuration.
 - [ ] Confirm `/r/<shareCode>` copy/share output and QR payload both resolve to the deployed room route.
 
+### Task 5: Non-blocking room-link email
+
+**Files:**
+
+- Create: `api/capture-email.ts`
+- Create: `api/capture-email.test.ts`
+
+**Consumes:** `PUBLIC_APP_ORIGIN`, `RESEND_API_KEY`, and an existing room share code from the client.
+
+**Produces:** A server-only, non-authoritative confirmation endpoint.
+
+- [ ] Validate a `POST` JSON body containing `{ email, shareCode }`; reject malformed email, invalid share code, and non-POST requests before any external request.
+- [ ] Derive `${PUBLIC_APP_ORIGIN}/r/${shareCode}` server-side and send a single plain-text confirmation through the Resend HTTP API using `fetch`; do not accept a browser-supplied URL.
+- [ ] Return no email address in responses, events, or logs. Room joining remains successful even if this optional endpoint is unavailable.
+- [ ] Add focused mocked-fetch tests for validation, derived link, and Resend failure propagation.
+- [ ] Commit only `api/**` and push an isolated `api/room-email` branch.
+
 ## Self-Review
 
 - Every requested metric has a single authoritative definition in `docs/room-insights-spec.md`.

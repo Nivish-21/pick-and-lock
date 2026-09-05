@@ -24,3 +24,7 @@
 - Added `docs/superpowers/plans/2026-09-05-room-insights.md` and appended U7 to `docs/plan.md` to isolate server, bridge, UI, and deployment work.
 - Ignored `.worktrees/` before creating isolated agent workspaces.
 - Recorded decisions for append-only decision history plus atomic summaries and creator-only room closure.
+
+# 2026-09-05 — Independent email lane
+
+- Added U8 and Task 5 to plan a server-only, non-authoritative room-link email endpoint with strict boundary validation and no email persistence.
