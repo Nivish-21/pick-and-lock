@@ -73,6 +73,46 @@ export const Friend = __t.object("Friend", {
 });
 export type Friend = __Infer<typeof Friend>;
 
+export const MyRoom = __t.object("MyRoom", {
+  roomId: __t.u32(),
+  publicRoomId: __t.string(),
+  title: __t.string(),
+  createdAt: __t.timestamp(),
+  get status() {
+    return PrivateRoomStatus;
+  },
+});
+export type MyRoom = __Infer<typeof MyRoom>;
+
+export const MyRoomChoice = __t.object("MyRoomChoice", {
+  choiceId: __t.u32(),
+  roomId: __t.u32(),
+  label: __t.string(),
+  price: __t.option(__t.u32()),
+  minPeople: __t.u32(),
+  sortOrder: __t.u32(),
+});
+export type MyRoomChoice = __Infer<typeof MyRoomChoice>;
+
+export const MyRoomMember = __t.object("MyRoomMember", {
+  membershipId: __t.u32(),
+  roomId: __t.u32(),
+  displayName: __t.string(),
+  joinedAt: __t.timestamp(),
+  get role() {
+    return RoomMembershipRole;
+  },
+});
+export type MyRoomMember = __Infer<typeof MyRoomMember>;
+
+export const MyRoomSchedule = __t.object("MyRoomSchedule", {
+  roomId: __t.u32(),
+  startsAt: __t.timestamp(),
+  endsAt: __t.timestamp(),
+  timezone: __t.string(),
+});
+export type MyRoomSchedule = __Infer<typeof MyRoomSchedule>;
+
 export const Plan = __t.object("Plan", {
   id: __t.u32(),
   shareCode: __t.string(),
@@ -92,6 +132,31 @@ export const PlanStatus = __t.enum("PlanStatus", {
   Locked: __t.unit(),
 });
 export type PlanStatus = __Infer<typeof PlanStatus>;
+
+export const PrivateRoom = __t.object("PrivateRoom", {
+  id: __t.u32(),
+  publicRoomId: __t.string(),
+  creatorIdentity: __t.identity(),
+  title: __t.string(),
+  createdAt: __t.timestamp(),
+  get status() {
+    return PrivateRoomStatus;
+  },
+});
+export type PrivateRoom = __Infer<typeof PrivateRoom>;
+
+export const PrivateRoomChoiceInput = __t.object("PrivateRoomChoiceInput", {
+  label: __t.string(),
+  price: __t.option(__t.u32()),
+  minPeople: __t.u32(),
+});
+export type PrivateRoomChoiceInput = __Infer<typeof PrivateRoomChoiceInput>;
+
+// The tagged union or sum type for the algebraic type `PrivateRoomStatus`.
+export const PrivateRoomStatus = __t.enum("PrivateRoomStatus", {
+  Open: __t.unit(),
+});
+export type PrivateRoomStatus = __Infer<typeof PrivateRoomStatus>;
 
 export const Proposal = __t.object("Proposal", {
   id: __t.u32(),
@@ -113,3 +178,54 @@ export const ProposalStatus = __t.enum("ProposalStatus", {
   Reopened: __t.unit(),
 });
 export type ProposalStatus = __Infer<typeof ProposalStatus>;
+
+export const RoomChoice = __t.object("RoomChoice", {
+  id: __t.u32(),
+  roomId: __t.u32(),
+  label: __t.string(),
+  price: __t.option(__t.u32()),
+  minPeople: __t.u32(),
+  sortOrder: __t.u32(),
+});
+export type RoomChoice = __Infer<typeof RoomChoice>;
+
+export const RoomInvite = __t.object("RoomInvite", {
+  id: __t.u32(),
+  roomId: __t.u32(),
+  tokenHash: __t.string(),
+  expiresAt: __t.option(__t.timestamp()),
+  maxUses: __t.option(__t.u32()),
+  uses: __t.u32(),
+  revokedAt: __t.option(__t.timestamp()),
+});
+export type RoomInvite = __Infer<typeof RoomInvite>;
+
+export const RoomMembership = __t.object("RoomMembership", {
+  id: __t.u32(),
+  roomId: __t.u32(),
+  identity: __t.identity(),
+  membershipKey: __t.string(),
+  displayName: __t.string(),
+  joinedAt: __t.timestamp(),
+  get role() {
+    return RoomMembershipRole;
+  },
+  leftAt: __t.option(__t.timestamp()),
+});
+export type RoomMembership = __Infer<typeof RoomMembership>;
+
+// The tagged union or sum type for the algebraic type `RoomMembershipRole`.
+export const RoomMembershipRole = __t.enum("RoomMembershipRole", {
+  Creator: __t.unit(),
+  Member: __t.unit(),
+});
+export type RoomMembershipRole = __Infer<typeof RoomMembershipRole>;
+
+export const RoomSchedule = __t.object("RoomSchedule", {
+  id: __t.u32(),
+  roomId: __t.u32(),
+  startsAt: __t.timestamp(),
+  endsAt: __t.timestamp(),
+  timezone: __t.string(),
+});
+export type RoomSchedule = __Infer<typeof RoomSchedule>;
