@@ -1,4 +1,5 @@
 import { DbConnection } from "../module_bindings";
+import { Timestamp } from "spacetimedb";
 import type { AnswerState, RoomActions } from "../fixtures/room";
 
 const DEFAULT_HOST = "https://maincloud.spacetimedb.com";
@@ -115,6 +116,7 @@ export async function createRoom(input: {
   shareCode: string;
   title: string;
   dateLabel: string;
+  scheduledAt: Timestamp;
 }): Promise<void> {
   if (!activeConnection) throw new Error("SpacetimeDB is not connected");
   return activeConnection.reducers.createRoom(input);

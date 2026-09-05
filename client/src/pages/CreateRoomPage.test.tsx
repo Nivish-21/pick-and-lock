@@ -8,16 +8,21 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { Timestamp } from "spacetimedb";
 import { CreateRoomPage, type CreateRoomInput } from "./CreateRoomPage";
 
 afterEach(cleanup);
 
-function fillForm(title: string, dateLabel = "Tonight", hostName = "Nivish") {
+function fillForm(
+  title: string,
+  scheduledAt = "2026-09-05T19:00",
+  hostName = "Nivish",
+) {
   fireEvent.change(screen.getByLabelText("What are we deciding?"), {
     target: { value: title },
   });
   fireEvent.change(screen.getByLabelText("When?"), {
-    target: { value: dateLabel },
+    target: { value: scheduledAt },
   });
   fireEvent.change(screen.getByLabelText("Your name"), {
     target: { value: hostName },
@@ -42,12 +47,25 @@ describe("CreateRoomPage", () => {
     const onCreate = vi.fn<(input: CreateRoomInput) => Promise<void>>();
 
     render(<CreateRoomPage onCreate={onCreate} />);
-    fillForm("Dinner plan", "Tonight", "A");
+    fillForm("Dinner plan", "2026-09-05T19:00", "A");
     fireEvent.click(screen.getByRole("button", { name: "Create room" }));
 
     expect(onCreate).not.toHaveBeenCalled();
     expect(screen.getByRole("alert").textContent).toContain(
       "Use a name between 2 and 40 characters.",
+    );
+  });
+
+  it("does not create a room without a date and time", () => {
+    const onCreate = vi.fn<(input: CreateRoomInput) => Promise<void>>();
+
+    render(<CreateRoomPage onCreate={onCreate} />);
+    fillForm("Dinner plan", "", "Nivish");
+    fireEvent.click(screen.getByRole("button", { name: "Create room" }));
+
+    expect(onCreate).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert").textContent).toContain(
+      "Choose a date and time.",
     );
   });
 
@@ -57,7 +75,7 @@ describe("CreateRoomPage", () => {
       .mockResolvedValue(undefined);
 
     render(<CreateRoomPage onCreate={onCreate} />);
-    fillForm("Dinner plan", "Friday at 8");
+    fillForm("Dinner plan");
     fireEvent.click(screen.getByRole("button", { name: "Create room" }));
 
     await waitFor(() => expect(onCreate).toHaveBeenCalledOnce());
@@ -65,9 +83,12 @@ describe("CreateRoomPage", () => {
 
     expect(input).toMatchObject({
       title: "Dinner plan",
-      dateLabel: "Friday at 8",
+      dateLabel: "Sat, Sep 5 · 7:00 PM",
       hostName: "Nivish",
     });
+    expect(input.scheduledAt).toEqual(
+      Timestamp.fromDate(new Date("2026-09-05T19:00")),
+    );
     expect(input.shareCode).toMatch(/^[A-Z0-9]{10}$/);
   });
 
@@ -77,7 +98,7 @@ describe("CreateRoomPage", () => {
       .mockResolvedValue(undefined);
 
     render(<CreateRoomPage onCreate={onCreate} />);
-    fillForm("Dinner plan", "Tonight", "  Host Name  ");
+    fillForm("Dinner plan", "2026-09-05T19:00", "  Host Name  ");
     fireEvent.click(screen.getByRole("button", { name: "Create room" }));
 
     await waitFor(() => expect(onCreate).toHaveBeenCalledOnce());

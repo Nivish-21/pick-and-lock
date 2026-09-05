@@ -143,3 +143,17 @@ Scope: server/spacetimedb/src/lib.rs, regenerated client/src/module_bindings/**,
 - [x] Update status/changelog, commit, push the existing branch, and comment on issue #20.
 
 Assumptions: blank optional form fields become undefined; distance/time are display metadata only, not per-friend feasibility constraints.
+
+## Room creation date/time picker (2026-09-06)
+
+Goal: replace the free-text room date with a browser-local datetime picker while storing the real scheduled timestamp and retaining a human-readable date label.
+
+Scope: server/spacetimedb/src/lib.rs, regenerated client/src/module_bindings/**, client/src/pages/CreateRoomPage.tsx, client/src/pages/CreateRoomPage.test.tsx, client/src/data/spacetime.ts, and required project logs. Do not touch RoomPage, chat, or activity-form code.
+
+- [x] Append Plan.scheduled_at with its required default and update create_room/seed construction.
+- [x] Run server fmt/build, regenerate bindings, and update the createRoom client action.
+- [x] Replace the free-text field with datetime-local, derive Timestamp/dateLabel, and update tests.
+- [x] Run all requested verification and confirm the origin/main Plan diff is additive-only.
+- [x] Update status/changelog, commit, push the existing branch, and comment on issue #25.
+
+Assumptions: `datetime-local` uses the browser's local timezone; the client sends both `Timestamp.fromDate(date)` and a label shorter than 40 characters.

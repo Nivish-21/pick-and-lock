@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from "react";
+import { Timestamp } from "spacetimedb";
 import "../styles/create-room.css";
 
 export type CreateRoomInput = {
   shareCode: string;
   title: string;
   dateLabel: string;
+  scheduledAt: Timestamp;
   hostName: string;
 };
 
@@ -38,9 +40,22 @@ function callbackError(error: unknown): string {
   return "The room could not be created. Try again.";
 }
 
+function formatDateLabel(date: Date): string {
+  const datePart = new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).format(date);
+  const timePart = new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+  return `${datePart} · ${timePart}`;
+}
+
 export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
   const [title, setTitle] = useState("");
-  const [dateLabel, setDateLabel] = useState("");
+  const [scheduledAtValue, setScheduledAtValue] = useState("");
   const [hostName, setHostName] = useState("");
   const [shareCode, setShareCode] = useState("");
   const [error, setError] = useState("");
@@ -52,15 +67,21 @@ export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
     if (pending) return;
 
     const trimmedTitle = title.trim();
-    const trimmedDateLabel = dateLabel.trim();
+    const trimmedScheduledAtValue = scheduledAtValue.trim();
 
     if (trimmedTitle.length < 1 || trimmedTitle.length > 60) {
       setError("Add a decision between 1 and 60 characters.");
       return;
     }
 
-    if (trimmedDateLabel.length < 1 || trimmedDateLabel.length > 40) {
-      setError("Add a time between 1 and 40 characters.");
+    if (!trimmedScheduledAtValue) {
+      setError("Choose a date and time.");
+      return;
+    }
+
+    const scheduledDate = new Date(trimmedScheduledAtValue);
+    if (Number.isNaN(scheduledDate.getTime())) {
+      setError("Choose a valid date and time.");
       return;
     }
 
@@ -85,7 +106,8 @@ export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
       await onCreate({
         shareCode: nextShareCode,
         title: trimmedTitle,
-        dateLabel: trimmedDateLabel,
+        dateLabel: formatDateLabel(scheduledDate),
+        scheduledAt: Timestamp.fromDate(scheduledDate),
         hostName: trimmedHostName,
       });
       setShareCode(nextShareCode);
@@ -152,13 +174,12 @@ export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
             <label htmlFor="room-date">When?</label>
             <input
               id="room-date"
-              name="dateLabel"
-              value={dateLabel}
-              onChange={(event) => setDateLabel(event.target.value)}
-              placeholder="Tonight, Saturday 7pm…"
-              maxLength={40}
+              name="scheduledAt"
+              type="datetime-local"
+              value={scheduledAtValue}
+              onChange={(event) => setScheduledAtValue(event.target.value)}
               autoComplete="off"
-              aria-invalid={Boolean(error && !dateLabel.trim())}
+              aria-invalid={Boolean(error && !scheduledAtValue.trim())}
             />
           </div>
 

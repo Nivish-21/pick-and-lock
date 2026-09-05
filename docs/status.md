@@ -89,3 +89,9 @@ Merged PR #22 (`ebd12c9`): the isolated `pick-and-lock-beyond-core-loop` feature
 Live-tested the fully integrated `main` on production: room creation with host-name-on-creation, joining, answering, and adding a custom activity all confirmed working end-to-end. Found and fixed a real bug during that test: `/insights` showed "Invalid Date" for every event because `new Date(Number(timestamp))` doesn't work on the generated `Timestamp` class — needs `.toDate()`. Same latent bug existed in `planSelectors.ts` (never surfaced there since `RoomPage` never renders the timestamp). Fixed both as `f2abb8f`, re-verified, redeployed, confirmed live.
 
 **pick-and-lock.vercel.app is ready for real testers** — confirmed aliased to the latest deployment with the fix live. Mobile responsiveness: confirmed mobile-first CSS is already in place (base styles are single-column/stacked, `min-width` media queries only add desktop enhancements) across landing/create-room/room pages, but could not visually confirm at a real mobile viewport this session — the browser-automation resize tool didn't actually change the page's viewport in this environment (`window.innerWidth` stayed at desktop size despite the resize call reporting success). Worth a real device/DevTools check before/while testers are using it.
+
+# 2026-09-06 — Room date/time picker lane
+
+- Added additive `Plan.scheduled_at` timestamp storage with the required default annotation and updated room creation to accept it.
+- Replaced free-text room timing with a local `datetime-local` picker, generated a bounded display label, and updated client tests.
+- Verification passed: server fmt/build, 47 client tests, client lint/build, and whitespace checks. Pending push and issue #25 handoff.

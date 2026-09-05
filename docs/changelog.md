@@ -134,3 +134,8 @@
 - Live-tested the fully integrated `main` end-to-end on production: created a room with the new host-name-on-creation flow, joined, answered an activity, added a custom activity live (confirms Lane B + the republished module both work together), and loaded `/insights`.
 - That live test found a real bug: every event timestamp on `/insights` rendered "Invalid Date" — `new Date(Number(timestamp))` doesn't work on the generated `Timestamp` class (no numeric coercion), it needs `.toDate()`. The same bug existed in `planSelectors.ts` but never surfaced because `RoomPage` never renders `latestEvent.at`. Fixed both directly (trivial, pre-existing bug found during verification, not new feature work) as `f2abb8f`, updated the one test that mocked `at` as a raw bigint to use a real `Timestamp` instance, re-verified (44/44 tests, lint, build), redeployed, and confirmed live: real timestamps now render correctly.
 - Confirmed `pick-and-lock.vercel.app` is aliased to the latest deployment. Product is ready for real testers.
+
+# 2026-09-06 — Room date/time picker
+
+- Appended `Plan.scheduled_at` with `#[default(None)]`, passed the required timestamp through `create_room`, and regenerated client bindings.
+- Replaced the room creation free-text timing field with a browser-local datetime picker that sends both a real timestamp and a human-readable label.
