@@ -85,3 +85,18 @@ Scope: `client/public/`, `client/index.html`, `client/src/pages/LandingPage.tsx`
 - [x] Update project status/changelog, commit, and push `ui/rebrand-sorted`.
 
 Assumption: the source icon is trusted as supplied and does not need visual editing; only the requested raster sizes are generated.
+
+## Onboarding and split chat (2026-09-05)
+
+Goal: let room creators enter their name during room creation and auto-join after navigation, then mount the existing chat and shared-context components in a responsive RoomPage sidebar using placeholder data until issue #16 lands.
+
+Scope: `client/src/pages/CreateRoomPage.tsx`, `client/src/pages/CreateRoomPage.test.tsx`, `client/src/pages/RoomPage.tsx`, `client/src/App.tsx`, `client/src/data/**` only if needed for the placeholder boundary, `client/src/styles/room.css`, and relevant tests. No server or bot-service paths.
+
++ [x] Add and validate the host-name field; include it in the create callback and store the pending host name before navigation.
++ [x] Auto-join pending creators in `RoomSession`, remove the session key only after join succeeds, and preserve the shared-link LandingPage path.
++ [x] Add the responsive two-column room layout and mount `RoomChat` plus `GroupInputPanel` with empty placeholder props and an issue #16 TODO at the data boundary.
++ [x] Add tests for host-name validation and create payload; add a focused RoomSession integration test proving pending-host navigation skips LandingPage and renders RoomPage after join.
++ [x] Run client tests, lint, build, and `git diff --check`.
+- [ ] Update project status/changelog, commit incremental work, push `client/merged-onboarding-split-chat`, and comment on issue #17.
+
+Assumptions: the existing `CreateRoomPage.onCreate` callback remains the create boundary, so the parent stores `pending-host-name:${shareCode}` after `createRoom` succeeds; the current RoomDataBridge provides the same `RoomActions` contract while issue #16 is unresolved.
