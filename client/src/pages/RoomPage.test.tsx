@@ -16,7 +16,20 @@ import {
 } from "../fixtures/room";
 import { RoomPage } from "./RoomPage";
 
-afterEach(cleanup);
+const clipboardDescriptor = Object.getOwnPropertyDescriptor(
+  navigator,
+  "clipboard",
+);
+
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+  if (clipboardDescriptor) {
+    Object.defineProperty(navigator, "clipboard", clipboardDescriptor);
+  } else {
+    Reflect.deleteProperty(navigator, "clipboard");
+  }
+});
 
 function actionsWith(overrides: Partial<RoomActions>): RoomActions {
   return { ...fixtureActions, ...overrides };
@@ -57,5 +70,32 @@ describe("RoomPage", () => {
     await waitFor(() => {
       expect(dropOut).toHaveBeenCalledOnce();
     });
+  });
+
+  it("copies the current room link and announces success", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+
+    render(<RoomPage view={saturdayOpenView} actions={fixtureActions} />);
+    fireEvent.click(screen.getByRole("button", { name: "Copy room link" }));
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith(window.location.href);
+    });
+    expect(screen.getByRole("status").textContent).toBe("Room link copied.");
+  });
+
+  it("announces when copying the room link is unavailable", async () => {
+    Reflect.deleteProperty(navigator, "clipboard");
+
+    render(<RoomPage view={saturdayOpenView} actions={fixtureActions} />);
+    fireEvent.click(screen.getByRole("button", { name: "Copy room link" }));
+
+    expect(screen.getByRole("status").textContent).toBe(
+      "Could not copy room link.",
+    );
   });
 });

@@ -55,3 +55,15 @@ The multi-agent tool rejected `prompt`; its schema requires `message` or structu
 ## 2026-09-05 — Generated bindings failed the whitespace gate
 
 SpacetimeDB code generation left extra blank lines at EOF in four TypeScript binding files, causing `git diff --check` to fail. Run the diff gate after generation and remove only generated trailing blank lines before committing.
+
+## 2026-09-05 — Subagent prompt broke JavaScript interpolation
+
+Backticks in a JavaScript template-literal agent prompt terminated the string before the tool call. Use plain quoted strings or avoid embedded Markdown code markers in orchestration payloads.
+
+## 2026-09-05 — Maincloud publish required an interactive terminal
+
+`spacetime publish` to Maincloud aborted at its confirmation prompt in a non-interactive shell before changing remote state. Use a TTY and explicitly confirm the reviewed publish after verifying the target database is absent.
+
+## 2026-09-05 — Subagent branches shared the primary checkout
+
+Multiple agents changed branches and wrote partial changes in the primary checkout rather than isolated worktrees. Stop agents before any branch switch, inspect the exact dirty files, preserve only reviewed work, and commit it from the active branch before merging it back.

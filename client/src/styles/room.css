@@ -26,6 +26,32 @@
   font-family: var(--font-mono);
   font-size: 0.75rem;
 }
+.room-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.room-header-actions > p,
+.room-header-actions > span {
+  margin: 0;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+.room-header-actions > span {
+  position: absolute;
+  right: 1.25rem;
+  top: 4.7rem;
+}
+.room-header-actions > button {
+  min-height: 2.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--ink);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
 .room-kicker {
   margin-bottom: 0.7rem;
   color: var(--signal-strong);

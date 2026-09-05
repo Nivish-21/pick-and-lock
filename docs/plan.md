@@ -38,3 +38,7 @@ Goal: integrate the collaborator's SpacetimeDB core without importing unrelated 
 - [x] Validated the collaborator module in a disposable checkout, selectively integrated only product code and generated bindings, and excluded machine-local and duplicate instruction files.
 - [x] Added the multi-room amendment, creator-supplied share codes, room-scoped friends, corrected acceptance eligibility, and counted reopen events.
 - [x] Regenerated bindings; Rust format/build and client test/lint/build pass. Publishing is the next owner-authorised deployment action.
+
+### U6 interaction checkpoint completed
+
+- [x] Added proposal controls for feasible activities and an accessible share-link copy action with focused UI coverage.

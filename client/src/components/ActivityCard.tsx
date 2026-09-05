@@ -29,6 +29,14 @@ export function ActivityCard({
     }
   }
 
+  async function submitProposal() {
+    try {
+      await actions.propose(activity.id);
+    } catch (error) {
+      onError(error instanceof Error ? error.message : "Action not applied");
+    }
+  }
+
   return (
     <article className="activity-card">
       <div className="activity-summary">
@@ -66,6 +74,11 @@ export function ActivityCard({
         >
           Conditional
         </button>
+        {activity.possible ? (
+          <button type="button" onClick={() => void submitProposal()}>
+            Propose {activity.name}
+          </button>
+        ) : null}
       </div>
       {showConditional ? (
         <div className="conditional-answer">

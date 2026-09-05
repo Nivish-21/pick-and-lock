@@ -11,6 +11,7 @@ function eventMessage(event: RoomView["latestEvent"]): string {
 
 export function RoomPage({ view, actions }: RoomPageProps) {
   const [toast, setToast] = useState("");
+  const [shareStatus, setShareStatus] = useState("");
   const proposal = view.pendingProposal;
   const lockedActivity = view.activities.find(
     (activity) => activity.id === view.lockedActivityId,
@@ -24,10 +25,26 @@ export function RoomPage({ view, actions }: RoomPageProps) {
     }
   }
 
+  async function copyRoomLink() {
+    try {
+      if (!navigator.clipboard) {
+        throw new Error("Clipboard unavailable");
+      }
+      await navigator.clipboard.writeText(window.location.href);
+      setShareStatus("Room link copied.");
+    } catch {
+      setShareStatus("Could not copy room link.");
+    }
+  }
+
   if (view.status === "locked") {
     return (
       <main className="room-shell">
-        <RoomHeader dateLabel={view.dateLabel} />
+        <RoomHeader
+          dateLabel={view.dateLabel}
+          onCopy={() => void copyRoomLink()}
+          shareStatus={shareStatus}
+        />
         <section className="locked-panel" aria-labelledby="locked-title">
           <p className="room-kicker">Confirmed plan</p>
           <h1 id="locked-title">{lockedActivity?.name} is locked.</h1>
@@ -59,7 +76,11 @@ export function RoomPage({ view, actions }: RoomPageProps) {
 
   return (
     <main className="room-shell">
-      <RoomHeader dateLabel={view.dateLabel} />
+      <RoomHeader
+        dateLabel={view.dateLabel}
+        onCopy={() => void copyRoomLink()}
+        shareStatus={shareStatus}
+      />
       {view.latestEvent?.kind === "reopened" ? (
         <section className="reopen-notice" aria-live="polite">
           <strong>Plan reopened</strong>
@@ -142,7 +163,15 @@ export function RoomPage({ view, actions }: RoomPageProps) {
   );
 }
 
-function RoomHeader({ dateLabel }: { dateLabel: string }) {
+function RoomHeader({
+  dateLabel,
+  onCopy,
+  shareStatus,
+}: {
+  dateLabel: string;
+  onCopy: () => void;
+  shareStatus: string;
+}) {
   return (
     <header className="room-header">
       <a
@@ -153,7 +182,15 @@ function RoomHeader({ dateLabel }: { dateLabel: string }) {
         <span aria-hidden="true">P&amp;L</span>
         <span>Pick &amp; Lock</span>
       </a>
-      <p>{dateLabel}</p>
+      <div className="room-header-actions">
+        <p>{dateLabel}</p>
+        <button type="button" onClick={onCopy}>
+          Copy room link
+        </button>
+        <span role="status" aria-live="polite">
+          {shareStatus}
+        </span>
+      </div>
     </header>
   );
 }
