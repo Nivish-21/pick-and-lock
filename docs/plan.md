@@ -1,5 +1,21 @@
 # Active execution plan — 2026-09-06 checkpoint (most recent, read this first)
 
+## Task block: beyond-core-loop merge, ship, and two new parallel lanes (2026-09-06)
+
+Owner decision: get the verified core loop + chat feature in front of real testers now rather than gating on more feature work — tester feedback has latency, so start that clock early. In parallel, two genuinely disjoint new lanes proceed on their own branches (never merged until independently re-verified, same as every prior lane).
+
+**My work (infra/verification, not new product code):**
+1. Live-test current `main` end-to-end (core loop + merged chat feature).
+2. Merge the isolated `pick-and-lock-beyond-core-loop` feature (commit `538742a`: PWA manifest/icons/OG tags, app-wide `/insights` route, `/api/capture-email` Resend endpoint) — self-contained, already tested (41/41), doesn't touch the core decision engine or `RoomDataBridge.tsx`. Same merge-main-in → resolve `App.tsx` conflict → independently re-verify → PR → merge process as #16/#17.
+3. Deploy to Vercel, confirm the Maincloud DB matches what's published.
+4. Owner invites real testers once the above is live.
+
+**Builder A — issue #20, branch `client/activity-constraints`:** add `distance_km`/`time_minutes` as optional display/filter attributes on `Activity` (additive schema, not a feasibility-matching engine — owner explicitly chose the smaller scope). Touches the server `Activity` struct + `add_activity`/`bot_add_activity` reducers, and ONLY the "Add an option" form block in `client/src/pages/RoomPage.tsx`, plus `ActivityCard.tsx`, `spacetime.ts`, `fixtures/room.ts`.
+
+**Builder B — issue #21, branch `client/room-chat-wiring`:** replace the `TODO(issue #16)` placeholder chat wiring with real `my_room_chat`/`my_room_preferences` subscriptions and `sendChatMessage`. Touches ONLY the `RoomSidebar` block in `client/src/pages/RoomPage.tsx` plus chat-related additions to `spacetime.ts`.
+
+Both lanes touch `RoomPage.tsx` but in disjoint regions (form block vs. sidebar block) — same pattern that already merged cleanly for #16/#17. Neither merges into `main` until independently re-verified by re-running the full test/lint/build suite myself, not just trusting the builder's self-report.
+
 ## Resume point
 
 Both chat-feature lanes are merged into `main`: issue #17 (onboarding + split-chat layout, PR #18) and issue #16 (server retarget to `Plan.id` + `bot_add_activity`/`ensure_bot_friend` + autonomous poll authoring, PR #19) — both independently re-verified, not just self-reported. To resume:
