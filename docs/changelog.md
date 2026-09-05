@@ -12,3 +12,5 @@
 - Started the resumable UI execution lane with an explicit six-subtask log and durable product context for the selected design workflow.
 - Completed UI U1: created the React/Vite client, removed the visible starter experience, added departure-board semantic tokens, and verified lint plus production build.
 - Completed UI U2: added frozen-contract TypeScript types and deterministic Saturday room fixtures for open, pending, locked, and reopened UI states.
+- Completed UI U3 pending verification: added a mobile-first landing page, accessible name-only join form, and live Saturday fixture preview.
+- Verified UI U3 at desktop and 390px widths, including invalid-name rejection and successful name-only join.

@@ -15,3 +15,4 @@ The server agent independently owns all `server/**`, bindings, data bridge, emai
 
 - [x] U1 completed: Vite client bootstrapped, default starter screen replaced, shared semantic tokens added, and lint/build passed.
 - [x] U2 completed: `RoomView`, `RoomActions`, and Saturday open, pending, locked, and reopened fixtures now mirror the frozen realtime contract.
+- [x] U3 completed: mobile-first landing and name-only join flow render from fixture data without backend imports.

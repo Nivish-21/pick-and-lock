@@ -31,3 +31,7 @@ An `apply_patch` batch included Vite's PNG asset, which cannot be read as UTF-8 
 ## 2026-09-05 — Fixture briefly contradicted the demo activity minimum
 
 `client/src/fixtures/room.ts` initially set Escape room to three people rather than the authoritative minimum of five. Re-read every fixed demo value against `docs/source/pick-and-lock-build-spec.md` before committing fixtures.
+
+## 2026-09-05 — Used pre-formatting TypeScript as a patch anchor
+
+A U3 patch expected an App component without semicolons, but Prettier had reformatted it after U1. Re-read exact current source immediately before each multi-file patch and split it when one formatted anchor can abort the whole task.
