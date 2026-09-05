@@ -82,6 +82,6 @@ Scope: `client/public/`, `client/index.html`, `client/src/pages/LandingPage.tsx`
 - [x] Copy the supplied PNG and generate 32px favicon and 180px Apple touch icon with `sips`.
 - [x] Update the browser title, favicon links, wordmarks, and user-facing accessibility labels to Sorted.
 - [x] Run the requested client tests, lint, build, and whitespace checks.
-- [ ] Update project status/changelog, commit, and push `ui/rebrand-sorted`.
+- [x] Update project status/changelog, commit, and push `ui/rebrand-sorted`.
 
 Assumption: the source icon is trusted as supplied and does not need visual editing; only the requested raster sizes are generated.

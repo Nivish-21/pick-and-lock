@@ -64,4 +64,4 @@ The private v2 access core merged as `dcd5ac5` after privacy review: v1 is uncha
 
 Lane B client wiring is complete and pushed as `d595ad4`: generated bindings expose `addActivity`, the live room action and fixture contract are updated, and joined open rooms render a custom-activity form with reducer error toasts. Focused and full client tests, lint, production build, Rust format/tests/build, and whitespace validation pass. Issue #12 handoff is posted.
 
-Sorted rebrand is complete on branch `ui/rebrand-sorted`: browser title, favicon, Apple touch icon, and all three user-facing wordmarks now use Sorted. The live `pick-and-lock` database connection string and internal fixture URL remain unchanged. Client tests, lint, build, Prettier, and whitespace checks pass; pending commit and push for review.
+Sorted rebrand is complete on branch `ui/rebrand-sorted` at `f99a7e2`: browser title, favicon, Apple touch icon, and all three user-facing wordmarks now use Sorted. The live `pick-and-lock` database connection string and internal fixture URL remain unchanged. Client tests, lint, build, Prettier, and whitespace checks pass; branch is ready for human review.
