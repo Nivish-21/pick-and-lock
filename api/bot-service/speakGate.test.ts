@@ -17,6 +17,16 @@ describe("decideSpeak", () => {
     ).toMatchObject({ allowed: true, trigger: "direct-address" });
   });
 
+  it("recognizes @sorted as a direct address", () => {
+    expect(
+      decideSpeak({
+        messages: [{ senderName: "Priya", body: "@Sorted, suggest something" }],
+        now: 1000,
+        state,
+      }),
+    ).toMatchObject({ allowed: true, trigger: "direct-address" });
+  });
+
   it("stays silent for ordinary conversation", () => {
     expect(
       decideSpeak({

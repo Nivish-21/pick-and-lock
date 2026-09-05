@@ -38,7 +38,7 @@ function isDirectlyAddressed(messages: SpeakGateMessage[]): boolean {
   return messages.some(
     (message) =>
       !message.isBot &&
-      /(?:^|[\s,])(?:@?ai concierge|@?pick\s*&?\s*lock|@?bot)(?:\b|$)/i.test(
+      /(?:^|[\s,])(?:@(?:ai\s+concierge|pick\s*&?\s*lock|bot|sorted)|(?:ai\s+concierge|pick\s*&?\s*lock|bot))(?:\b|$)/i.test(
         message.body,
       ),
   );
