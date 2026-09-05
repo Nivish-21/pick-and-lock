@@ -51,6 +51,7 @@ Goal: integrate the collaborator's SpacetimeDB core without importing unrelated 
 
 - [x] Merged the route, QR, Vercel, bridge, and Create Room client branches; mounted the bridge and creation flow in `App.tsx`.
 - [x] Verified Maincloud in a real browser: `SATURDAY` connected, `Demo Host` joined, and a live Bowling answer changed the authoritative eligible count from 0 to 1.
+- [x] Created and deployed the Vercel `pick-and-lock` project; production `/r/SATURDAY` connected to Maincloud, joined `Demo Guest`, and rendered the deployed canonical QR URL.
 
 ## U7 — Room insights and closure
 

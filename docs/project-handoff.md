@@ -97,3 +97,7 @@ OpenAI, Haven, and any other provider remain unselected implementation details u
 3. `docs/contracts/realtime-contract.md` — current UI/server contract.
 4. `docs/superpowers/plans/2026-09-05-room-insights.md` — executable task sequence.
 5. `AGENTS.md` — ownership and quality rules.
+
+## Deployment update — 2026-09-05
+
+The version-1 demo is live at **https://pick-and-lock.vercel.app**. A direct visit to **https://pick-and-lock.vercel.app/r/SATURDAY** was verified against Maincloud: the browser joined as `Demo Guest`, saw the existing `Demo Host` and live Bowling count, and received the canonical deployed room URL in its QR component. The server metrics branch remains deliberately excluded until its additive migration correction is complete.

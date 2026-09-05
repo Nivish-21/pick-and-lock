@@ -64,6 +64,10 @@ Backticks in a JavaScript template-literal agent prompt terminated the string be
 
 After merging `origin/ui/room-qr`, `client/src/components/RoomQrCode.tsx` could not resolve `qrcode.react` during `npm run test --prefix client`. The branch correctly changed `client/package.json` and `client/package-lock.json`; this checkout's `client/node_modules` was stale. After merging any dependency change, run `npm install --prefix client` before the first test/build gate.
 
+## 2026-09-05 — Assumed a Vercel project existed from the repository name
+
+`vercel deploy --dry --project pick-and-lock --yes` failed because the authenticated Vercel team had no project by that name. List or create the Vercel project before a named deployment; the GitHub repository name does not create a Vercel project automatically.
+
 ## 2026-09-05 — Maincloud publish required an interactive terminal
 
 `spacetime publish` to Maincloud aborted at its confirmation prompt in a non-interactive shell before changing remote state. Use a TTY and explicitly confirm the reviewed publish after verifying the target database is absent.

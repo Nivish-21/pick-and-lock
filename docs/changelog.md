@@ -47,3 +47,9 @@
 - Mounted the SpacetimeDB bridge and Create Room callback in `client/src/App.tsx`; rendered the room QR payload from the canonical browser URL.
 - Refreshed the local dependency tree after the QR dependency merge and passed 19 client tests, lint, production build, and whitespace validation.
 - Performed a live Maincloud browser smoke test: joined `SATURDAY` as `Demo Host` and changed Bowling eligibility from 0 to 1 through the real reducer.
+
+# 2026-09-05 — Production demo deployment
+
+- Created Vercel project `nivi-s-projects1/pick-and-lock` and deployed the verified main client to https://pick-and-lock.vercel.app.
+- Verified the direct public room URL `/r/SATURDAY`: Maincloud connected, `Demo Guest` joined alongside `Demo Host`, the real Bowling count rendered, and the QR component encoded the production room URL.
+- Kept the incompatible metrics schema branch out of main and out of the production deployment.
