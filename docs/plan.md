@@ -4,11 +4,13 @@
 
 Owner decision: get the verified core loop + chat feature in front of real testers now rather than gating on more feature work — tester feedback has latency, so start that clock early. In parallel, two genuinely disjoint new lanes proceed on their own branches (never merged until independently re-verified, same as every prior lane).
 
-**My work (infra/verification, not new product code):**
-1. Live-test current `main` end-to-end (core loop + merged chat feature).
-2. Merge the isolated `pick-and-lock-beyond-core-loop` feature (commit `538742a`: PWA manifest/icons/OG tags, app-wide `/insights` route, `/api/capture-email` Resend endpoint) — self-contained, already tested (41/41), doesn't touch the core decision engine or `RoomDataBridge.tsx`. Same merge-main-in → resolve `App.tsx` conflict → independently re-verify → PR → merge process as #16/#17.
-3. Deploy to Vercel, confirm the Maincloud DB matches what's published.
-4. Owner invites real testers once the above is live.
+**My work (infra/verification, not new product code) — all done:**
+1. ~~Live-test current `main` end-to-end~~ — done.
+2. ~~Merge the isolated `pick-and-lock-beyond-core-loop` feature~~ — done as PR #22 (`ebd12c9`).
+3. ~~Deploy to Vercel, confirm the Maincloud DB matches what's published~~ — done; republished Maincloud (owner-confirmed, additive-only), redeployed client, confirmed `pick-and-lock.vercel.app` aliased to latest.
+4. Live-tested the integrated build, found and fixed a real bug (`/insights` "Invalid Date" — `Timestamp` needs `.toDate()`, not `Number()`), re-verified, redeployed. **Ready for real testers.**
+
+Open item: mobile viewport couldn't be visually confirmed this session (browser-automation resize tool didn't affect actual page viewport). CSS is mobile-first by construction (base = stacked, `min-width` queries add desktop columns) so it's likely fine, but worth a real-device check.
 
 **Builder A — issue #20, branch `client/activity-constraints`:** add `distance_km`/`time_minutes` as optional display/filter attributes on `Activity` (additive schema, not a feasibility-matching engine — owner explicitly chose the smaller scope). Touches the server `Activity` struct + `add_activity`/`bot_add_activity` reducers, and ONLY the "Add an option" form block in `client/src/pages/RoomPage.tsx`, plus `ActivityCard.tsx`, `spacetime.ts`, `fixtures/room.ts`.
 
