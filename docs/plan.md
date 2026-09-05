@@ -86,3 +86,12 @@ Goal: help a group recognise trade-offs from preferences they deliberately share
 - [ ] Reject the current `server/room-insights` implementation for deployment because it alters the existing `plan` table incompatibly.
 - [ ] Rework lifecycle as a new `room_lifecycle` table, retain the existing `Plan` schema/status, and preserve `SATURDAY` as a legacy readable room.
 - [ ] Regenerate bindings, re-run all gates, and review the corrected branch before asking for a publish confirmation.
+
+## U10 — Private custom rooms and calendar scheduling (v2)
+
+Goal: add invite-only, member-visible rooms with creator-defined choices and a real schedule without weakening the live v1 demo.
+
+- [ ] Build v2 from `docs/private-rooms-and-scheduling-spec.md` and `docs/superpowers/plans/2026-09-05-private-rooms-v2.md`.
+- [ ] Use new private canonical tables plus caller-filtered views; do not attempt to make already-public v1 room data private retroactively.
+- [ ] Create the wizard, invite acceptance, custom choice board, calendar export, and privacy proof in separate ownership lanes.
+- [ ] Do not publish the v2 module until a two-identity outsider/member proof and explicit owner confirmation are complete.

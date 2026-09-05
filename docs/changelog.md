@@ -55,3 +55,9 @@
 - Kept the incompatible metrics schema branch out of main and out of the production deployment.
 - Ignored Vercel’s local project directory and local environment files in `client/.gitignore`; no deployment token or environment file entered Git.
 - Created and verified the clean production presenter room `XATWU1XNQB` (`Demo dinner decision`) through the public Create Room, route, and join flows.
+
+# 2026-09-05 — Private rooms v2 planning
+
+- Added the private custom-room and scheduling specification plus an executable implementation plan.
+- Defined private canonical tables, caller-filtered views, fragment invite secrets, custom choices, calendar export, v1 coexistence, and two-identity privacy proof.
+- Recorded that the current public v1 share-code model cannot meet invite-only visibility requirements without the v2 access boundary.

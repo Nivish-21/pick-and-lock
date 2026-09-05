@@ -57,3 +57,7 @@ Mobile-first web UI. Keyboard focus, text equivalents for status colour, 44px mi
 ## Planned expansion — consented decision assistance
 
 After the live hosted version is proven, Pick & Lock may add participant-controlled preference memory and a non-authoritative decision assistant. The assistant can identify trade-offs in consented, room-scoped data, but it never votes, locks, closes, or mutates a room. See `docs/project-handoff.md` for the privacy boundary and implementation sequence.
+
+## Planned expansion — private custom rooms
+
+The next product version replaces fixed public demo rooms with private, invite-only decision rooms. A creator supplies the purpose, schedule, timezone, and choices; only members who accept an invite can see them. The locked choice can be exported to a calendar file. See `docs/private-rooms-and-scheduling-spec.md`.

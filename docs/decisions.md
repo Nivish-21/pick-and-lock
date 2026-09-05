@@ -19,3 +19,7 @@ The proposed assistant needs durable preference context, but a raw browser finge
 ## 2026-09-05 — Add room lifecycle beside the published plan table
 
 The live database already contains `plan` rows. SpacetimeDB cannot automatically migrate the proposed required lifecycle fields because they are non-default columns inserted into an existing table. We will preserve `Plan` and `PlanStatus` as published, introduce a separate `room_lifecycle` table for new rooms, and make close checks consult that table. This avoids data destruction and keeps the migration additive. The legacy seeded room remains non-closable until an owner explicitly approves a separate migration strategy.
+
+## 2026-09-05 — Private rooms use private tables and membership-filtered views
+
+The existing v1 tables are public and a share code is not an access-control mechanism. For v2, room content is private canonical data and client reads come only from public views filtered by `ViewContext.sender()`. We explicitly choose views over experimental SpacetimeDB RLS. Invite links carry a high-entropy secret in the URL fragment, while the module stores only its hash. This makes invite acceptance an explicit reducer-authorised transition and prevents a copied post-join room URL from revealing room data.

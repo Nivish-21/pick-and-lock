@@ -103,3 +103,7 @@ OpenAI, Haven, and any other provider remain unselected implementation details u
 The version-1 demo is live at **https://pick-and-lock.vercel.app**. A direct visit to **https://pick-and-lock.vercel.app/r/SATURDAY** was verified against Maincloud: the browser joined as `Demo Guest`, saw the existing `Demo Host` and live Bowling count, and received the canonical deployed room URL in its QR component. The server metrics branch remains deliberately excluded until its additive migration correction is complete.
 
 The clean presenter room is **https://pick-and-lock.vercel.app/r/XATWU1XNQB** (`Demo dinner decision`, `Tonight`). It was created and joined through the public production client, so presenters should use this URL rather than the seeded `SATURDAY` smoke-test room.
+
+## Next product version — private custom rooms
+
+The planned v2 replaces the public fixed-choice creation path with an invite-only custom-room wizard: purpose, schedule/timezone, choices, privacy, then QR/invite sharing. It is intentionally a new private system beside v1, not a cosmetic upgrade to public share codes. Read `docs/private-rooms-and-scheduling-spec.md` before touching v2 code.
