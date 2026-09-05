@@ -125,3 +125,8 @@
 - Merged PR #19 (`70e0ca5`) into `main`: chat/preference/bot-state/location views and reducers retargeted from `PrivateRoom.id` to `Plan.id` via `Friend`; added `bot_add_activity` (bot-gated autonomous poll-option authoring) and `ensure_bot_friend` reducers; added poll-authoring extraction with confidence filtering and case-insensitive dedup wired into the existing debounce cycle; broadened the speak-gate to recognize `@sorted`.
 - The branch was forked before PR #18 (onboarding/split-chat) merged; merged `main` into the branch first and independently re-verified the result rather than trusting the merge or the agent's self-report: confirmed no existing table columns removed/changed (only a new index attribute on `Friend.identity`), confirmed `docs/status.md`/`docs/changelog.md`/`docs/plan.md` came out identical to main's checkpoint, then re-ran Rust fmt/build, 8/8 bot-service tests, bot-service `tsc --noEmit`, 39/39 client tests, client lint, and client production build myself.
 - `RoomPage.tsx` still has the `TODO(issue #16)` placeholder chat wiring (`messages={[]}`, `placeholderSendChat`) — client wiring to the real `my_room_chat`/`sendChatMessage` plumbing is the next open task, not yet filed as an issue.
+
+# 2026-09-06 — Activity constraints
+
+- Added `distance_km` and `time_minutes` as appended optional Activity fields, validated in `add_activity` and `bot_add_activity`, and included in generated TypeScript bindings.
+- Added optional distance/time inputs to the existing activity form and rendered metadata on ActivityCard with focused tests.

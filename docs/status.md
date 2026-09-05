@@ -81,3 +81,9 @@ That same live testing surfaced a second, more significant defect: the chat/loca
 Issue #16 is **done**: merged to `main` as PR #19 (`70e0ca5`). The branch had been forked before #17/PR #18 merged, so `main` was merged into it first; independently re-verified the result (not the agent's self-report) — confirmed no existing table columns were removed or changed (only a new `#[index(btree)]` on `Friend.identity`), confirmed `docs/status.md`/`docs/changelog.md`/`docs/plan.md` came out identical to main's own checkpoint after the merge, then re-ran cargo fmt/`spacetime build`, 8/8 bot-service tests, bot-service `tsc --noEmit`, 39/39 client tests, client lint, and client production build myself. Both chat-feature lanes (#16 and #17) are now closed and merged.
 
 **New resume point**: `RoomPage.tsx` still has the `TODO(issue #16)` placeholder chat wiring (`messages={[]}`, `placeholderSendChat`). The next task — not yet filed as an issue — is to wire the client to the real `my_room_chat`/`my_room_preferences` subscriptions and the `sendChatMessage`/`bot_add_activity` actions now that both server and UI foundations exist, then re-verify and re-publish to Maincloud (additive-only, owner confirmation required) before live-browser-testing the whole chat feature end-to-end.
+
+# 2026-09-06 — Activity constraints lane
+
+- Added additive optional distance and time-budget metadata to activities, with reducer validation, regenerated bindings, client form submission, and card display.
+- Preserved the existing Activity field order and left RoomSidebar/chat code untouched.
+- Verification passed: Rust fmt/tests/build, 41 client tests, client lint/build, and whitespace checks. Pending push and issue #20 handoff.
