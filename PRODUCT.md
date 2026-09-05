@@ -53,3 +53,7 @@ Authoritative product requirements live in `docs/source/pick-and-lock-build-spec
 ## Accessibility & Inclusion
 
 Mobile-first web UI. Keyboard focus, text equivalents for status colour, 44px minimum touch controls, reduced motion, and screen-reader announcement of a reopen are required.
+
+## Planned expansion — consented decision assistance
+
+After the live hosted version is proven, Pick & Lock may add participant-controlled preference memory and a non-authoritative decision assistant. The assistant can identify trade-offs in consented, room-scoped data, but it never votes, locks, closes, or mutates a room. See `docs/project-handoff.md` for the privacy boundary and implementation sequence.

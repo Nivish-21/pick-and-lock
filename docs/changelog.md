@@ -28,3 +28,9 @@
 # 2026-09-05 — Independent email lane
 
 - Added U8 and Task 5 to plan a server-only, non-authoritative room-link email endpoint with strict boundary validation and no email persistence.
+
+# 2026-09-05 — Repository hand-off and future assistant boundary
+
+- Added `docs/project-handoff.md` as the first-read document for future collaborators, with current branches, active work, integration order, version-1 outcome, and final verification sequence.
+- Updated product and execution documents for a later consented preference-memory and advisory decision-assistant phase.
+- Rejected raw browser fingerprinting as a memory key; documented explicit consent, visibility, correction, expiry, export, and deletion requirements before any AI/provider implementation.

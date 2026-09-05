@@ -11,3 +11,7 @@ Completed decisions must be auditable and quick to render. We will store each su
 ## 2026-09-05 — Creator-only room closure
 
 `close_room` may only be called by the identity that created the room, and only after a decision has locked. Closing remains a lifecycle state and preserves all rows; it never deletes a room, decisions, chat, or event history. This prevents an arbitrary participant from prematurely ending an active group decision.
+
+## 2026-09-05 — Preference memory requires opt-in, not browser fingerprinting
+
+The proposed assistant needs durable preference context, but a raw browser fingerprint is not an acceptable identity or memory key: it is opaque, unstable, difficult to revoke, and creates a privacy-sensitive tracking system. The future design will instead use explicit consent bound to the participant's SpacetimeDB identity, a participant-visible preference profile, room-specific sharing controls, correction, expiry, export, and deletion. Assistant output remains advisory; reducers retain all decision authority.

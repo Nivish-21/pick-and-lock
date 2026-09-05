@@ -60,3 +60,13 @@ Goal: send a non-authoritative email containing a validated room link without de
 - [ ] Add a Vercel serverless `POST /api/capture-email` endpoint in the server-agent-owned `api/**` path using the configured Resend HTTP API and environment variables only.
 - [ ] Validate email and share code at the API boundary, derive the room URL from `PUBLIC_APP_ORIGIN`, and return short, explicit errors without logging email addresses.
 - [ ] Add isolated endpoint tests, then hand the endpoint contract to the bridge/UI lane without editing visual components.
+
+## U9 — Future consented preference memory and decision assistant
+
+Goal: help a group recognise trade-offs from preferences they deliberately share, without covert tracking or autonomous decisions.
+
+- [ ] Complete and deploy version 1 before opening this implementation lane.
+- [ ] Write the separate consent, retention, delete/export, provider, and threat-model specification before adding any identity or memory table.
+- [ ] Use explicit participant identity and consented `preference_profile` rows; never use raw browser fingerprint data as a memory key.
+- [ ] Keep all model/provider calls server-side behind one adapter; pass only room-scoped, consented context and return suggestions only.
+- [ ] Give every preference and suggestion a visible source, correction path, expiry/retention policy, and delete action.
