@@ -1,2 +1,5 @@
 server/**/target/
 .worktrees/
+.env
+.env.*
+!.env.example
