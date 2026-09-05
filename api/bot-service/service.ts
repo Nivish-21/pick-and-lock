@@ -60,8 +60,15 @@ export class RoomBotService {
 
   constructor(private readonly config: BotServiceConfig) {
     this.debouncer = new RoomDebouncer(3_000, async (batch) => {
-      const roomIds = [...new Set(batch.map((entry) => entry.roomId))];
-      await Promise.all(roomIds.map((roomId) => this.processRoom(roomId)));
+      const byRoom = new Map<number, Array<{ type: "message" | "location"; id: number }>>();
+      for (const entry of batch) {
+        const roomBatch = byRoom.get(entry.roomId) ?? [];
+        roomBatch.push(entry.item);
+        byRoom.set(entry.roomId, roomBatch);
+      }
+      await Promise.all(
+        [...byRoom.entries()].map(([roomId, roomBatch]) => this.processRoom(roomId, roomBatch)),
+      );
     });
     this.connection = DbConnection.builder()
       .withUri(config.host)
@@ -91,7 +98,7 @@ export class RoomBotService {
       };
       const roomMessages = this.messages.get(row.roomId) ?? [];
       roomMessages.push(message);
-      this.messages.set(row.roomId, roomMessages);
+        this.messages.set(row.roomId, roomMessages);
       this.lastActivity.set(row.roomId, message.sentAt);
       if (!message.isBot) this.debouncer.schedule(row.roomId, { type: "message", id: message.id });
     });
@@ -119,6 +126,10 @@ export class RoomBotService {
 
     connection.subscriptionBuilder()
       .onApplied(() => {
+        this.messages.clear();
+        this.preferences.clear();
+        this.locations.clear();
+        this.lastActivity.clear();
         for (const row of connection.db.myRoomChat) {
           const roomMessages = this.messages.get(row.roomId) ?? [];
           roomMessages.push({
@@ -131,6 +142,7 @@ export class RoomBotService {
             sentAt: timestampMs(row.sentAt),
           });
           this.messages.set(row.roomId, roomMessages);
+          this.lastActivity.set(row.roomId, Math.max(this.lastActivity.get(row.roomId) ?? 0, timestampMs(row.sentAt)));
         }
         for (const row of connection.db.myRoomPreferences) {
           const roomPreferences = this.preferences.get(row.roomId) ?? [];
@@ -141,6 +153,13 @@ export class RoomBotService {
           const roomLocations = this.locations.get(row.roomId) ?? [];
           roomLocations.push({ id: numeric(row.id), roomId: row.roomId, lat: row.lat, lng: row.lng });
           this.locations.set(row.roomId, roomLocations);
+        }
+        const roomIds = new Set<number>();
+        for (const row of connection.db.myRoomChat) {
+          if (!row.isBot) roomIds.add(row.roomId);
+        }
+        for (const roomId of roomIds) {
+          this.debouncer.schedule(roomId, { type: "message", id: 0 });
         }
       })
       .onError((context) => console.error("Bot subscription error", context))
@@ -168,7 +187,10 @@ export class RoomBotService {
     });
   }
 
-  private async processRoom(roomId: number): Promise<void> {
+  private async processRoom(
+    roomId: number,
+    batch: Array<{ type: "message" | "location"; id: number }>,
+  ): Promise<void> {
     const messages = this.messages.get(roomId) ?? [];
     const previousState = this.states.get(roomId) ?? {
       roomId,
@@ -178,7 +200,7 @@ export class RoomBotService {
       lastProcessedMessageId: 0,
     };
     const newMessages = messages.filter((message) => message.id > previousState.lastProcessedMessageId);
-    const locationJustSubmitted = (this.locations.get(roomId) ?? []).length > 0;
+    const locationJustSubmitted = batch.some((entry) => entry.type === "location");
     const gate = decideSpeak({
       messages: newMessages,
       now: Date.now(),

@@ -14,6 +14,7 @@ export type RoomChatProps = {
   messages: RoomChatMessage[];
   onSend(body: string): Promise<void>;
   onShareLocation?: () => Promise<void>;
+  onSubmitLocation?: (latitude: number, longitude: number) => Promise<void>;
   isTyping?: boolean;
   disabled?: boolean;
 };
@@ -26,6 +27,7 @@ export function RoomChat({
   messages,
   onSend,
   onShareLocation,
+  onSubmitLocation,
   isTyping = false,
   disabled = false,
 }: RoomChatProps) {
@@ -51,10 +53,20 @@ export function RoomChat({
   }
 
   async function shareLocation() {
-    if (!onShareLocation) return;
     try {
       setError("");
-      await onShareLocation();
+      if (onSubmitLocation && "geolocation" in navigator) {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: false,
+            maximumAge: 60_000,
+            timeout: 8_000,
+          });
+        });
+        await onSubmitLocation(position.coords.latitude, position.coords.longitude);
+      } else if (onShareLocation) {
+        await onShareLocation();
+      }
     } catch (locationError) {
       setError(locationError instanceof Error ? locationError.message : "Location could not be shared");
     }
@@ -81,7 +93,7 @@ export function RoomChat({
                 {message.isBot ? <span>AI Concierge</span> : null}
               </div>
               <p>{message.body}</p>
-              {message.kind === "location_request" && onShareLocation ? (
+              {message.kind === "location_request" && (onShareLocation || onSubmitLocation) ? (
                 <button type="button" onClick={() => void shareLocation()}>
                   Share my location
                 </button>
