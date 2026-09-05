@@ -1,23 +1,27 @@
 # Active execution plan — 2026-09-06 checkpoint (most recent, read this first)
 
-## Task block: enable the bot in production (background — does not block the current tester round)
+## Task block: enable the bot in production — DONE
 
-Owner decision: ship human-only chat to the first real tester now (already live — the bot has never worked in production, so no change was needed to reach this state). Build and verify bot-enablement in the background in parallel; only push it live for the tester to try once it's fully verified end-to-end. This plan is written, not yet approved for execution — do not start any step until the owner says go.
+Owner decision: ship human-only chat to the first real tester now, build and verify the bot in the background, only announce it once fully working. All five steps below completed and independently verified; bot is live in production.
 
-**Step 1 — generate a bot SpacetimeDB identity + token (owner runs this, not me).**
-Write a small script (`api/bot-service/generate-identity.ts` or similar) that connects to Maincloud once with no token — same pattern already used by the human client in `spacetime.ts` (server auto-assigns a new identity + token on first connect with `withToken(undefined)`). The script prints ONLY the identity (hex — public, safe to print) to the console and writes the token directly into `.env`'s `BOT_SPACETIME_TOKEN=` line via a file write, never printing it. The owner runs this script themselves on their own machine, per the established credential-handling rule (never read/print secret values; the owner fills `.env` directly, same as `OPENAI_API_KEY` all session).
+- [x] **Step 1 — generate a bot SpacetimeDB identity + token.** Owner ran `api/bot-service/generate-identity.ts` themselves; identity printed (public/safe), token written directly into `.env` (never printed by me).
+- [x] **Step 2 — rebuild and republish with `BOT_IDENTITY` set.** `BOT_IDENTITY=<identity> spacetime publish pick-and-lock --module-path server/spacetimedb --yes=remote` — no table/column changes, compile-time constant only.
+- [x] **Step 3 — confirm remaining bot-service env vars.** `OPENAI_API_KEY` and `GOOGLE_PLACES_API_KEY` both confirmed working via masked test calls (status codes only, values never printed).
+- [x] **Step 4 — run `api/bot-service` persistently.** Superseded the original "run on the owner's machine" plan entirely — see the Render section below; this sandboxed tool cannot keep any detached long-running Node process network-connected (confirmed four separate ways), so a real always-on host was required immediately, not just "for later."
+- [x] **Step 5 — end-to-end verification.** Confirmed live twice via direct SpacetimeDB SQL queries against `my_room_chat`/`my_bot_room_state` (not just the browser): `@sorted` triggers a real OpenAI call and a real `sendBotMessage` reply. Two apparent "bot didn't reply" cases were root-caused as correct guardrail behavior (bare "sorted" without `@` is deliberately not a trigger; 25s cooldown was still active), not bugs. **Not yet done**: a live-adversarial guardrail test and an autonomous `bot_add_activity` poll-authoring test against the now-live deployment (the mocked unit tests cover this logic, but nothing has exercised it against a live LLM + live database together since the diagnostic-logging deploy went out).
 
-**Step 2 — rebuild and republish with `BOT_IDENTITY` set (owner confirmation required, like every publish).**
-`require_bot()` checks `option_env!("BOT_IDENTITY")`, a Rust *compile-time* constant — it must be set as an env var before `cargo build`/`spacetime build`/`spacetime publish` run, not just in `.env` (which Rust's `option_env!` does not read at runtime). Command: `BOT_IDENTITY=<hex-identity-from-step-1> spacetime publish pick-and-lock --module-path server/spacetimedb --yes=remote`. No table/column changes in this step — only the compiled module's baked-in constant changes — so `--yes=break-clients` is likely not needed, but check the migration plan output before assuming.
+## Bot-service hosting — Render (superseded Cloudflare Containers below)
 
-**Step 3 — confirm the remaining bot-service env vars are real.**
-`OPENAI_API_KEY` should already be filled from earlier in the session — confirm it's non-empty (never print the value). `GOOGLE_PLACES_API_KEY` was flagged earlier this session as "not yet verified working" — run one masked test call (report only the HTTP status, never the key) before relying on it. `BOT_SPACETIME_TOKEN` comes from step 1.
+Three hosts attempted in sequence; Render is what's actually live. Cloudflare Containers (original plan, kept below for the record) was fully built and proven working locally via Docker, then blocked at deploy time: Containers require the Workers **Paid** plan, this account is Free — not a bug, an account-tier wall. Fly.io: `flyctl auth login` requires a real interactive TTY neither this tool nor the owner's own terminal (via the `!` prefix) could provide. Koyeb: mid-acquisition by Mistral, dashboard non-functional at the time (confirmed via screenshot).
 
-**Step 4 — run `api/bot-service` persistently.**
-It's a long-running Node process (`npm start` → `tsx index.ts`), not a serverless function. For this hackathon round: run it as a background process on the owner's machine (e.g. `nohup npm start > bot.log 2>&1 &` from `api/bot-service`), logging to a file so it can be monitored. Note for later (not now): a real always-on host (Railway/Fly.io/a small VPS) if this needs to survive beyond the hackathon or the owner's machine being offline.
+Render (`render.yaml`, repo root) is live at `https://sorted-bot-service.onrender.com`, service ID `srv-dae9gt67bikc738ic13g`. Simpler than the Docker path — Render checks out the whole repo, so the bot-service's relative import into `client/src/module_bindings` needs no path rewriting, just a `node_modules` copy step in `buildCommand` (same underlying issue as Cloudflare: `spacetimedb` isn't resolvable from `client/src/module_bindings` on a clean checkout since Node's `node_modules` resolution never crosses into the sibling `api/bot-service` directory). `index.ts` gained a dynamic-`$PORT` health server for Render's health check. Owner logged in via `render login`'s device-authorization flow (no credentials seen by me); owner pasted the three secret env vars into Render's dashboard directly (one, `OPENAI_API_KEY`, needed re-pasting after a mismatch on first deploy).
 
-**Step 5 — end-to-end verification before flipping it on for the tester.**
-Create a fresh test room, `@sorted` mention the bot, confirm it replies within the tightened latency budget (issue #26's 2s debounce + 6s timeout), confirm `bot_add_activity`-driven autonomous poll authoring actually inserts a real activity, confirm the hardened guardrails hold against a live adversarial message (not just the mocked unit tests), confirm the speak-gate cooldown/minute-cap behaves as tuned. This is exactly the class of defect unit tests can't catch — no test in the suite talks to a live LLM and a live database together.
+- [x] Add health server to `index.ts`, add `render.yaml`, deploy via Render Blueprint (owner connected the GitHub repo in the dashboard).
+- [x] Fix monorepo `node_modules` resolution in `buildCommand`.
+- [x] Fix `OPENAI_API_KEY` mismatch (owner re-pasted in Render dashboard).
+- [x] Verify live twice via direct SpacetimeDB SQL queries.
+- [ ] Confirm `GOOGLE_PLACES_API_KEY` in Render's dashboard matches the now-working local value — it was set during initial Blueprint setup, before the key was confirmed working locally; worth the same re-check `OPENAI_API_KEY` needed.
+- [ ] Run the Step 5 live-adversarial + autonomous-poll-authoring verification pass against the current live deployment (diagnostic-logging commit `f81e810`).
 
 **Step 6 — owner decides when to tell the tester the bot is live.**
 This is purely backend enablement — no new URL, no client redeploy needed (the client-side chat UI already works, it was only ever the bot's own authentication that was missing). Once step 5 passes, the same room the tester is already using will just start getting bot replies.
@@ -191,3 +195,81 @@ Scope: server/spacetimedb/src/lib.rs, regenerated client/src/module_bindings/**,
 - [x] Update status/changelog, commit, push the existing branch, and comment on issue #25.
 
 Assumptions: `datetime-local` uses the browser's local timezone; the client sends both `Timestamp.fromDate(date)` and a label shorter than 40 characters.
+
+## Bot-service deployment: Cloudflare Containers (2026-09-06)
+
+Context: `api/bot-service` code is confirmed correct — verified three separate times today with live instrumentation (fetch to SpacetimeDB temp-token endpoint, WebSocket construction, `onConnect` firing, live OpenAI calls against real queued room messages). The blocker is purely environmental: this sandboxed dev tool cannot keep a persistent detached process alive with working outbound network access. Tried and confirmed broken: Python `subprocess.Popen(start_new_session=True)`, the harness's own `run_in_background` task (both via `npm start` and bare `npx tsx`), and a macOS `launchd` user agent spawned entirely outside this tool's process tree — all four hang at "Connecting to SpacetimeDB WS..." with zero network sockets ever opening. Only a blocking foreground shell command reliably connects. Owner chose to deploy properly rather than run it in their own terminal, and pointed at Cloudflare — wrangler is already authenticated (account `Nivishv2004@gmail.com's Account`) with `containers`/`cloudchamber` write scopes, so Cloudflare Containers is viable with no new account setup.
+
+Goal: run the existing bot-service Node process, unmodified in logic, inside a Cloudflare Container that stays up continuously (not per-request), fronted by the minimal Worker + Durable Object plumbing Cloudflare Containers requires.
+
+Scope: new `api/bot-service/Dockerfile`, new `api/bot-service/wrangler.jsonc`, new `api/bot-service/worker.ts` (Container/Durable Object entrypoint), a small addition to `api/bot-service/index.ts` for a minimal HTTP health listener (Cloudflare Containers requires `defaultPort` to be listening for the platform to consider the container healthy — the bot has no inbound HTTP today), and `wrangler secret put` calls for the four existing env vars (`BOT_SPACETIME_TOKEN`, `OPENAI_API_KEY`, `GOOGLE_PLACES_API_KEY`, plus the two non-secret `SPACETIMEDB_HOST`/`SPACETIMEDB_DATABASE` values). No changes to `service.ts`, `openai.ts`, `speakGate.ts`, or any other bot logic — those are already proven working. No changes to the client or server SpacetimeDB module.
+
+- [ ] Add a ~5-line HTTP health server to `index.ts` (listens on port 3000, returns 200) so the container reports healthy; does not change any existing bot behavior.
+- [ ] Write `Dockerfile` (node base image, `npm ci`, `CMD ["npx", "tsx", "index.ts"]`).
+- [ ] Write `wrangler.jsonc` with the `containers` block (`class_name`, `image: "./Dockerfile"`, `max_instances: 1`), matching `durable_objects` binding, and the SQLite-class migration.
+- [ ] Write `worker.ts`: a `Container` subclass with `defaultPort = 3000`, `sleepAfter` set to effectively never sleep, and `envVars` sourced from the Durable Object's own `env` (never hardcoded) for the four config values; a default export `fetch` that calls `getContainer(...)` so the platform starts the instance.
+- [ ] Set the four secrets via `wrangler secret put` (never echoing values into chat or logs) and deploy with `npx wrangler deploy`.
+- [ ] Verify end-to-end against the live room used earlier today: confirm via `wrangler tail` or container logs that it connects, then re-send the `@sorted` test message in the browser and confirm a real bot reply appears in the room chat within the tuned latency budget.
+- [ ] Update status/changelog once verified; report back to the owner so they can decide when to tell the tester the bot is live — do not announce it themselves.
+
+Assumptions: Cloudflare Containers do not require the process to serve real traffic on the health port beyond a 200 response; `envVars` set from Durable Object `env` at construction time is the correct way to avoid hardcoding secrets into source; the existing `tsx`-based dev workflow runs fine inside a plain Node container image without a separate build step.
+
+## Release audit and GitHub consolidation (2026-09-06)
+
+Goal: bring the verified public decision-story server projection (`23a9c8b`) and the existing bot-production documentation checkpoint into `main`, prove the consolidated repository locally and through the live browser flow, then push the resulting commits to `origin/main`.
+
+Scope: existing modifications to `docs/status.md`, `docs/changelog.md`, and this plan; `README.md` only for the required release-state update; `server/spacetimedb/src/lib.rs`; and generated `client/src/module_bindings/**`. Preserve `api/bot-service/bot.pid` and the nested `pick-and-lock-beyond-core-loop/` repository as untracked local artefacts. Do not publish the SpacetimeDB module, deploy Vercel, alter Render, or delete either artefact: those are distinct external/destructive actions and are not authorised by a GitHub push.
+
+- [ ] Review the current dirty documentation checkpoint and `23a9c8b` against the public-projection privacy contract; confirm no merge conflict with `main` and no secrets or private rows enter generated public bindings.
+- [ ] Commit the existing documentation checkpoint as-is, then cherry-pick `23a9c8b` into `main`; update the append-only status/changelog and release-state README to record the consolidation.
+- [ ] Run the complete repository gate on consolidated `main`: Rust format/tests/SpacetimeDB build and binding generation; bot-service tests/typecheck; client tests/lint/Prettier/build; and `git diff --check`.
+- [ ] Run a browser E2E smoke test against the currently deployed production application: create a fresh room, enter as its creator, join a second browser identity, add and answer an activity, and verify real-time state reaches both sessions without refresh. This tests the current deployed core; the new public projection remains local-only until a separately authorised Maincloud publish and route integration.
+- [ ] Inspect the final commit graph, tracked diff, remote state, and GitHub push result; leave no unstaged tracked change. Report the exact push SHA, quality output, browser evidence, and the explicit non-deployed limitation.
+
+Assumptions: the user's request authorises commits and a push to `origin/main`, plus non-destructive test-room creation during browser E2E; it does not authorise a Maincloud schema/module publish, Vercel deployment, Render change, or deletion of local artefacts.
+
+## Public-story freshness correction (2026-09-06 — approval required)
+
+Release-audit finding: `23a9c8b` materialises `shared_room_story` only in `publish_room` and `set_public_share_settings`. The private reducers that subsequently add a choice, lock a decision, or reopen after an accepter leaves never update the public row. A published story can therefore expose stale choices, status, selected choice, metrics, and timestamp. Do not merge or push `23a9c8b` as-is.
+
+Goal: make a published public story a transactionally refreshed projection of every approved public field, without widening its schema or exposing private data; then resume the GitHub consolidation plan.
+
+Scope: `server/spacetimedb/src/lib.rs`, its existing reducer tests, regenerated `client/src/module_bindings/**` only if generation changes them, plus append-only project logs and release README status. No UI route, Maincloud publish, Vercel deployment, Render change, or local-artefact deletion.
+
+- [ ] Trace every private-room reducer that changes a field exposed by `shared_room_story`; add one minimal helper that refreshes an existing published row in the same reducer transaction and leaves unpublished rooms with no public row.
+- [ ] Add reducer proof that a published story refreshes after choice creation, locks with the selected label and decision count, and reopens after an accepting member leaves; retain the non-creator and unpublish privacy checks.
+- [ ] Run Rust format/tests/SpacetimeDB build and binding generation on the corrected projection branch; review the public row and generated bindings for private-field leakage.
+- [ ] Replace the rejected commit with the corrected one, resume the consolidation/local gate/live deployed-core E2E/push sequence, and record the limitation that the projection remains undeployed until an explicitly authorised Maincloud publish plus UI route integration.
+
+Assumption: a materialised public table is acceptable only if every exposed lifecycle mutation refreshes it atomically; an unpublished room must continue to produce zero public rows.
+
+## Autonomous active-release completion (2026-09-06 — owner authorised)
+
+Owner instruction: take over the active build while they are unavailable. This explicitly authorises implementation, documentation, commits, pushes, Maincloud publishing, Vercel deployment, and live test-room creation required to complete the current release. Keep scope to the deployed v1 demo and the already specified private-v2 public-story release; do not invent unrelated features or delete local artefacts.
+
+- [ ] Correct and prove public-story freshness on the isolated server branch, then integrate the corrected projection with the existing mainline documentation checkpoint.
+- [ ] Audit and wire the already-built public-story UI/route/data paths to the real public projection, preserving the private/public boundary and existing ownership constraints.
+- [ ] Run the complete local gate and privacy proof, inspect the Maincloud migration as additive-only, then publish the module and deploy the verified client.
+- [ ] Run live browser E2E for the v1 create/join/realtime core and the new public-story publish/view/unpublish/CTA lifecycle, including two-identity privacy checks where browser and subscriptions permit.
+- [ ] Push all release commits to `origin/main`; append release evidence to status/changelog, update README release state, and leave the repository clean apart from deliberately preserved local artefacts.
+
+Assumptions: a temporary production room and test identities are authorised test data; no existing production room, membership, message, or deployment is deleted or overwritten. Any migration that removes or changes an existing Maincloud column remains prohibited and stops the release.
+
+## Critical real-time membership rendering defect (2026-09-06 — owner authorised)
+
+Reported production symptom: joins and leaves are persisted in SpacetimeDB, but the people count and related room state do not update in already-open frontend sessions. This violates the product's core no-refresh/low-latency contract. Pause public-story release work until the live subscription-to-render path is proven and fixed.
+
+- [x] Reproduce with two browser identities in a fresh room; capture the reducer result, subscribed `friend` rows, cache events, and rendered count before and after join/leave without refresh.
+- [x] Trace the live `RoomDataBridge` subscription and cache listeners against the generated bindings; identify the first boundary where the update is absent or ignored. Add a focused failing regression test there.
+- [x] Implement the smallest root-cause fix, verify the focused test and full client/server gates, and live-test join, leave, answer, lock, and reopen propagation across two active sessions.
+- [x] Publish/deploy only after the migration and release diff are reviewed; record the live proof and resume the paused public-story release.
+
+Assumptions: the report concerns the deployed v1 `/r/<shareCode>` path, where `Friend.online` is the room-presence source; membership identities and test rooms are temporary production test data, not user data to alter.
+
+## Deployment-blocking email function typecheck (2026-09-06 — owner authorised)
+
+The production Vercel build for the real-time presence hotfix completed and was aliased, but reported `TS2591` twice in `api/capture-email.ts`: its Vercel runtime use of `process.env` lacks the Node global type. This is an existing deployment defect, not a presence change. Treat it as release-blocking because the optional email endpoint must build cleanly even though it remains non-authoritative.
+
+- [x] Trace the API TypeScript compilation boundary and write the smallest regression proof for the runtime-environment access.
+- [x] Correct the typing/build configuration without widening the client bundle or changing email behaviour.
+- [x] Verify Vercel build locally and in a fresh production deployment, then resume two-identity browser proof for presence.

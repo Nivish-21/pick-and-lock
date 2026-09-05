@@ -14,6 +14,7 @@ The live demo is version 1 and uses public share-code rooms. Do not put private 
 - React/Vite client hosted on Vercel.
 - Rust SpacetimeDB module on Maincloud.
 - Real-time room join, answers, proposal, atomic agreement, lock/reopen, copyable room links, and QR codes.
+- Live presence distinguishes people currently here from people still in the room, and updates without refresh.
 - Root room creation flow for the current public v1 demo.
 
 ## What is being built now

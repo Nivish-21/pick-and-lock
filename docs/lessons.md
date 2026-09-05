@@ -95,3 +95,43 @@ The initial Sorted icon swap passed lint, tests, build, and whitespace checks, b
 ## 2026-09-06 — Date/time picker test retained the old date fixture shape
 
 `client/src/pages/CreateRoomPage.test.tsx` passed `"Tonight"` as the second argument to the invalid-host helper after the field changed from free text to `datetime-local`. The helper interpreted it as an empty/invalid datetime in the browser, so date validation ran before host validation. Update callers whenever a test helper's parameter meaning changes.
+
+## 2026-09-06 — Assumed a generated SpacetimeDB row implemented `Clone`
+
+`server/spacetimedb/src/lib.rs` failed with `E0599` while adding the public-story refresh path because `SharedRoomStory` has no `Clone` derive. Capture the required scalar (`published_at`) before moving a generated row into the replacement helper; never assume a SpacetimeDB table row is clonable unless its declaration explicitly derives `Clone`.
+
+## 2026-09-06 — Ran a TypeScript one-liner with top-level await
+
+The two-identity SpacetimeDB subscription proof did not execute because `tsx -e` emitted CommonJS and rejected top-level `await`. Wrap exploratory `tsx -e` code in an async IIFE before interpreting the command as a live test.
+
+## 2026-09-06 — Let shell quotes corrupt a live SQL probe
+
+The retry created its authorised temporary room but sent `SELECT * FROM plan WHERE share_code =` because a single quote inside a single-quoted `tsx -e` payload was consumed by the shell. Construct SQL string delimiters in TypeScript or use a separately patched script; never place SQL single quotes directly inside a shell single-quoted payload.
+
+## 2026-09-06 — Assumed the Vercel CLI was locally installed
+
+`npx --no-install vercel` could not inspect the deployment because this checkout has no local Vercel CLI dependency. Check the executable path or use the configured global CLI before a deployment-status command; do not interpret a package-resolution error as deployment state.
+
+## 2026-09-06 — Client build did not typecheck the Vercel function
+
+The Vercel production build reported `TS2591` for `process.env` in `api/capture-email.ts` even though `npm run build --prefix client` passed. Include the API compilation boundary in release verification; a successful Vite client build does not validate Vercel function types.
+
+## 2026-09-06 — Assumed the Vercel function used the repository-root API path
+
+The deployment runs with `client/` as its Vercel root, so `api/capture-email.ts` resolves under that directory rather than the repository root. Resolve deployment-relative paths before inspecting a Vercel build error.
+
+## 2026-09-06 — Ran an explicit-file TypeScript check without its TypeScript 6 flag
+
+TypeScript 6 rejects a command that specifies source files while a `tsconfig.json` is present unless `--ignoreConfig` is also supplied. Add the flag for one-file compiler probes before drawing conclusions from the result.
+
+## 2026-09-06 — Used a stale release-log patch anchor
+
+A combined status/changelog/README patch failed because the expected final status line was not the exact current text. Re-read the destination tails and split append-only release-log edits from unrelated README and plan changes.
+
+## 2026-09-06 — Used unsupported line-number hunks with `apply_patch`
+
+An attempt to append release notes using a standard unified-diff line-number hunk failed because this patch tool requires textual context. Use the exact final line as the append anchor.
+
+## 2026-09-06 — Assumed the bot package exposed a typecheck script
+
+`npm run typecheck --prefix api/bot-service` failed because `package.json` has no such script, despite TypeScript being available. Inspect package scripts before composing a full gate; use `tsc --noEmit` directly until the project explicitly adds that script.
