@@ -69,6 +69,6 @@ Scope: `client/src/pages/**`, `client/src/components/**`, `client/src/data/**`, 
 - [x] Add the joined-room form, using the existing `runAction` toast error path and current room styling.
 - [x] Add focused React Testing Library coverage for valid arguments and reducer failure toast; run the focused test red before implementation, then green.
 - [x] Run all requested Rust/client verification commands plus `git diff --check`.
-- [ ] Append completion state to `docs/status.md` and `docs/changelog.md`, commit, push, and comment on issue #12.
+- [x] Append completion state to `docs/status.md` and `docs/changelog.md`, commit, push, and comment on issue #12.
 
 Assumptions: the form is available on open joined rooms because `RoomPage` is only rendered after joining; no separate membership field exists in `RoomView`, so the server remains the authority for rejecting unauthorised calls. The required project logs are procedural files despite the source-only ownership boundary.
