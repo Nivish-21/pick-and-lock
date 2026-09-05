@@ -18,3 +18,9 @@
 - Completed UI U5: added local Vitest and Testing Library coverage for join and room-critical actions, explicit test cleanup, the `npm run test` command, and passing mobile accessibility smoke, lint, production-build, and deterministic-design gates.
 - Added the first-version SpacetimeDB server checkpoint: selectively integrated the Rust module and regenerated bindings, installed the matching TypeScript SDK, added creator-supplied share-code rooms, scoped membership/leave/drop-out per room, corrected active-eligible acceptance counting and the reopen reason, and excluded the collaborator's duplicate agent files plus machine-local database setting.
 - Published the first Maincloud database as `pick-and-lock`, verified its seeded plan/activity rows, and added proposal plus copy-room-link controls with passing UI coverage.
+# 2026-09-05 — Room insights contract and execution plan
+
+- Added `docs/room-insights-spec.md` to define authoritative lifecycle, decision history, metrics, chat, and room-close semantics.
+- Added `docs/superpowers/plans/2026-09-05-room-insights.md` and appended U7 to `docs/plan.md` to isolate server, bridge, UI, and deployment work.
+- Ignored `.worktrees/` before creating isolated agent workspaces.
+- Recorded decisions for append-only decision history plus atomic summaries and creator-only room closure.

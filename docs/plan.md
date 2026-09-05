@@ -42,3 +42,13 @@ Goal: integrate the collaborator's SpacetimeDB core without importing unrelated 
 ### U6 interaction checkpoint completed
 
 - [x] Added proposal controls for feasible activities and an accessible share-link copy action with focused UI coverage.
+
+## U7 — Room insights and closure
+
+Goal: persist complete room lifecycles, decision history, current metrics, and short room chat without making browser state authoritative.
+
+- [ ] Add the additive server schema and regenerate bindings in an isolated server-owned branch.
+- [ ] Record each lock atomically as a decision and update the room metrics row.
+- [ ] Add creator-authorised locked-room closure and active-member chat reducers.
+- [ ] Hand the new bindings to the data-bridge agent; mount visual insight, close, and chat controls only after its adapter handoff.
+- [ ] Obtain explicit approval before publishing the schema update to Maincloud, then verify real rows and deploy the client.
