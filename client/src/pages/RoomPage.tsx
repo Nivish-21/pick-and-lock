@@ -12,7 +12,13 @@ function eventMessage(event: RoomView["latestEvent"]): string {
   return event?.message ?? "Waiting for the first room update.";
 }
 
-function RoomSidebar({ view, actions }: { view: RoomView; actions: RoomActions }) {
+function RoomSidebar({
+  view,
+  actions,
+}: {
+  view: RoomView;
+  actions: RoomActions;
+}) {
   const bridgeView = view as RoomView & {
     chatMessages?: Array<{
       id: number | bigint;
@@ -36,9 +42,12 @@ function RoomSidebar({ view, actions }: { view: RoomView; actions: RoomActions }
     <aside className="room-sidebar" aria-label="Room conversation">
       <RoomChat
         messages={bridgeView.chatMessages ?? []}
-        onSend={bridgeActions.sendChatMessage ?? (async () => {
-          throw new Error("Chat is unavailable");
-        })}
+        onSend={
+          bridgeActions.sendChatMessage ??
+          (async () => {
+            throw new Error("Chat is unavailable");
+          })
+        }
       />
       <GroupInputPanel preferences={bridgeView.preferences ?? []} />
     </aside>
@@ -57,6 +66,8 @@ export function RoomPage({ view, actions }: RoomPageProps) {
   const lockedActivity = view.activities.find(
     (activity) => activity.id === view.lockedActivityId,
   );
+  const friendsInRoom = view.friends.filter((friend) => !friend.dropped);
+  const friendsHere = friendsInRoom.filter((friend) => friend.online);
 
   async function runAction(action: () => Promise<void>) {
     try {
@@ -263,6 +274,9 @@ export function RoomPage({ view, actions }: RoomPageProps) {
           <section className="group-grid" aria-label="Group status">
             <div className="group-panel">
               <h2>Friends</h2>
+              <p aria-live="polite">
+                {friendsHere.length} here · {friendsInRoom.length} in room
+              </p>
               <ul>
                 {view.friends.map((friend) => (
                   <li key={friend.id}>

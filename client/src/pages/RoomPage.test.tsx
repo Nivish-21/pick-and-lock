@@ -156,6 +156,28 @@ describe("RoomPage", () => {
     });
   });
 
+  it("updates the live room presence count when a friend joins or leaves", () => {
+    const { rerender } = render(
+      <RoomPage view={saturdayOpenView} actions={fixtureActions} />,
+    );
+
+    expect(screen.getByText("5 here · 6 in room")).toBeTruthy();
+
+    rerender(
+      <RoomPage
+        view={{
+          ...saturdayOpenView,
+          friends: saturdayOpenView.friends.map((friend) =>
+            friend.id === 1 ? { ...friend, online: false } : friend,
+          ),
+        }}
+        actions={fixtureActions}
+      />,
+    );
+
+    expect(screen.getByText("4 here · 6 in room")).toBeTruthy();
+  });
+
   it("shows the reducer error when adding an activity fails", async () => {
     const addActivity = vi
       .fn()
