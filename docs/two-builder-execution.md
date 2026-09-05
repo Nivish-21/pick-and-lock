@@ -61,3 +61,18 @@ Deploy Maincloud and Vercel, provision Resend, run the six-tab and fresh-phone s
 3. Each handoff posts the commit SHA, command output, contract impact, and integration action.
 4. Contract changes require explicit agreement before either lane edits code.
 5. A failed real-time or race check stops polish and returns work to the server lane.
+
+## Schedule correction — 2026-09-05, 17:46 IST
+
+The earlier statement that the team was past the Sunday code-freeze was wrong and is withdrawn. At 17:46 Saturday, 14 hours 44 minutes remain before the 08:30 Sunday freeze. The 17:00 core-loop checkpoint is 46 minutes late, not a reason to cut the first iteration.
+
+| By (IST)       | Required state                                                              | Owner                      |
+| -------------- | --------------------------------------------------------------------------- | -------------------------- |
+| 18:00 Saturday | UI Vite workspace committed; server module initialised; both lanes started. | Both                       |
+| 21:00 Saturday | M1 green: complete fixture UI and tested server core.                       | UI + server                |
+| 22:00 Saturday | M2 green: bridge mounted and two-client updates pass.                       | UI + server                |
+| 00:00 Sunday   | M3 green: lock/reopen and both race proofs pass.                            | Server with UI observation |
+| 06:00 Sunday   | Preview, real email, six-tab rehearsal, and fresh-phone test pass.          | Both                       |
+| 08:00 Sunday   | Code freeze; only demo rehearsal and recovery remain.                       | Both                       |
+
+The first response to a missed checkpoint is to remove only optional polish. Do not cut reducer authority, atomic lock/reopen, subscription proof, or the real email requirement.

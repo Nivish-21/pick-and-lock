@@ -5,8 +5,9 @@ Read these files before changing code:
 1. `docs/source/pick-and-lock-build-spec.md`
 2. `docs/product-brief.md`
 3. `docs/contracts/realtime-contract.md`
-4. `docs/two-builder-execution.md`
-5. `docs/superpowers/plans/2026-09-05-pick-and-lock-two-builder.md`
+4. `docs/plan-hardening.md`
+5. `docs/two-builder-execution.md`
+6. `docs/superpowers/plans/2026-09-05-pick-and-lock-two-builder.md`
 
 The written build spec is authoritative. Build Pick & Lock: a real-time group activity decision room that locks only after enough eligible people accept and automatically reopens if an accepter drops out. Do not turn it into a generic poll.
 
@@ -23,6 +24,8 @@ You own the SpacetimeDB module, reducer tests, generated bindings, connection/da
 | Shared contract | `docs/contracts/realtime-contract.md`. Do not edit it without agreement from the UI owner.                                                               |
 
 Do not edit files outside your owned paths. Do not create an app at repository root. Do not refactor the UI, change its styles, add mock server state, or add a second backend.
+
+Before the first edit, read and follow `docs/prompts/server-agent.md` verbatim. Do not start implementation until the repository owner says the hardened plan is accepted.
 
 ## Non-negotiable server rules
 

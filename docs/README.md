@@ -23,3 +23,9 @@ The current plan supersedes the earlier single-lane schedule:
 | [Realtime contract](contracts/realtime-contract.md)                                          | Frozen reducer inputs and `RoomView`/`RoomActions` UI boundary.    |
 | [Two-builder implementation plan](superpowers/plans/2026-09-05-pick-and-lock-two-builder.md) | Current task-by-task first-iteration plan.                         |
 | [Contributor contract](../AGENTS.md)                                                         | Instructions and file ownership for the collaborator's agent.      |
+
+| [Plan hardening](plan-hardening.md) | Resolved risks, no-loop state machine, external-service gates, and audit process. |
+| [Acceptance matrix](acceptance-matrix.md) | Requirement-by-requirement owner, proof, and release gate. |
+| [Server-agent prompt](prompts/server-agent.md) | Exact starting instruction for the collaborator's agent. |
+| [UI-owner prompt](prompts/ui-owner.md) | Exact independent UI lane instruction. |
+| [Plan-auditor prompt](prompts/plan-auditor.md) | Read-only red-team check to run before implementation and before release. |

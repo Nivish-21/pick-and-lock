@@ -94,3 +94,7 @@ Screens are Join, Choices, Live Group, and Locked Plan. The route is `/r/:shareC
 - Deploy `client/` and `api/capture-email.ts` on Vercel. Set only public `VITE_SPACETIMEDB_HOST` and `VITE_SPACETIMEDB_DATABASE` in the client environment.
 - Provision the discovered Resend Marketplace integration before adding the email function. Keep its API key server-only.
 - Warm the Maincloud database before demos, test the public URL on a fresh phone, and keep the deployment logs accessible.
+
+## Hardening errata
+
+The newer frozen realtime contract supersedes this document where they differ. The implementation paths are `client/src/data/**` and `client/src/module_bindings/**`, not `client/src/lib/**`. The durable unique columns are `answer_key` and `acceptance_key`. The bridge first resolves `plan.share_code`, then subscribes to the remaining six plan-scoped tables. Email posts `{ email, shareCode }`; the server derives the URL and never trusts a client-supplied URL.

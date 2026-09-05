@@ -5,3 +5,9 @@ The accidental local scaffold was deleted on 2026-09-05. This repository now con
 The current execution authority is `docs/superpowers/plans/2026-09-05-pick-and-lock-two-builder.md`. The UI owner and the server agent have disjoint file ownership defined in `AGENTS.md`.
 
 Next step: both builders start their independent lanes from the frozen realtime contract, then perform the one explicit data-bridge handoff.
+
+Plan hardening is in progress. Do not hand the repository to the collaborator or start implementation until the hardened contract, prompts, and acceptance matrix are committed and the repository owner accepts them.
+
+Schedule corrected at 17:46 IST on Saturday: 14 hours 44 minutes remain before the 08:30 Sunday code freeze. The immediate plan is the M1-to-M3 sequence in `docs/two-builder-execution.md`; no first-iteration core feature is cut.
+
+The hardened plan package is complete and awaiting repository-owner acceptance. It includes the frozen contract, acceptance matrix, owner prompts, plan-auditor prompt, and checkpoint schedule. No application code has been created in this hardening pass.

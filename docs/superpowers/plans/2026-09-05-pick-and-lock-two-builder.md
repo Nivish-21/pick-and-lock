@@ -284,3 +284,14 @@
 | File ownership for collaborator agent | `AGENTS.md` and every task owner   |
 
 The only shared-file action is the UI owner's one-time `App.tsx` mount. All other code paths are disjoint by ownership.
+
+## Hardening amendments — 2026-09-05
+
+These amendments are part of the current plan and override conflicting earlier task wording.
+
+- The UI owner's first commit is the Vite `client/` workspace. The server lane can complete all `server/**` work in parallel and waits only for that committed workspace before writing its owned `client/src/data/**` and `client/src/module_bindings/**` paths.
+- The bridge first subscribes to `plan` by validated `share_code`, resolves exactly one `planId`, and only then subscribes to the other six plan-scoped tables. It never makes a reducer call while resolution is loading or failed.
+- The Join screen collects only a display name. After successful join, a separate optional email action offers an email input and Skip. Email never delays entry.
+- `api/capture-email.ts` accepts same-origin JSON under 8 KiB containing `{ email, shareCode }`. It validates the email and share code, derives the canonical URL from `PUBLIC_APP_ORIGIN`, sends one email, and persists nothing. It never accepts a caller-provided room URL.
+- `plan.share_code`, `answer.answer_key`, and `acceptance.acceptance_key` are `#[unique]` columns. The table and reducer tests prove the no-duplicate invariants.
+- Before Task 6, the owner must complete every external-service preflight item in `docs/plan-hardening.md`. A missing provisioned integration, verified sender, environment name, origin, or Maincloud database stops only email/deployment work; it does not block core product work.
