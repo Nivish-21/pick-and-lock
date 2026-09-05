@@ -162,6 +162,7 @@
 
 # 2026-09-06 — Real-time presence and Vercel function release repair
 
+- Stopped the subsequent public-story Maincloud publish before confirmation: its migration would remove and recreate `my_rooms`, disconnecting active clients. No schema change was applied.
 - Added a live room-presence readout in `client/src/pages/RoomPage.tsx`: `here` counts online, non-dropped friends; `in room` counts all non-dropped friends. It deliberately does not alter activity eligibility.
 - Added a RoomPage regression test covering a no-refresh presence transition.
 - Added the Node type reference required by the Vercel email function, so `process.env` typechecks in the deployment compiler without changing email behaviour or client runtime code.

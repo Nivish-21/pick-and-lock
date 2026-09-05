@@ -28,10 +28,10 @@ The active parallel lanes are:
 | [#2](https://github.com/Nivish-21/pick-and-lock/issues/2)   | Merged  | Private SpacetimeDB room access core; private votes/history remain next                             |
 | [#3](https://github.com/Nivish-21/pick-and-lock/issues/3)   | Merged  | Fixture-driven public decision-story UI; [PR #7](https://github.com/Nivish-21/pick-and-lock/pull/7) |
 | [#6](https://github.com/Nivish-21/pick-and-lock/issues/6)   | Review  | Calendar-event helper; [PR #8](https://github.com/Nivish-21/pick-and-lock/pull/8)                   |
-| [#10](https://github.com/Nivish-21/pick-and-lock/issues/10) | Ready   | Private decision engine, history, and metrics                                                       |
-| [#1](https://github.com/Nivish-21/pick-and-lock/issues/1)   | Blocked | Creator-controlled public-story projection; waits for #10                                           |
-| [#4](https://github.com/Nivish-21/pick-and-lock/issues/4)   | Blocked | Public route and bridge; waits for #1 and #3                                                        |
-| [#5](https://github.com/Nivish-21/pick-and-lock/issues/5)   | Blocked | Two-identity privacy proof; waits for #4                                                            |
+| [#10](https://github.com/Nivish-21/pick-and-lock/issues/10) | Merged  | Private decision engine, history, and metrics                                                       |
+| [#1](https://github.com/Nivish-21/pick-and-lock/issues/1)   | Local   | Creator-controlled public-story projection; Maincloud publish blocked by `my_rooms` view migration |
+| [#4](https://github.com/Nivish-21/pick-and-lock/issues/4)   | Local   | Public route and public-only bridge; waits for the safe #1 publish                                  |
+| [#5](https://github.com/Nivish-21/pick-and-lock/issues/5)   | Blocked | Two-identity privacy proof; waits for production #1/#4                                              |
 
 Private rooms are invite-only by default. A creator may later publish a separate, read-only decision story at `/share/<publicRoomId>`. It never exposes member names, chats, individual votes, invite data, preferences, or price limits. Its CTA is:
 

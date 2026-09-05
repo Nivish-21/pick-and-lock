@@ -255,6 +255,8 @@ Owner instruction: take over the active build while they are unavailable. This e
 
 Assumptions: a temporary production room and test identities are authorised test data; no existing production room, membership, message, or deployment is deleted or overwritten. Any migration that removes or changes an existing Maincloud column remains prohibited and stops the release.
 
+**Current blocker:** the 2026-09-06 Maincloud migration plan removes and recreates the existing `my_rooms` view, which would disconnect all connected clients. The publish was interrupted before confirmation. Do not publish this module until the view migration is made non-breaking or the owner explicitly accepts the connection interruption.
+
 ## Critical real-time membership rendering defect (2026-09-06 — owner authorised)
 
 Reported production symptom: joins and leaves are persisted in SpacetimeDB, but the people count and related room state do not update in already-open frontend sessions. This violates the product's core no-refresh/low-latency contract. Pause public-story release work until the live subscription-to-render path is proven and fixed.

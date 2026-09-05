@@ -135,3 +135,23 @@ An attempt to append release notes using a standard unified-diff line-number hun
 ## 2026-09-06 — Assumed the bot package exposed a typecheck script
 
 `npm run typecheck --prefix api/bot-service` failed because `package.json` has no such script, despite TypeScript being available. Inspect package scripts before composing a full gate; use `tsc --noEmit` directly until the project explicitly adds that script.
+
+## 2026-09-06 — Left a mocked table cache without listener methods
+
+`PublicStoryBridge.test.tsx` initially typed cache listener methods but did not attach them to the runtime array before render, so the bridge failed before its assertion. Initialise mock table methods in `beforeEach`, not only in cleanup.
+
+## 2026-09-06 — Used an impossible array intersection in a bridge test
+
+The bridge test cast a bare array directly to an array-plus-listener-method intersection, which TypeScript 6 correctly rejected; an inferred `() => undefined` callback was also too narrow. Build the runtime mock with `Object.assign` and declare callbacks as `() => void`.
+
+## 2026-09-06 — Regenerated bindings from the server wrapper rather than the module
+
+`spacetime generate --module-path server` could not detect a module because the Rust project lives at `server/spacetimedb`. Run generation against that module path and inspect the generated diff.
+
+## 2026-09-06 — Source diff did not reveal a breaking generated view migration
+
+The Maincloud plan for the public-story module removed and recreated `my_rooms`, which would disconnect all clients, despite the intended public tables being additive. Always inspect the SpacetimeDB migration plan itself; source-level table diffs are insufficient for view compatibility.
+
+## 2026-09-06 — Checked off historical plan steps despite append-only documentation
+
+The active release plan was amended by toggling existing checkboxes, which conflicts with the repository's append-only documentation rule. Preserve historical plans and append current outcome and blocker notes instead.
