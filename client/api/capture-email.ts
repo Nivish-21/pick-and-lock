@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 /**
  * POST /api/capture-email
  *
@@ -33,7 +35,10 @@ type VercelLikeResponse = {
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SHARE_CODE_PATTERN = /^[A-Z0-9]{6,12}$/i;
 
-function readBody(req: VercelLikeRequest): { email?: unknown; shareCode?: unknown } {
+function readBody(req: VercelLikeRequest): {
+  email?: unknown;
+  shareCode?: unknown;
+} {
   if (req.body && typeof req.body === "object") {
     return req.body as { email?: unknown; shareCode?: unknown };
   }
@@ -63,7 +68,10 @@ export default async function handler(
     return;
   }
 
-  if (typeof shareCode !== "string" || !SHARE_CODE_PATTERN.test(shareCode.trim())) {
+  if (
+    typeof shareCode !== "string" ||
+    !SHARE_CODE_PATTERN.test(shareCode.trim())
+  ) {
     res.status(400).send("A valid room code is required.");
     return;
   }
@@ -89,7 +97,8 @@ export default async function handler(
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        from: process.env.RESEND_FROM_ADDRESS || "Sorted <onboarding@resend.dev>",
+        from:
+          process.env.RESEND_FROM_ADDRESS || "Sorted <onboarding@resend.dev>",
         to: [trimmedEmail],
         subject: "You're in — welcome to Sorted",
         text: `You're in.\n\nYour room: ${roomUrl}\n\nAnswer in, out, or conditional — Sorted locks the plan the moment enough friends agree, and reopens automatically if someone drops out.`,
@@ -104,7 +113,8 @@ export default async function handler(
 
     res.status(200).json({ ok: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Email could not be sent.";
+    const message =
+      error instanceof Error ? error.message : "Email could not be sent.";
     res.status(502).send(message);
   }
 }
