@@ -1,6 +1,17 @@
-# Active execution plan — 2026-09-05 checkpoint
+# Active execution plan — 2026-09-06 checkpoint (most recent, read this first)
 
-## Where this stands right now
+## Resume point
+
+Everything is merged into `main` except one open lane. To resume:
+
+1. Check GitHub issue #16 (`server/chat-schema-plan-retarget`) — server retarget of chat/location/bot tables from `PrivateRoom.id` to `Plan.id`, plus a new `bot_add_activity` reducer and bot-service autonomous poll authoring. Spec: `docs/superpowers/specs/2026-09-05-web-fix-and-chat-agent-design.md` sections 8-9.
+2. Once #16 merges: regenerate `client/src/module_bindings`, replace the `TODO(issue #16)` placeholder chat wiring in `client/src/pages/RoomPage.tsx` with the real `my_room_chat`/`my_room_preferences` subscriptions and `sendChatMessage` action (client-side plumbing pattern already established in `RoomDataBridge.tsx`/`spacetime.ts` for `activity`/`friend`/etc.).
+3. Re-run full verification (server + client + bot-service, see any recent PR body for the exact command list), then publish to Maincloud again with explicit owner confirmation (`spacetime publish pick-and-lock --module-path server/spacetimedb --yes=remote` — additive-only, verify with `git diff <prev> HEAD -- server/spacetimedb/src/lib.rs` that no existing table's columns changed, same check performed before every publish so far).
+4. Live-browser-test the merged result the same way this session did (create a room, join, exercise the feature, check console/network) before considering it done — unit tests alone missed both the "module not republished" and "wrong room schema" defects this session found.
+
+Everything below this point is prior-session history, kept for context; `docs/status.md` and `docs/changelog.md` have the full detailed log of what was merged, verified, and published.
+
+## Where this stands right now (2026-09-05, superseded by Resume point above)
 
 Design approved. Spec written and committed to:
 `docs/superpowers/specs/2026-09-05-web-fix-and-chat-agent-design.md`
@@ -85,3 +96,18 @@ Scope: `client/public/`, `client/index.html`, `client/src/pages/LandingPage.tsx`
 - [x] Update project status/changelog, commit, and push `ui/rebrand-sorted`.
 
 Assumption: the source icon is trusted as supplied and does not need visual editing; only the requested raster sizes are generated.
+
+## Onboarding and split chat (2026-09-05)
+
+Goal: let room creators enter their name during room creation and auto-join after navigation, then mount the existing chat and shared-context components in a responsive RoomPage sidebar using placeholder data until issue #16 lands.
+
+Scope: `client/src/pages/CreateRoomPage.tsx`, `client/src/pages/CreateRoomPage.test.tsx`, `client/src/pages/RoomPage.tsx`, `client/src/App.tsx`, `client/src/data/**` only if needed for the placeholder boundary, `client/src/styles/room.css`, and relevant tests. No server or bot-service paths.
+
++ [x] Add and validate the host-name field; include it in the create callback and store the pending host name before navigation.
++ [x] Auto-join pending creators in `RoomSession`, remove the session key only after join succeeds, and preserve the shared-link LandingPage path.
++ [x] Add the responsive two-column room layout and mount `RoomChat` plus `GroupInputPanel` with empty placeholder props and an issue #16 TODO at the data boundary.
++ [x] Add tests for host-name validation and create payload; add a focused RoomSession integration test proving pending-host navigation skips LandingPage and renders RoomPage after join.
++ [x] Run client tests, lint, build, and `git diff --check`.
++ [x] Update project status/changelog, commit incremental work, push `client/merged-onboarding-split-chat`, and comment on issue #17.
+
+Assumptions: the existing `CreateRoomPage.onCreate` callback remains the create boundary, so the parent stores `pending-host-name:${shareCode}` after `createRoom` succeeds; the current RoomDataBridge provides the same `RoomActions` contract while issue #16 is unresolved.

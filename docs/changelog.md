@@ -94,6 +94,12 @@
 - Verified on `main`: Rust format, 3 module tests, SpacetimeDB build, 23 client tests, lint, production build, and whitespace validation pass.
 - Kept Maincloud unpublished. Added the private decision-engine prerequisite (#10) because public sharing requires server-authoritative decision history and metrics.
 
+# 2026-09-06 — Onboarding and split-chat client lane
+
+- Added creator name collection and validation to room creation, pending host session storage, and automatic post-navigation joining.
+- Added responsive RoomPage two-column layout with mounted `RoomChat` and `GroupInputPanel` using empty issue #16 placeholder data and TODO wiring.
+- Added host validation/payload tests and a RoomSession pending-host integration test; full client verification passes.
+
 # 2026-09-05 — Lane B custom activity UI wired
 
 - Regenerated `client/src/module_bindings/` with the new `add_activity` reducer binding.
@@ -105,3 +111,11 @@
 - Added the supplied Sorted icon plus 32px favicon and 180px Apple touch icon assets.
 - Updated browser metadata, accessibility labels, and landing, room, and create-room wordmarks to Sorted.
 - Kept the live SpacetimeDB database name, README, AGENTS, and internal fixture URLs unchanged.
+
+# 2026-09-06 — Integration, Maincloud publish, and schema-mismatch fix
+
+- Merged PRs #13 (Lane B), #14 (Sorted rebrand), #8 (calendar-event builder), #15 (chat-agent), and #18 (onboarding/split-chat) into `main`; independently re-ran full verification on each merge commit rather than trusting each agent's self-report.
+- Fixed a merge mistake: `api/bot-service/node_modules` was briefly staged via `git add -A`; added `api/bot-service/.gitignore`, recommitted clean before pushing.
+- Renamed the Vercel project `pick-and-lock` → `sorted`; production domain unchanged (still `pick-and-lock.vercel.app`) pending a Deployment Protection dashboard change the owner hasn't made yet.
+- Published the additive schema (verified no existing-table columns changed) to Maincloud with explicit owner confirmation: `spacetime publish pick-and-lock --module-path server/spacetimedb --yes=remote`.
+- Live browser testing against production found `add_activity` was unreachable (module not republished) and that chat/location/bot tables were built against `PrivateRoom.id` instead of `Plan.id`, and that `RoomChat`/`GroupInputPanel` were never mounted anywhere. Recorded the root cause and owner-confirmed fix in the design spec (section 8) and opened issues #16 (server retarget, in progress) and #17 (client onboarding/layout, merged as #18).
