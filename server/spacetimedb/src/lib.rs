@@ -44,7 +44,9 @@ pub struct Activity {
     pub name: String,
     pub price: u32,
     pub min_people: u32,
+    #[default(None)]
     pub distance_km: Option<u32>,
+    #[default(None)]
     pub time_minutes: Option<u32>,
 }
 #[spacetimedb::table(accessor = friend, public)]
