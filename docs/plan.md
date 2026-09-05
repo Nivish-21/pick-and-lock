@@ -121,7 +121,7 @@ Scope: server/spacetimedb/src/lib.rs, regenerated client/src/module_bindings/**,
 - [x] Append the two Activity fields at the struct end and update add_activity/bot_add_activity validation/inserts.
 - [x] Run server fmt/build, regenerate bindings, and update the client action/view contracts.
 - [x] Add optional form inputs and activity-card metadata display without changing chat/sidebar code.
-- [ ] Run all requested verification and confirm the origin/main Activity diff is additive-only.
-- [ ] Update status/changelog, commit, push the existing branch, and comment on issue #20.
+- [x] Run all requested verification and confirm the origin/main Activity diff is additive-only.
+- [x] Update status/changelog, commit, push the existing branch, and comment on issue #20.
 
 Assumptions: blank optional form fields become undefined; distance/time are display metadata only, not per-friend feasibility constraints.
