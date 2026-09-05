@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: sorted-bot-service
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: cd api/bot-service && npm ci
+    startCommand: cd api/bot-service && npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: 24.20.0
+      - key: SPACETIMEDB_HOST
+        value: https://maincloud.spacetimedb.com
+      - key: SPACETIMEDB_DATABASE
+        value: pick-and-lock
+      - key: BOT_SPACETIME_TOKEN
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GOOGLE_PLACES_API_KEY
+        sync: false

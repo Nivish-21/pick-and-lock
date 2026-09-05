@@ -1,3 +1,4 @@
+import { createServer } from "node:http";
 import { RoomBotService } from "./service";
 
 const config = {
@@ -27,3 +28,6 @@ const stop = () => {
 
 process.once("SIGINT", stop);
 process.once("SIGTERM", stop);
+
+const port = Number(process.env.PORT ?? 3000);
+createServer((_req, res) => res.writeHead(200).end("ok")).listen(port);
