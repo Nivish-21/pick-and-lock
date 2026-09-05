@@ -21,7 +21,7 @@
 
 ### Task 1: Build private decision authority
 
-**Owner:** Server agent, issue `#7`.
+**Owner:** Server agent, issue `#10`.
 
 **Files:**
 

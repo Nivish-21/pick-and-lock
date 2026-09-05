@@ -55,3 +55,11 @@ Then fetch origin, find one unassigned GitHub Issue labelled ready in your owner
 
 Never publish Maincloud or deploy production. Never expose private room data in a public story. A public story is read-only and contains no member names, chats, individual votes, invite secrets, or preferences.
 ```
+
+## Current issue-state update — 2026-09-05
+
+- #2 merged as `dcd5ac5`; it provides private room access, schedules, choices, membership, invite hashing, and caller-filtered foundational views.
+- #3 merged as `9d82753`; it provides fixture-only public-story presentation.
+- #6 is under review in PR #8.
+- [#10 V2-PR3 private decision engine](https://github.com/Nivish-21/pick-and-lock/issues/10) is the ready server lane for private votes, lock/reopen, decision history, and metrics.
+- #1 remains blocked by #10 because a public story must project authoritative decision history, never browser-derived counts.

@@ -22,14 +22,15 @@ Version 2 introduces private custom rooms: creator-defined purpose, schedule/tim
 
 The active parallel lanes are:
 
-| Issue                                                     | Status  | Scope                                                                                               |
-| --------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------- |
-| [#2](https://github.com/Nivish-21/pick-and-lock/issues/2) | Active  | Private SpacetimeDB room access core                                                                |
-| [#3](https://github.com/Nivish-21/pick-and-lock/issues/3) | Merged  | Fixture-driven public decision-story UI; [PR #7](https://github.com/Nivish-21/pick-and-lock/pull/7) |
-| [#6](https://github.com/Nivish-21/pick-and-lock/issues/6) | Ready   | Isolated RFC 5545 calendar-event helper                                                             |
-| [#1](https://github.com/Nivish-21/pick-and-lock/issues/1) | Blocked | Creator-controlled public-story projection; waits for #2                                            |
-| [#4](https://github.com/Nivish-21/pick-and-lock/issues/4) | Blocked | Public route and bridge; waits for #1 and #3                                                        |
-| [#5](https://github.com/Nivish-21/pick-and-lock/issues/5) | Blocked | Two-identity privacy proof; waits for #4                                                            |
+| Issue                                                       | Status  | Scope                                                                                               |
+| ----------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------- |
+| [#2](https://github.com/Nivish-21/pick-and-lock/issues/2)   | Merged  | Private SpacetimeDB room access core; private votes/history remain next                             |
+| [#3](https://github.com/Nivish-21/pick-and-lock/issues/3)   | Merged  | Fixture-driven public decision-story UI; [PR #7](https://github.com/Nivish-21/pick-and-lock/pull/7) |
+| [#6](https://github.com/Nivish-21/pick-and-lock/issues/6)   | Review  | Calendar-event helper; [PR #8](https://github.com/Nivish-21/pick-and-lock/pull/8)                   |
+| [#10](https://github.com/Nivish-21/pick-and-lock/issues/10) | Ready   | Private decision engine, history, and metrics                                                       |
+| [#1](https://github.com/Nivish-21/pick-and-lock/issues/1)   | Blocked | Creator-controlled public-story projection; waits for #10                                           |
+| [#4](https://github.com/Nivish-21/pick-and-lock/issues/4)   | Blocked | Public route and bridge; waits for #1 and #3                                                        |
+| [#5](https://github.com/Nivish-21/pick-and-lock/issues/5)   | Blocked | Two-identity privacy proof; waits for #4                                                            |
 
 Private rooms are invite-only by default. A creator may later publish a separate, read-only decision story at `/share/<publicRoomId>`. It never exposes member names, chats, individual votes, invite data, preferences, or price limits. Its CTA is:
 

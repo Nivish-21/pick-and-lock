@@ -87,3 +87,9 @@
 - Reviewed and merged PR #7 as `9d82753`; the fixture-only public-story page and sharing settings component remain isolated from routing and SpacetimeDB.
 - Verified on `main`: 23 client tests, lint, production build, and `git diff --check` pass.
 - Updated the root README and execution plan to mark #3 merged; public projection/route work remains dependency-blocked.
+
+# 2026-09-05 — Private v2 access core merged
+
+- Reviewed and merged PR #9 as `dcd5ac5`; private rooms, schedules, choices, membership, hash-only invites, and caller-filtered foundational views now exist locally in the module and bindings.
+- Verified on `main`: Rust format, 3 module tests, SpacetimeDB build, 23 client tests, lint, production build, and whitespace validation pass.
+- Kept Maincloud unpublished. Added the private decision-engine prerequisite (#10) because public sharing requires server-authoritative decision history and metrics.

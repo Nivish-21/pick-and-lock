@@ -75,3 +75,7 @@ After merging `origin/ui/room-qr`, `client/src/components/RoomQrCode.tsx` could 
 ## 2026-09-05 — Subagent branches shared the primary checkout
 
 Multiple agents changed branches and wrote partial changes in the primary checkout rather than isolated worktrees. Stop agents before any branch switch, inspect the exact dirty files, preserve only reviewed work, and commit it from the active branch before merging it back.
+
+## 2026-09-05 — Assumed the next GitHub issue number
+
+The private decision-engine plan named issue `#7`, but pull requests and issues share GitHub's repository number sequence, so the created issue was `#10`. Always capture the URL returned by `gh issue create` and update planning references from that authoritative number before assigning work.
