@@ -12,16 +12,35 @@ function eventMessage(event: RoomView["latestEvent"]): string {
   return event?.message ?? "Waiting for the first room update.";
 }
 
-async function placeholderSendChat(body: string): Promise<void> {
-  console.log("TODO(issue #16): wire my_room_chat and sendChatMessage", body);
-}
-
-function RoomSidebar() {
-  // TODO(issue #16): replace placeholders with the my_room_chat subscription and sendChatMessage action.
+function RoomSidebar({ view, actions }: { view: RoomView; actions: RoomActions }) {
+  const bridgeView = view as RoomView & {
+    chatMessages?: Array<{
+      id: number | bigint;
+      senderName: string;
+      isBot: boolean;
+      body: string;
+      kind: string;
+      payloadJson: string;
+    }>;
+    preferences?: Array<{
+      id: number | bigint;
+      friendName: string;
+      statement: string;
+      category: string;
+    }>;
+  };
+  const bridgeActions = actions as RoomActions & {
+    sendChatMessage?: (body: string) => Promise<void>;
+  };
   return (
     <aside className="room-sidebar" aria-label="Room conversation">
-      <RoomChat messages={[]} onSend={placeholderSendChat} />
-      <GroupInputPanel preferences={[]} />
+      <RoomChat
+        messages={bridgeView.chatMessages ?? []}
+        onSend={bridgeActions.sendChatMessage ?? (async () => {
+          throw new Error("Chat is unavailable");
+        })}
+      />
+      <GroupInputPanel preferences={bridgeView.preferences ?? []} />
     </aside>
   );
 }
@@ -111,7 +130,7 @@ export function RoomPage({ view, actions }: RoomPageProps) {
             </p>
             <RoomQrCode roomUrl={window.location.href} />
           </div>
-          <RoomSidebar />
+          <RoomSidebar view={view} actions={actions} />
         </div>
       </main>
     );
@@ -271,7 +290,7 @@ export function RoomPage({ view, actions }: RoomPageProps) {
           </p>
           <RoomQrCode roomUrl={window.location.href} />
         </div>
-        <RoomSidebar />
+        <RoomSidebar view={view} actions={actions} />
       </div>
     </main>
   );
