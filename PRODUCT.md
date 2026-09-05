@@ -61,3 +61,7 @@ After the live hosted version is proven, Pick & Lock may add participant-control
 ## Planned expansion — private custom rooms
 
 The next product version replaces fixed public demo rooms with private, invite-only decision rooms. A creator supplies the purpose, schedule, timezone, and choices; only members who accept an invite can see them. The locked choice can be exported to a calendar file. See `docs/private-rooms-and-scheduling-spec.md`.
+
+## Planned extension — public decision stories
+
+A private-room creator may explicitly publish a read-only decision story for a wider audience. It has no members, chats, individual votes, invite data, or preferences, and it can hide the schedule. The public page invites visitors to **“Have a decision to make? Make it together.”** and create an independent room. See `docs/public-sharing-and-cta-spec.md`.

@@ -23,3 +23,11 @@ The live database already contains `plan` rows. SpacetimeDB cannot automatically
 ## 2026-09-05 — Private rooms use private tables and membership-filtered views
 
 The existing v1 tables are public and a share code is not an access-control mechanism. For v2, room content is private canonical data and client reads come only from public views filtered by `ViewContext.sender()`. We explicitly choose views over experimental SpacetimeDB RLS. Invite links carry a high-entropy secret in the URL fragment, while the module stores only its hash. This makes invite acceptance an explicit reducer-authorised transition and prevents a copied post-join room URL from revealing room data.
+
+## 2026-09-05 — Public sharing is an explicit read-only story, not a room-access switch
+
+Private v2 rooms remain private by default. A creator may publish a narrow, reversible `shared_room_story` projection at `/share/<publicRoomId>`, but the public URL does not grant membership or any write capability. We rejected making `/r/<publicRoomId>` public because it would conflate an identifier with authorisation and leak member data. The public page has an independent create-room CTA so visitors can act without coupling their new room to the source room.
+
+## 2026-09-05 — GitHub Issues are the live agent queue
+
+The repeated manual prompt relay is a coordination failure, not a coding task. We will use GitHub Issues with `ready`, `claimed`, `blocked`, and `review` states for atomic task claiming, one task branch per issue, and pull requests as handoffs. This is sufficient for two agents and avoids introducing another hosted coordination system. It does require agents to remain running or be awakened by their host; a repository cannot independently wake a stopped chat agent.

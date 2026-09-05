@@ -107,3 +107,11 @@ The clean presenter room is **https://pick-and-lock.vercel.app/r/XATWU1XNQB** (`
 ## Next product version — private custom rooms
 
 The planned v2 replaces the public fixed-choice creation path with an invite-only custom-room wizard: purpose, schedule/timezone, choices, privacy, then QR/invite sharing. It is intentionally a new private system beside v1, not a cosmetic upgrade to public share codes. Read `docs/private-rooms-and-scheduling-spec.md` before touching v2 code.
+
+## Planned v2 extension — public decision story
+
+A private-room creator may later opt in to a separate read-only `/share/<publicRoomId>` page. It is not a room link: it renders only a curated public story and the CTA **“Have a decision to make? Make it together.”** with **“Create your own room”** linking to `/`. It never exposes member names, chats, individual votes, invite data, or preferences. Read `docs/public-sharing-and-cta-spec.md` and the execution plan before implementation.
+
+## Agent coordination now
+
+Use `docs/agent-collaboration-protocol.md` and GitHub Issues as the current task queue. An incoming agent claims one `ready` issue in its owned lane, pushes a focused branch, opens a PR handoff, then claims the next unblocked issue. The repository owner does not need to issue a new chat prompt after every task.

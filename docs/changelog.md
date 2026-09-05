@@ -18,6 +18,7 @@
 - Completed UI U5: added local Vitest and Testing Library coverage for join and room-critical actions, explicit test cleanup, the `npm run test` command, and passing mobile accessibility smoke, lint, production-build, and deterministic-design gates.
 - Added the first-version SpacetimeDB server checkpoint: selectively integrated the Rust module and regenerated bindings, installed the matching TypeScript SDK, added creator-supplied share-code rooms, scoped membership/leave/drop-out per room, corrected active-eligible acceptance counting and the reopen reason, and excluded the collaborator's duplicate agent files plus machine-local database setting.
 - Published the first Maincloud database as `pick-and-lock`, verified its seeded plan/activity rows, and added proposal plus copy-room-link controls with passing UI coverage.
+
 # 2026-09-05 — Room insights contract and execution plan
 
 - Added `docs/room-insights-spec.md` to define authoritative lifecycle, decision history, metrics, chat, and room-close semantics.
@@ -61,3 +62,10 @@
 - Added the private custom-room and scheduling specification plus an executable implementation plan.
 - Defined private canonical tables, caller-filtered views, fragment invite secrets, custom choices, calendar export, v1 coexistence, and two-identity privacy proof.
 - Recorded that the current public v1 share-code model cannot meet invite-only visibility requirements without the v2 access boundary.
+
+# 2026-09-05 — Public decision-story and agent-collaboration planning
+
+- Added the v2 public sharing specification: creator opt-in, read-only public story, optional schedule visibility, unpublish, and an independent create-room CTA.
+- Added an executable Superpowers plan that isolates server projection, UI, route/bridge, and two-identity privacy-proof tasks.
+- Added a GitHub-Issues-based task claim and pull-request handoff protocol so agents can claim their next unblocked task without repeated human relay prompts.
+- Kept private v2 data in SpacetimeDB; no Supabase integration or additional coordination service is planned.

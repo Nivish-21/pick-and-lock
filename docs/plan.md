@@ -95,3 +95,14 @@ Goal: add invite-only, member-visible rooms with creator-defined choices and a r
 - [ ] Use new private canonical tables plus caller-filtered views; do not attempt to make already-public v1 room data private retroactively.
 - [ ] Create the wizard, invite acceptance, custom choice board, calendar export, and privacy proof in separate ownership lanes.
 - [ ] Do not publish the v2 module until a two-identity outsider/member proof and explicit owner confirmation are complete.
+
+## U11 — Optional public decision story, CTA, and autonomous agent handoffs
+
+Goal: keep v2 rooms invite-only by default while allowing a creator to deliberately publish a privacy-safe read-only decision story that sends visitors into an independent room-creation flow.
+
+- [ ] Use `docs/public-sharing-and-cta-spec.md` and `docs/superpowers/plans/2026-09-05-public-sharing-and-agent-collaboration.md` as the source of truth.
+- [ ] Build only the new v2 public projection and `/share/<publicRoomId>` route; never expose a private v2 room through `/r/<publicRoomId>`.
+- [ ] Make public sharing default-off, creator-only, reversible, and free of member identity, chat, individual votes, invite data, preferences, and price limits.
+- [ ] Add the exact public CTA: “Have a decision to make? Make it together.” with a “Create your own room” link to `/`.
+- [ ] Use GitHub Issues and `docs/agent-collaboration-protocol.md` for autonomous task claiming and PR handoffs; no agent waits for a manually relayed next task.
+- [ ] Require two-identity privacy proof and explicit owner confirmation before a Maincloud publish or public deployment.
