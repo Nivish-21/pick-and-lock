@@ -19,6 +19,10 @@ export default __t.row({
   shareCode: __t.string().name("share_code"),
   title: __t.string(),
   dateLabel: __t.string().name("date_label"),
+  createdBy: __t.identity().name("created_by"),
+  createdAt: __t.timestamp().name("created_at"),
+  closedBy: __t.option(__t.identity()).name("closed_by"),
+  closedAt: __t.option(__t.timestamp()).name("closed_at"),
   get status() {
     return PlanStatus;
   },

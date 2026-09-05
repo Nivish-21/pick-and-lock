@@ -36,11 +36,13 @@ import {
 // Import all reducer arg schemas
 import AcceptReducer from "./accept_reducer";
 import CancelProposalReducer from "./cancel_proposal_reducer";
+import CloseRoomReducer from "./close_room_reducer";
 import CreateRoomReducer from "./create_room_reducer";
 import DropOutReducer from "./drop_out_reducer";
 import JoinReducer from "./join_reducer";
 import LeaveReducer from "./leave_reducer";
 import ProposeReducer from "./propose_reducer";
+import SendMessageReducer from "./send_message_reducer";
 import SetAnswerReducer from "./set_answer_reducer";
 
 // Import all procedure arg schemas
@@ -49,10 +51,13 @@ import SetAnswerReducer from "./set_answer_reducer";
 import AcceptanceRow from "./acceptance_table";
 import ActivityRow from "./activity_table";
 import AnswerRow from "./answer_table";
+import ChatMessageRow from "./chat_message_table";
+import DecisionRow from "./decision_table";
 import EventLogRow from "./event_log_table";
 import FriendRow from "./friend_table";
 import PlanRow from "./plan_table";
 import ProposalRow from "./proposal_table";
+import RoomMetricsRow from "./room_metrics_table";
 
 /** Type-only namespace exports for generated type groups. */
 
@@ -108,6 +113,34 @@ const tablesSchema = __schema({
       { name: 'answer_id_key', constraint: 'unique', columns: ['id'] },
     ],
   }, AnswerRow),
+  chatMessage: __table({
+    name: 'chat_message',
+    indexes: [
+      { accessor: 'id', name: 'chat_message_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'plan_id', name: 'chat_message_plan_id_idx_btree', algorithm: 'btree', columns: [
+        'planId',
+      ] },
+    ],
+    constraints: [
+      { name: 'chat_message_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, ChatMessageRow),
+  decision: __table({
+    name: 'decision',
+    indexes: [
+      { accessor: 'id', name: 'decision_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'plan_id', name: 'decision_plan_id_idx_btree', algorithm: 'btree', columns: [
+        'planId',
+      ] },
+    ],
+    constraints: [
+      { name: 'decision_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, DecisionRow),
   eventLog: __table({
     name: 'event_log',
     indexes: [
@@ -166,17 +199,34 @@ const tablesSchema = __schema({
       { name: 'proposal_id_key', constraint: 'unique', columns: ['id'] },
     ],
   }, ProposalRow),
+  roomMetrics: __table({
+    name: 'room_metrics',
+    indexes: [
+      { accessor: 'id', name: 'room_metrics_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'plan_id', name: 'room_metrics_plan_id_idx_btree', algorithm: 'btree', columns: [
+        'planId',
+      ] },
+    ],
+    constraints: [
+      { name: 'room_metrics_id_key', constraint: 'unique', columns: ['id'] },
+      { name: 'room_metrics_plan_id_key', constraint: 'unique', columns: ['planId'] },
+    ],
+  }, RoomMetricsRow),
 });
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
   __reducerSchema("accept", AcceptReducer),
   __reducerSchema("cancel_proposal", CancelProposalReducer),
+  __reducerSchema("close_room", CloseRoomReducer),
   __reducerSchema("create_room", CreateRoomReducer),
   __reducerSchema("drop_out", DropOutReducer),
   __reducerSchema("join", JoinReducer),
   __reducerSchema("leave", LeaveReducer),
   __reducerSchema("propose", ProposeReducer),
+  __reducerSchema("send_message", SendMessageReducer),
   __reducerSchema("set_answer", SetAnswerReducer),
 );
 
@@ -186,8 +236,12 @@ const proceduresSchema = __procedures(
 
 type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "tables"> & {
   tables: typeof tablesSchema.schemaType.tables & {
+    /** @deprecated Use `chatMessage` instead. This alias will be removed in the next major version. */
+    readonly "chat_message": Omit<typeof tablesSchema.schemaType.tables["chatMessage"], "accessorName"> & { readonly accessorName: "chat_message" };
     /** @deprecated Use `eventLog` instead. This alias will be removed in the next major version. */
     readonly "event_log": Omit<typeof tablesSchema.schemaType.tables["eventLog"], "accessorName"> & { readonly accessorName: "event_log" };
+    /** @deprecated Use `roomMetrics` instead. This alias will be removed in the next major version. */
+    readonly "room_metrics": Omit<typeof tablesSchema.schemaType.tables["roomMetrics"], "accessorName"> & { readonly accessorName: "room_metrics" };
   };
 };
 
@@ -206,7 +260,9 @@ const REMOTE_MODULE = {
 >;
 
 const tableAccessorAliases = {
+  "chat_message": "chatMessage",
   "event_log": "eventLog",
+  "room_metrics": "roomMetrics",
 } as const;
 
 function __withTableAccessorAliases<T extends object>(target: T, freeze = false): T {
@@ -227,14 +283,22 @@ function __withTableAccessorAliases<T extends object>(target: T, freeze = false)
 
 type __DbViewBase = __DbConnectionImpl<typeof REMOTE_MODULE>["db"];
 export type DbView = __DbViewBase & {
+  /** @deprecated Use `chatMessage` instead. This alias will be removed in the next major version. */
+  readonly "chat_message": __DbViewBase["chatMessage"];
   /** @deprecated Use `eventLog` instead. This alias will be removed in the next major version. */
   readonly "event_log": __DbViewBase["eventLog"];
+  /** @deprecated Use `roomMetrics` instead. This alias will be removed in the next major version. */
+  readonly "room_metrics": __DbViewBase["roomMetrics"];
 };
 
 type __TablesBase = __QueryBuilder<typeof tablesSchema.schemaType>;
 export type Tables = __TablesBase & {
+  /** @deprecated Use `chatMessage` instead. This alias will be removed in the next major version. */
+  readonly "chat_message": __TablesBase["chatMessage"];
   /** @deprecated Use `eventLog` instead. This alias will be removed in the next major version. */
   readonly "event_log": __TablesBase["eventLog"];
+  /** @deprecated Use `roomMetrics` instead. This alias will be removed in the next major version. */
+  readonly "room_metrics": __TablesBase["roomMetrics"];
 };
 
 /** The tables available in this remote SpacetimeDB module. Each table reference doubles as a query builder. */

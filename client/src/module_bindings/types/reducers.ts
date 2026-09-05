@@ -8,18 +8,22 @@ import { type Infer as __Infer } from "spacetimedb";
 // Import all reducer arg schemas
 import AcceptReducer from "../accept_reducer";
 import CancelProposalReducer from "../cancel_proposal_reducer";
+import CloseRoomReducer from "../close_room_reducer";
 import CreateRoomReducer from "../create_room_reducer";
 import DropOutReducer from "../drop_out_reducer";
 import JoinReducer from "../join_reducer";
 import LeaveReducer from "../leave_reducer";
 import ProposeReducer from "../propose_reducer";
+import SendMessageReducer from "../send_message_reducer";
 import SetAnswerReducer from "../set_answer_reducer";
 
 export type AcceptParams = __Infer<typeof AcceptReducer>;
 export type CancelProposalParams = __Infer<typeof CancelProposalReducer>;
+export type CloseRoomParams = __Infer<typeof CloseRoomReducer>;
 export type CreateRoomParams = __Infer<typeof CreateRoomReducer>;
 export type DropOutParams = __Infer<typeof DropOutReducer>;
 export type JoinParams = __Infer<typeof JoinReducer>;
 export type LeaveParams = __Infer<typeof LeaveReducer>;
 export type ProposeParams = __Infer<typeof ProposeReducer>;
+export type SendMessageParams = __Infer<typeof SendMessageReducer>;
 export type SetAnswerParams = __Infer<typeof SetAnswerReducer>;

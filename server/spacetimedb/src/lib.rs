@@ -4,6 +4,7 @@ use spacetimedb::{Identity, ReducerContext, SpacetimeType, Table, Timestamp};
 pub enum PlanStatus {
     Open,
     Locked,
+    Closed,
 }
 #[derive(SpacetimeType, Clone, Copy, PartialEq, Eq)]
 pub enum AnswerState {
@@ -28,6 +29,10 @@ pub struct Plan {
     pub share_code: String,
     pub title: String,
     pub date_label: String,
+    pub created_by: Identity,
+    pub created_at: Timestamp,
+    pub closed_by: Option<Identity>,
+    pub closed_at: Option<Timestamp>,
     pub status: PlanStatus,
     pub locked_activity_id: Option<u32>,
     pub version: u64,
@@ -109,6 +114,45 @@ pub struct EventLog {
     pub message: String,
     pub at: Timestamp,
 }
+#[spacetimedb::table(accessor = decision, public)]
+pub struct Decision {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u32,
+    #[index(btree)]
+    pub plan_id: u32,
+    pub proposal_id: u32,
+    pub activity_id: u32,
+    pub sequence: u32,
+    pub decided_at: Timestamp,
+    pub decision_duration_ms: u64,
+    pub eligible_count: u32,
+    pub accepted_count: u32,
+}
+#[spacetimedb::table(accessor = room_metrics, public)]
+pub struct RoomMetrics {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u32,
+    #[unique]
+    #[index(btree)]
+    pub plan_id: u32,
+    pub decisions_taken: u32,
+    pub total_decision_time_ms: u64,
+    pub last_decision_time_ms: u64,
+    pub last_decided_at: Option<Timestamp>,
+}
+#[spacetimedb::table(accessor = chat_message, public)]
+pub struct ChatMessage {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u64,
+    #[index(btree)]
+    pub plan_id: u32,
+    pub friend_id: u32,
+    pub body: String,
+    pub sent_at: Timestamp,
+}
 
 fn friend_for(ctx: &ReducerContext, plan_id: u32) -> Option<Friend> {
     ctx.db
@@ -122,6 +166,12 @@ fn plan_for(ctx: &ReducerContext, plan_id: u32) -> Result<Plan, String> {
         .id()
         .find(plan_id)
         .ok_or_else(|| "Plan not found".into())
+}
+fn ensure_not_closed(plan: &Plan) -> Result<(), String> {
+    if plan.status == PlanStatus::Closed {
+        return Err("Room is closed".into());
+    }
+    Ok(())
 }
 fn activity_for(ctx: &ReducerContext, id: u32) -> Result<Activity, String> {
     ctx.db
@@ -196,6 +246,47 @@ fn event(
     });
 }
 
+fn decision_duration_ms(decided_at: Timestamp, proposed_at: Timestamp) -> u64 {
+    decided_at
+        .to_micros_since_unix_epoch()
+        .saturating_sub(proposed_at.to_micros_since_unix_epoch())
+        .max(0) as u64
+        / 1_000
+}
+
+fn decision_for_lock(
+    proposal: &Proposal,
+    activity: &Activity,
+    sequence: u32,
+    decided_at: Timestamp,
+    decision_duration_ms: u64,
+    eligible_count: u32,
+    accepted_count: u32,
+) -> Decision {
+    Decision {
+        id: 0,
+        plan_id: proposal.plan_id,
+        proposal_id: proposal.id,
+        activity_id: activity.id,
+        sequence,
+        decided_at,
+        decision_duration_ms,
+        eligible_count,
+        accepted_count,
+    }
+}
+
+fn next_decision_metrics(
+    decisions_taken: u32,
+    total_decision_time_ms: u64,
+    decision_duration_ms: u64,
+) -> (u32, u64) {
+    (
+        decisions_taken + 1,
+        total_decision_time_ms + decision_duration_ms,
+    )
+}
+
 fn valid_share_code(share_code: &str) -> bool {
     (6..=12).contains(&share_code.len())
         && share_code
@@ -219,6 +310,17 @@ fn seed_activities(ctx: &ReducerContext, plan_id: u32) {
     }
 }
 
+fn create_room_metrics(ctx: &ReducerContext, plan_id: u32) {
+    ctx.db.room_metrics().insert(RoomMetrics {
+        id: 0,
+        plan_id,
+        decisions_taken: 0,
+        total_decision_time_ms: 0,
+        last_decision_time_ms: 0,
+        last_decided_at: None,
+    });
+}
+
 #[spacetimedb::reducer(init)]
 pub fn init(ctx: &ReducerContext) {
     if ctx.db.plan().iter().next().is_some() {
@@ -229,11 +331,16 @@ pub fn init(ctx: &ReducerContext) {
         share_code: "SATURDAY".into(),
         title: "Saturday plans".into(),
         date_label: "Saturday".into(),
+        created_by: ctx.sender(),
+        created_at: ctx.timestamp,
+        closed_by: None,
+        closed_at: None,
         status: PlanStatus::Open,
         locked_activity_id: None,
         version: 0,
     });
     seed_activities(ctx, p.id);
+    create_room_metrics(ctx, p.id);
 }
 
 #[spacetimedb::reducer]
@@ -265,11 +372,16 @@ pub fn create_room(
         share_code,
         title,
         date_label,
+        created_by: ctx.sender(),
+        created_at: ctx.timestamp,
+        closed_by: None,
+        closed_at: None,
         status: PlanStatus::Open,
         locked_activity_id: None,
         version: 0,
     });
     seed_activities(ctx, plan.id);
+    create_room_metrics(ctx, plan.id);
     event(ctx, plan.id, "created", None, None, "Room created".into());
     Ok(())
 }
@@ -301,7 +413,8 @@ pub fn client_disconnected(ctx: &ReducerContext) {
 
 #[spacetimedb::reducer]
 pub fn join(ctx: &ReducerContext, plan_id: u32, name: String) -> Result<(), String> {
-    plan_for(ctx, plan_id)?;
+    let plan = plan_for(ctx, plan_id)?;
+    ensure_not_closed(&plan)?;
     let name = name.trim().to_string();
     if name.is_empty() || name.len() > 40 {
         return Err("Name must be 1-40 characters".into());
@@ -353,6 +466,7 @@ pub fn set_answer(
 ) -> Result<(), String> {
     let a = activity_for(ctx, activity_id)?;
     let p = plan_for(ctx, a.plan_id)?;
+    ensure_not_closed(&p)?;
     if p.status != PlanStatus::Open {
         return Err("Plan is locked".into());
     }
@@ -394,6 +508,7 @@ pub fn set_answer(
 pub fn propose(ctx: &ReducerContext, activity_id: u32) -> Result<(), String> {
     let a = activity_for(ctx, activity_id)?;
     let p = plan_for(ctx, a.plan_id)?;
+    ensure_not_closed(&p)?;
     if p.status != PlanStatus::Open {
         return Err("Plan is locked".into());
     }
@@ -445,11 +560,12 @@ pub fn accept(ctx: &ReducerContext, proposal_id: u32) -> Result<(), String> {
         .id()
         .find(proposal_id)
         .ok_or("Proposal not found")?;
+    let a = activity_for(ctx, prop.activity_id)?;
+    let mut p = plan_for(ctx, prop.plan_id)?;
+    ensure_not_closed(&p)?;
     if prop.status != ProposalStatus::Pending {
         return Err("Proposal is no longer pending".into());
     }
-    let a = activity_for(ctx, prop.activity_id)?;
-    let mut p = plan_for(ctx, prop.plan_id)?;
     let f = friend_for(ctx, prop.plan_id).ok_or("Join the plan first")?;
     let ans = ctx
         .db
@@ -482,12 +598,38 @@ pub fn accept(ctx: &ReducerContext, proposal_id: u32) -> Result<(), String> {
     );
     let n = active_eligible_acceptance_count(ctx, proposal_id, &a);
     if n >= a.min_people {
+        let mut metrics = ctx
+            .db
+            .room_metrics()
+            .iter()
+            .find(|metrics| metrics.plan_id == p.id)
+            .ok_or("Room metrics not found")?;
+        let duration = decision_duration_ms(ctx.timestamp, prop.created_at);
+        let (decisions_taken, total_decision_time_ms) = next_decision_metrics(
+            metrics.decisions_taken,
+            metrics.total_decision_time_ms,
+            duration,
+        );
         prop.status = ProposalStatus::Locked;
         p.status = PlanStatus::Locked;
         p.locked_activity_id = Some(a.id);
         p.version += 1;
+        metrics.decisions_taken = decisions_taken;
+        metrics.total_decision_time_ms = total_decision_time_ms;
+        metrics.last_decision_time_ms = duration;
+        metrics.last_decided_at = Some(ctx.timestamp);
+        ctx.db.decision().insert(decision_for_lock(
+            &prop,
+            &a,
+            decisions_taken,
+            ctx.timestamp,
+            duration,
+            eligible_count(ctx, p.id, &a),
+            n,
+        ));
         ctx.db.proposal().id().update(prop);
         ctx.db.plan().id().update(p);
+        ctx.db.room_metrics().id().update(metrics);
         event(
             ctx,
             a.plan_id,
@@ -508,6 +650,7 @@ pub fn cancel_proposal(ctx: &ReducerContext, proposal_id: u32) -> Result<(), Str
         .id()
         .find(proposal_id)
         .ok_or("Proposal not found")?;
+    ensure_not_closed(&plan_for(ctx, p.plan_id)?)?;
     if p.status != ProposalStatus::Pending {
         return Err("Proposal is no longer pending".into());
     }
@@ -531,11 +674,12 @@ pub fn cancel_proposal(ctx: &ReducerContext, proposal_id: u32) -> Result<(), Str
 
 #[spacetimedb::reducer]
 pub fn drop_out(ctx: &ReducerContext, plan_id: u32) -> Result<(), String> {
+    let mut p = plan_for(ctx, plan_id)?;
+    ensure_not_closed(&p)?;
     let mut f = friend_for(ctx, plan_id).ok_or("Join the plan first")?;
     if f.dropped_at.is_some() {
         return Err("You are already out".into());
     }
-    let mut p = plan_for(ctx, plan_id)?;
     f.dropped_at = Some(ctx.timestamp);
     f.online = false;
     let friend_id = f.id;
@@ -609,8 +753,111 @@ pub fn drop_out(ctx: &ReducerContext, plan_id: u32) -> Result<(), String> {
 
 #[spacetimedb::reducer]
 pub fn leave(ctx: &ReducerContext, plan_id: u32) -> Result<(), String> {
+    let plan = plan_for(ctx, plan_id)?;
+    ensure_not_closed(&plan)?;
     let mut f = friend_for(ctx, plan_id).ok_or("Join the plan first")?;
     f.online = false;
     ctx.db.friend().id().update(f);
     Ok(())
+}
+
+#[spacetimedb::reducer]
+pub fn close_room(ctx: &ReducerContext, plan_id: u32) -> Result<(), String> {
+    let mut plan = plan_for(ctx, plan_id)?;
+    ensure_not_closed(&plan)?;
+    if plan.created_by != ctx.sender() {
+        return Err("Only the room creator can close".into());
+    }
+    if plan.status != PlanStatus::Locked {
+        return Err("Room must be locked before closing".into());
+    }
+    plan.status = PlanStatus::Closed;
+    plan.closed_by = Some(ctx.sender());
+    plan.closed_at = Some(ctx.timestamp);
+    plan.version += 1;
+    ctx.db.plan().id().update(plan);
+    event(
+        ctx,
+        plan_id,
+        "closed",
+        friend_for(ctx, plan_id).map(|friend| friend.id),
+        None,
+        "Room closed".into(),
+    );
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+pub fn send_message(ctx: &ReducerContext, plan_id: u32, body: String) -> Result<(), String> {
+    let plan = plan_for(ctx, plan_id)?;
+    ensure_not_closed(&plan)?;
+    let body = body.trim().to_string();
+    if !(1..=500).contains(&body.len()) {
+        return Err("Message must be 1-500 bytes".into());
+    }
+    let friend = friend_for(ctx, plan_id).ok_or("Join the plan first")?;
+    if friend.dropped_at.is_some() {
+        return Err("You are marked out for this plan".into());
+    }
+    ctx.db.chat_message().insert(ChatMessage {
+        id: 0,
+        plan_id,
+        friend_id: friend.id,
+        body,
+        sent_at: ctx.timestamp,
+    });
+    event(
+        ctx,
+        plan_id,
+        "message_sent",
+        Some(friend.id),
+        None,
+        format!("{} sent a message", friend.name),
+    );
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn threshold_lock_adds_one_decision_and_a_non_negative_duration() {
+        let proposed_at = Timestamp::from_micros_since_unix_epoch(1_000_000);
+        let decided_at = Timestamp::from_micros_since_unix_epoch(1_200_000);
+        let proposal = Proposal {
+            id: 3,
+            plan_id: 1,
+            activity_id: 2,
+            proposed_by: 4,
+            status: ProposalStatus::Pending,
+            created_at: proposed_at,
+        };
+        let activity = Activity {
+            id: 2,
+            plan_id: 1,
+            name: "Bowling".into(),
+            price: 400,
+            min_people: 4,
+        };
+        let duration = decision_duration_ms(decided_at, proposed_at);
+        let (decisions_taken, total_decision_time_ms) = next_decision_metrics(0, 0, duration);
+        let decision = decision_for_lock(
+            &proposal,
+            &activity,
+            decisions_taken,
+            decided_at,
+            duration,
+            4,
+            4,
+        );
+
+        assert_eq!(duration, 200);
+        assert_eq!(decisions_taken, 1);
+        assert_eq!(total_decision_time_ms, 200);
+        assert_eq!(decision.sequence, 1);
+        assert_eq!(decision.decision_duration_ms, 200);
+        assert_eq!(decision.eligible_count, 4);
+        assert_eq!(decision.accepted_count, 4);
+    }
 }

@@ -50,6 +50,28 @@ export const AnswerState = __t.enum("AnswerState", {
 });
 export type AnswerState = __Infer<typeof AnswerState>;
 
+export const ChatMessage = __t.object("ChatMessage", {
+  id: __t.u64(),
+  planId: __t.u32(),
+  friendId: __t.u32(),
+  body: __t.string(),
+  sentAt: __t.timestamp(),
+});
+export type ChatMessage = __Infer<typeof ChatMessage>;
+
+export const Decision = __t.object("Decision", {
+  id: __t.u32(),
+  planId: __t.u32(),
+  proposalId: __t.u32(),
+  activityId: __t.u32(),
+  sequence: __t.u32(),
+  decidedAt: __t.timestamp(),
+  decisionDurationMs: __t.u64(),
+  eligibleCount: __t.u32(),
+  acceptedCount: __t.u32(),
+});
+export type Decision = __Infer<typeof Decision>;
+
 export const EventLog = __t.object("EventLog", {
   id: __t.u64(),
   planId: __t.u32(),
@@ -78,6 +100,10 @@ export const Plan = __t.object("Plan", {
   shareCode: __t.string(),
   title: __t.string(),
   dateLabel: __t.string(),
+  createdBy: __t.identity(),
+  createdAt: __t.timestamp(),
+  closedBy: __t.option(__t.identity()),
+  closedAt: __t.option(__t.timestamp()),
   get status() {
     return PlanStatus;
   },
@@ -90,6 +116,7 @@ export type Plan = __Infer<typeof Plan>;
 export const PlanStatus = __t.enum("PlanStatus", {
   Open: __t.unit(),
   Locked: __t.unit(),
+  Closed: __t.unit(),
 });
 export type PlanStatus = __Infer<typeof PlanStatus>;
 
@@ -113,3 +140,13 @@ export const ProposalStatus = __t.enum("ProposalStatus", {
   Reopened: __t.unit(),
 });
 export type ProposalStatus = __Infer<typeof ProposalStatus>;
+
+export const RoomMetrics = __t.object("RoomMetrics", {
+  id: __t.u32(),
+  planId: __t.u32(),
+  decisionsTaken: __t.u32(),
+  totalDecisionTimeMs: __t.u64(),
+  lastDecisionTimeMs: __t.u64(),
+  lastDecidedAt: __t.option(__t.timestamp()),
+});
+export type RoomMetrics = __Infer<typeof RoomMetrics>;
