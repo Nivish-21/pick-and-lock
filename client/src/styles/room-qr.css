@@ -1,0 +1,32 @@
+.room-qr {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.room-qr svg {
+  width: min(100%, 11rem);
+  height: auto;
+  padding: 0.5rem;
+  border-radius: var(--radius-control);
+  background: var(--surface-muted);
+}
+
+.room-qr p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.room-qr code {
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
