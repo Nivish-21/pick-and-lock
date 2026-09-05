@@ -12,3 +12,14 @@ Start with [the product brief](product-brief.md), then read [the architecture co
 | [Plan deck](source/the-plan-deck.pdf)                                | Original pitch deck and event presentation context.                                    |
 
 The written build spec wins whenever it conflicts with the deck. No implementation files are included in this planning commit.
+
+## Current execution documents
+
+The current plan supersedes the earlier single-lane schedule:
+
+| Document                                                                                     | Purpose                                                            |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| [Two-builder execution model](two-builder-execution.md)                                      | Independent UI and server lanes, milestones, and handoff protocol. |
+| [Realtime contract](contracts/realtime-contract.md)                                          | Frozen reducer inputs and `RoomView`/`RoomActions` UI boundary.    |
+| [Two-builder implementation plan](superpowers/plans/2026-09-05-pick-and-lock-two-builder.md) | Current task-by-task first-iteration plan.                         |
+| [Contributor contract](../AGENTS.md)                                                         | Instructions and file ownership for the collaborator's agent.      |
