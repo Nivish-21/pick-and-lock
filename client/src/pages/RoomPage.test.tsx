@@ -36,22 +36,17 @@ function actionsWith(overrides: Partial<RoomActions>): RoomActions {
 }
 
 describe("RoomPage", () => {
-  it("sends a conditional answer with the chosen maximum price", async () => {
+  it("sends a simple in vote", async () => {
     const setAnswer = vi.fn().mockResolvedValue(undefined);
 
     render(
       <RoomPage view={saturdayOpenView} actions={actionsWith({ setAnswer })} />,
     );
-    fireEvent.click(screen.getAllByRole("button", { name: "Conditional" })[0]);
-    fireEvent.change(screen.getByLabelText("Maximum price in INR"), {
-      target: { value: "450" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "I'm in" })[0]);
 
     await waitFor(() => {
-      expect(setAnswer).toHaveBeenCalledWith(1, "conditional", 450);
+      expect(setAnswer).toHaveBeenCalledWith(1, "in");
     });
-    expect(screen.queryByLabelText("Maximum price in INR")).toBeNull();
   });
 
   it("explains the automatic reopen safety rule in a locked room", async () => {

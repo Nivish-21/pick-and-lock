@@ -83,7 +83,7 @@ describe("CreateRoomPage", () => {
 
     expect(input).toMatchObject({
       title: "Dinner plan",
-      dateLabel: "Sat, Sep 5 · 7:00 PM",
+      dateLabel: "05/09/2026 · 7:00 PM",
       hostName: "Nivish",
     });
     expect(input.scheduledAt).toEqual(
@@ -129,10 +129,9 @@ describe("CreateRoomPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Create room" }));
 
     await waitFor(() => expect(onCreate).toHaveBeenCalledOnce());
-    const { shareCode } = onCreate.mock.calls[0][0];
     const success = await screen.findByRole("status");
 
     expect(success.textContent).toContain("Room created.");
-    expect(success.textContent).toContain(shareCode);
+    expect(success.textContent).not.toContain("Public room code");
   });
 });

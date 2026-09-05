@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import "../styles/room-chat.css";
 
 export type RoomChatMessage = {
@@ -23,6 +23,13 @@ function messageKey(id: number | bigint): string {
   return typeof id === "bigint" ? id.toString() : String(id);
 }
 
+function senderColor(senderName: string): number {
+  return Array.from(senderName).reduce(
+    (hash, character) => (hash * 31 + character.charCodeAt(0)) % 5,
+    0,
+  );
+}
+
 export function RoomChat({
   messages,
   onSend,
@@ -34,6 +41,12 @@ export function RoomChat({
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
+  const chatListRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const list = chatListRef.current;
+    if (list) list.scrollTop = list.scrollHeight;
+  }, [messages.length]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -82,12 +95,15 @@ export function RoomChat({
         <span className="room-chat-live" aria-label="Chat is live">Live</span>
       </div>
 
-      <div className="room-chat-list" aria-live="polite" aria-label="Room messages">
+      <div ref={chatListRef} className="room-chat-list" aria-live="polite" aria-label="Room messages">
         {messages.length === 0 ? (
           <p className="room-chat-empty">No messages yet. Start the conversation.</p>
         ) : (
           messages.map((message) => (
-            <article className={message.isBot ? "room-chat-message is-bot" : "room-chat-message"} key={messageKey(message.id)}>
+            <article
+              className={message.isBot ? "room-chat-message is-bot" : `room-chat-message sender-color-${senderColor(message.senderName)}`}
+              key={messageKey(message.id)}
+            >
               <div className="room-chat-message-meta">
                 <strong>{message.senderName}</strong>
                 {message.isBot ? <span>AI Concierge</span> : null}

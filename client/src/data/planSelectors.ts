@@ -30,6 +30,11 @@ export function buildRoomView(db: DbView, planId: number, identity?: { toHexStri
   const currentAnswers = new Map(answers.filter((answer) => answer.friendId === caller?.id).map((answer) => [answer.activityId, answer]));
   const activeFriends = friends.filter((friend) => friend.droppedAt == null);
   const activityViews = activities.map((activity) => {
+    const voteCount = answers.filter(
+      (answer) =>
+        answer.activityId === activity.id &&
+        activeFriends.some((friend) => friend.id === answer.friendId),
+    ).length;
     const eligibleCount = answers.filter((answer) => answer.activityId === activity.id && activeFriends.some((friend) => friend.id === answer.friendId) && (tag(answer.state) === "In" || (tag(answer.state) === "Conditional" && (answer.maxPrice ?? 0) >= activity.price))).length;
     const answer = currentAnswers.get(activity.id);
     const state = tag(answer?.state);
@@ -41,6 +46,7 @@ export function buildRoomView(db: DbView, planId: number, identity?: { toHexStri
       distanceKm: activity.distanceKm,
       timeMinutes: activity.timeMinutes,
       eligibleCount,
+      voteCount,
       possible: eligibleCount >= activity.minPeople,
       callerAnswer: state === "In" ? { state: "in" as const } : state === "Out" ? { state: "out" as const } : state === "Conditional" ? { state: "conditional" as const, ...(answer?.maxPrice == null ? {} : { maxPrice: answer.maxPrice }) } : null,
     };

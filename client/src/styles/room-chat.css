@@ -59,6 +59,12 @@
   background: #273025;
 }
 
+.room-chat-message.sender-color-0 { border-left: 0.25rem solid #6eb5ff; }
+.room-chat-message.sender-color-1 { border-left: 0.25rem solid #d69cff; }
+.room-chat-message.sender-color-2 { border-left: 0.25rem solid #72d6b2; }
+.room-chat-message.sender-color-3 { border-left: 0.25rem solid #ffb86b; }
+.room-chat-message.sender-color-4 { border-left: 0.25rem solid #ff7f9f; }
+
 .room-chat-message-meta {
   align-items: center;
   justify-content: start;

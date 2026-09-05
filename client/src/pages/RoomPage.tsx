@@ -156,12 +156,12 @@ export function RoomPage({ view, actions }: RoomPageProps) {
               {proposal ? "Group decision" : "What works for you?"}
             </p>
             <h1 id="room-title">
-              {proposal ? "One plan is on the table." : view.title}
+              {proposal ? "One plan is on the table." : "What works for you?"}
             </h1>
             <p>
               {proposal
                 ? "Only eligible friends can agree. The plan locks at the required count."
-                : "Choose what works. The group sees feasibility as answers arrive."}
+                : `Choose what works for ${view.title.toLowerCase()}. The group sees every vote live.`}
             </p>
           </section>
           {proposal ? (

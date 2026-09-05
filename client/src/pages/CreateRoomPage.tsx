@@ -41,10 +41,10 @@ function callbackError(error: unknown): string {
 }
 
 function formatDateLabel(date: Date): string {
-  const datePart = new Intl.DateTimeFormat("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
+  const datePart = new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
   }).format(date);
   const timePart = new Intl.DateTimeFormat("en-US", {
     hour: "numeric",
@@ -57,7 +57,6 @@ export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
   const [title, setTitle] = useState("");
   const [scheduledAtValue, setScheduledAtValue] = useState("");
   const [hostName, setHostName] = useState("");
-  const [shareCode, setShareCode] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   const [created, setCreated] = useState(false);
@@ -110,7 +109,6 @@ export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
         scheduledAt: Timestamp.fromDate(scheduledDate),
         hostName: trimmedHostName,
       });
-      setShareCode(nextShareCode);
       setCreated(true);
     } catch (creationError) {
       setError(callbackError(creationError));
@@ -131,7 +129,7 @@ export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
           />
           <span>Sorted</span>
         </a>
-        <p>New decision room</p>
+        <p>New decision</p>
       </header>
 
       <section
@@ -139,7 +137,7 @@ export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
         aria-labelledby="create-room-title"
       >
         <div className="create-room-intro">
-          <p className="create-room-kicker">Start with a clear question</p>
+          <p className="create-room-kicker">Start a new decision</p>
           <h1 id="create-room-title">Get everyone on the same page.</h1>
           <p>
             Make one room for the decision, then share the code with the people
@@ -176,6 +174,7 @@ export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
               id="room-date"
               name="scheduledAt"
               type="datetime-local"
+              lang="en-GB"
               value={scheduledAtValue}
               onChange={(event) => setScheduledAtValue(event.target.value)}
               autoComplete="off"
@@ -197,21 +196,6 @@ export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
             />
           </div>
 
-          <div
-            className="create-room-code"
-            aria-label="Generated public room code"
-          >
-            <div>
-              <span className="create-room-code-label">Public room code</span>
-              <strong>
-                {shareCode || "Generated when you create the room"}
-              </strong>
-            </div>
-            <span className="create-room-code-mark" aria-hidden="true">
-              Open
-            </span>
-          </div>
-
           <p
             className="create-room-feedback"
             role="alert"
@@ -227,9 +211,7 @@ export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
               aria-live="polite"
             >
               <strong>Room created.</strong>
-              <span>
-                Share code {shareCode} with your group to get started.
-              </span>
+              <span>Your decision room is ready. Opening it now…</span>
             </div>
           ) : null}
 

@@ -102,6 +102,15 @@
   color: #8fa4a5;
 }
 
+.create-room-field input[type="datetime-local"] {
+  color-scheme: dark;
+}
+
+.create-room-field input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.9;
+}
+
 .create-room-hint {
   color: #a9beb7;
   font-family: var(--font-sans);

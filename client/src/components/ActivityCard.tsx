@@ -1,4 +1,3 @@
-import { useState } from "react";
 import type { ActivityView, RoomActions } from "../fixtures/room";
 
 type ActivityCardProps = {
@@ -19,18 +18,9 @@ export function ActivityCard({
   actions,
   onError,
 }: ActivityCardProps) {
-  const [showConditional, setShowConditional] = useState(false);
-  const [maxPrice, setMaxPrice] = useState(String(activity.price));
-
-  async function submitAnswer(state: "in" | "out" | "conditional") {
+  async function submitAnswer(state: "in" | "out") {
     try {
-      const price = Number(maxPrice);
-      await actions.setAnswer(
-        activity.id,
-        state,
-        state === "conditional" && Number.isFinite(price) ? price : undefined,
-      );
-      setShowConditional(false);
+      await actions.setAnswer(activity.id, state);
     } catch (error) {
       onError(error instanceof Error ? error.message : "Action not applied");
     }
@@ -66,9 +56,9 @@ export function ActivityCard({
           }
         >
           <strong>
-            {activity.eligibleCount} / {activity.minPeople}
+            {activity.voteCount ?? activity.eligibleCount}
           </strong>
-          <span>{activity.possible ? "Possible" : "Not yet"}</span>
+          <span>votes</span>
         </div>
       </div>
       <div
@@ -81,38 +71,12 @@ export function ActivityCard({
         <button type="button" onClick={() => void submitAnswer("out")}>
           I&apos;m out
         </button>
-        <button
-          type="button"
-          onClick={() => setShowConditional((current) => !current)}
-        >
-          Conditional
-        </button>
         {activity.possible ? (
           <button type="button" onClick={() => void submitProposal()}>
             Propose {activity.name}
           </button>
         ) : null}
       </div>
-      {showConditional ? (
-        <div className="conditional-answer">
-          <label htmlFor={`price-${activity.id}`}>Maximum price in INR</label>
-          <div>
-            <input
-              id={`price-${activity.id}`}
-              inputMode="numeric"
-              min="0"
-              value={maxPrice}
-              onChange={(event) => setMaxPrice(event.target.value)}
-            />
-            <button
-              type="button"
-              onClick={() => void submitAnswer("conditional")}
-            >
-              Save
-            </button>
-          </div>
-        </div>
-      ) : null}
     </article>
   );
 }

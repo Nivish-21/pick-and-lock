@@ -10,6 +10,7 @@ export type ActivityView = {
   distanceKm?: number;
   timeMinutes?: number;
   eligibleCount: number;
+  voteCount?: number;
   possible: boolean;
   callerAnswer: { state: AnswerState; maxPrice?: number } | null;
 };

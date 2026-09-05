@@ -58,7 +58,9 @@ describe("RoomSession", () => {
     await waitFor(() => {
       expect(bridgeActions.join).toHaveBeenCalledWith("Host Name");
     });
-    expect(await screen.findByText("What works for you?")).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", { name: "What works for you?" }),
+    ).toBeTruthy();
     expect(
       screen.queryByRole("button", { name: "Join Saturday plans" }),
     ).toBeNull();
