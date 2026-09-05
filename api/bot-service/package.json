@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "start": "tsx index.ts",
+    "generate-identity": "tsx generate-identity.ts",
     "test": "vitest run"
   },
   "dependencies": {
