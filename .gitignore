@@ -1,3 +1,6 @@
 .cargo-local/
 .rustup-local/
 server/**/target/
+client-scaffold/
+client/node_modules/
+client/dist/

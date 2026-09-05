@@ -1,0 +1,7 @@
+.shell { min-height: 100vh; padding: 24px; max-width: 720px; margin: 0 auto; }
+.brand { font-weight: 800; letter-spacing: .04em; margin-bottom: 48px; }
+.card { background: #fff; border: 1px solid #e5e7eb; border-radius: 24px; padding: 32px; box-shadow: 0 18px 50px #11182712; }
+.eyebrow { color: #6366f1; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; font-size: .75rem; }
+h1 { font-size: clamp(2.2rem, 9vw, 4.5rem); line-height: .98; margin: 12px 0 20px; }
+.muted { color: #64748b; line-height: 1.6; }
+button { margin-top: 20px; border: 0; border-radius: 999px; padding: 14px 20px; background: #111827; color: white; font-weight: 700; cursor: pointer; }
