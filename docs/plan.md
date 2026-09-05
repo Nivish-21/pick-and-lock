@@ -1,6 +1,17 @@
-# Active execution plan — 2026-09-05 checkpoint
+# Active execution plan — 2026-09-06 checkpoint (most recent, read this first)
 
-## Where this stands right now
+## Resume point
+
+Everything is merged into `main` except one open lane. To resume:
+
+1. Check GitHub issue #16 (`server/chat-schema-plan-retarget`) — server retarget of chat/location/bot tables from `PrivateRoom.id` to `Plan.id`, plus a new `bot_add_activity` reducer and bot-service autonomous poll authoring. Spec: `docs/superpowers/specs/2026-09-05-web-fix-and-chat-agent-design.md` sections 8-9.
+2. Once #16 merges: regenerate `client/src/module_bindings`, replace the `TODO(issue #16)` placeholder chat wiring in `client/src/pages/RoomPage.tsx` with the real `my_room_chat`/`my_room_preferences` subscriptions and `sendChatMessage` action (client-side plumbing pattern already established in `RoomDataBridge.tsx`/`spacetime.ts` for `activity`/`friend`/etc.).
+3. Re-run full verification (server + client + bot-service, see any recent PR body for the exact command list), then publish to Maincloud again with explicit owner confirmation (`spacetime publish pick-and-lock --module-path server/spacetimedb --yes=remote` — additive-only, verify with `git diff <prev> HEAD -- server/spacetimedb/src/lib.rs` that no existing table's columns changed, same check performed before every publish so far).
+4. Live-browser-test the merged result the same way this session did (create a room, join, exercise the feature, check console/network) before considering it done — unit tests alone missed both the "module not republished" and "wrong room schema" defects this session found.
+
+Everything below this point is prior-session history, kept for context; `docs/status.md` and `docs/changelog.md` have the full detailed log of what was merged, verified, and published.
+
+## Where this stands right now (2026-09-05, superseded by Resume point above)
 
 Design approved. Spec written and committed to:
 `docs/superpowers/specs/2026-09-05-web-fix-and-chat-agent-design.md`

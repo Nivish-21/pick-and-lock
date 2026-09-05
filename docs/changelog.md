@@ -111,3 +111,11 @@
 - Added the supplied Sorted icon plus 32px favicon and 180px Apple touch icon assets.
 - Updated browser metadata, accessibility labels, and landing, room, and create-room wordmarks to Sorted.
 - Kept the live SpacetimeDB database name, README, AGENTS, and internal fixture URLs unchanged.
+
+# 2026-09-06 — Integration, Maincloud publish, and schema-mismatch fix
+
+- Merged PRs #13 (Lane B), #14 (Sorted rebrand), #8 (calendar-event builder), #15 (chat-agent), and #18 (onboarding/split-chat) into `main`; independently re-ran full verification on each merge commit rather than trusting each agent's self-report.
+- Fixed a merge mistake: `api/bot-service/node_modules` was briefly staged via `git add -A`; added `api/bot-service/.gitignore`, recommitted clean before pushing.
+- Renamed the Vercel project `pick-and-lock` → `sorted`; production domain unchanged (still `pick-and-lock.vercel.app`) pending a Deployment Protection dashboard change the owner hasn't made yet.
+- Published the additive schema (verified no existing-table columns changed) to Maincloud with explicit owner confirmation: `spacetime publish pick-and-lock --module-path server/spacetimedb --yes=remote`.
+- Live browser testing against production found `add_activity` was unreachable (module not republished) and that chat/location/bot tables were built against `PrivateRoom.id` instead of `Plan.id`, and that `RoomChat`/`GroupInputPanel` were never mounted anywhere. Recorded the root cause and owner-confirmed fix in the design spec (section 8) and opened issues #16 (server retarget, in progress) and #17 (client onboarding/layout, merged as #18).
