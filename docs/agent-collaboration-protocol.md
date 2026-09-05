@@ -29,14 +29,16 @@ An agent waiting for a new chat prompt is idle by design. Git branches alone do 
 - The repository owner merges only green reviewed pull requests, runs the relevant suite after each merge, and moves newly unblocked issues to `ready`.
 - Maincloud publishes and production deployment remain owner-confirmed destructive actions; an agent must never publish merely because a pull request merged.
 
-## Current v2 public-sharing issue graph
+## Current v2 build issue graph
 
-| Issue title                                | Lane        | Allowed paths                                                                                                 | Depends on          | Completion unblocks  |
-| ------------------------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------- | ------------------- | -------------------- |
-| V2-PS1 Public-share SpacetimeDB projection | server      | `server/spacetimedb/**`, generated bindings                                                                   | private v2 tables   | V2-PS3 integration   |
-| V2-PS2 Public-story presentational page    | ui          | `client/src/pages/public-room/**`, `client/src/components/public-room/**`, `client/src/styles/public-room/**` | none; fixtures only | V2-PS3 integration   |
-| V2-PS3 Route and data bridge               | integration | `client/src/data/**`, `client/src/public-share-route.*`                                                       | V2-PS1, V2-PS2      | V2-PS4 verification  |
-| V2-PS4 Two-identity privacy proof          | server      | `client/e2e/**` and server test files only                                                                    | V2-PS3              | owner publish review |
+| Issue                                                                                                | Lane        | Allowed paths                                                                                                 | Depends on          | Completion unblocks     |
+| ---------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------- | ------------------- | ----------------------- |
+| [#2 V2-PR1 Private room access core](https://github.com/Nivish-21/pick-and-lock/issues/2)            | server      | `server/spacetimedb/**`, generated bindings                                                                   | none                | V2-PS1                  |
+| [#6 V2-PR2 Calendar-event builder](https://github.com/Nivish-21/pick-and-lock/issues/6)              | integration | `client/src/lib/calendarEvent.*`                                                                              | none                | calendar UI integration |
+| [#3 V2-PS2 Public-story presentational page](https://github.com/Nivish-21/pick-and-lock/issues/3)    | ui          | `client/src/pages/public-room/**`, `client/src/components/public-room/**`, `client/src/styles/public-room/**` | none; fixtures only | V2-PS3                  |
+| [#1 V2-PS1 Public-share SpacetimeDB projection](https://github.com/Nivish-21/pick-and-lock/issues/1) | server      | `server/spacetimedb/**`, generated bindings                                                                   | V2-PR1              | V2-PS3                  |
+| [#4 V2-PS3 Route and data bridge](https://github.com/Nivish-21/pick-and-lock/issues/4)               | integration | `client/src/data/**`, `client/src/public-share-route.*`                                                       | V2-PS1, V2-PS2      | V2-PS4                  |
+| [#5 V2-PS4 Two-identity privacy proof](https://github.com/Nivish-21/pick-and-lock/issues/5)          | server      | `client/e2e/**` and server test files only                                                                    | V2-PS3              | owner publish review    |
 
 ## Bootstrap prompt to send once to any collaborator agent
 

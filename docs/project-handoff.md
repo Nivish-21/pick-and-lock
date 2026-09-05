@@ -115,3 +115,10 @@ A private-room creator may later opt in to a separate read-only `/share/<publicR
 ## Agent coordination now
 
 Use `docs/agent-collaboration-protocol.md` and GitHub Issues as the current task queue. An incoming agent claims one `ready` issue in its owned lane, pushes a focused branch, opens a PR handoff, then claims the next unblocked issue. The repository owner does not need to issue a new chat prompt after every task.
+
+### Live v2 lanes
+
+- #2 `server/private-v2-core`: private room access foundation; it cannot publish Maincloud.
+- #3 `ui/public-story`: fixture-only read-only public-story UI; it cannot touch routes or data access.
+- #6 `integration/calendar-event`: ready, isolated RFC 5545 calendar-text helper for an external collaborator.
+- #1, #4, and #5 remain blocked until their named dependencies merge. Do not bypass this order.

@@ -69,3 +69,9 @@
 - Added an executable Superpowers plan that isolates server projection, UI, route/bridge, and two-identity privacy-proof tasks.
 - Added a GitHub-Issues-based task claim and pull-request handoff protocol so agents can claim their next unblocked task without repeated human relay prompts.
 - Kept private v2 data in SpacetimeDB; no Supabase integration or additional coordination service is planned.
+
+# 2026-09-05 — v2 execution queue launched
+
+- Pushed the planning package as `45626e6` to `origin/main`.
+- Created GitHub labels plus issues #1–#6 with explicit ownership, dependency, and acceptance boundaries.
+- Started disjoint private-room server (#2) and public-story UI (#3) worktrees; reserved the independent calendar-event builder (#6) for a collaborator.

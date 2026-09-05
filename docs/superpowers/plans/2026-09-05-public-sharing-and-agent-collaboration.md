@@ -44,10 +44,10 @@
 
 **Produces:** Each agent can claim exactly one unblocked task without a relay prompt.
 
-- [ ] Create the listed labels and four issues from the current v2 public-sharing issue graph.
-- [ ] Put task scope, allowed paths, dependencies, and the listed acceptance proof into each issue.
-- [ ] Send the bootstrap prompt from `docs/agent-collaboration-protocol.md` to each collaborator agent once.
-- [ ] Verify every active agent has either a claimed issue or a visible blocker comment.
+- [x] Create the listed labels and the v2 issue queue from the current public-sharing issue graph.
+- [x] Put task scope, allowed paths, dependencies, and the listed acceptance proof into each issue.
+- [x] Send the bootstrap prompt from `docs/agent-collaboration-protocol.md` to each internal collaborator agent once.
+- [x] Verify every active internal agent has a claimed issue and every dependent issue has a visible blocker comment.
 
 ### Task 2: Add the creator-controlled SpacetimeDB public projection
 
