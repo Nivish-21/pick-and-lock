@@ -35,9 +35,11 @@ import {
 
 // Import all reducer arg schemas
 import AcceptReducer from "./accept_reducer";
+import AcceptPrivateProposalReducer from "./accept_private_proposal_reducer";
 import AddActivityReducer from "./add_activity_reducer";
 import AdvanceBotWatermarkReducer from "./advance_bot_watermark_reducer";
 import BotAddActivityReducer from "./bot_add_activity_reducer";
+import CancelPrivateProposalReducer from "./cancel_private_proposal_reducer";
 import CancelProposalReducer from "./cancel_proposal_reducer";
 import CreatePrivateRoomReducer from "./create_private_room_reducer";
 import CreateRoomReducer from "./create_room_reducer";
@@ -46,13 +48,16 @@ import EnsureBotFriendReducer from "./ensure_bot_friend_reducer";
 import JoinReducer from "./join_reducer";
 import JoinWithInviteReducer from "./join_with_invite_reducer";
 import LeaveReducer from "./leave_reducer";
+import LeavePrivateRoomReducer from "./leave_private_room_reducer";
 import ProposeReducer from "./propose_reducer";
+import ProposePrivateChoiceReducer from "./propose_private_choice_reducer";
 import RecordPreferenceReducer from "./record_preference_reducer";
 import RegenerateInviteReducer from "./regenerate_invite_reducer";
 import RevokeInviteReducer from "./revoke_invite_reducer";
 import SendBotMessageReducer from "./send_bot_message_reducer";
 import SendChatMessageReducer from "./send_chat_message_reducer";
 import SetAnswerReducer from "./set_answer_reducer";
+import SetPrivateVoteReducer from "./set_private_vote_reducer";
 import SubmitLocationReducer from "./submit_location_reducer";
 
 // Import all procedure arg schemas
@@ -64,12 +69,17 @@ import AnswerRow from "./answer_table";
 import EventLogRow from "./event_log_table";
 import FriendRow from "./friend_table";
 import MyBotRoomStateRow from "./my_bot_room_state_table";
+import MyRoomAcceptancesRow from "./my_room_acceptances_table";
 import MyRoomChatRow from "./my_room_chat_table";
 import MyRoomChoicesRow from "./my_room_choices_table";
+import MyRoomDecisionsRow from "./my_room_decisions_table";
 import MyRoomLocationsRow from "./my_room_locations_table";
 import MyRoomMembersRow from "./my_room_members_table";
+import MyRoomMetricsRow from "./my_room_metrics_table";
 import MyRoomPreferencesRow from "./my_room_preferences_table";
+import MyRoomProposalsRow from "./my_room_proposals_table";
 import MyRoomScheduleRow from "./my_room_schedule_table";
+import MyRoomVotesRow from "./my_room_votes_table";
 import MyRoomsRow from "./my_rooms_table";
 import PlanRow from "./plan_table";
 import ProposalRow from "./proposal_table";
@@ -196,6 +206,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MyBotRoomStateRow),
+  myRoomAcceptances: __table({
+    name: 'my_room_acceptances',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyRoomAcceptancesRow),
   myRoomChat: __table({
     name: 'my_room_chat',
     indexes: [
@@ -210,6 +227,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MyRoomChoicesRow),
+  myRoomDecisions: __table({
+    name: 'my_room_decisions',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyRoomDecisionsRow),
   myRoomLocations: __table({
     name: 'my_room_locations',
     indexes: [
@@ -224,6 +248,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MyRoomMembersRow),
+  myRoomMetrics: __table({
+    name: 'my_room_metrics',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyRoomMetricsRow),
   myRoomPreferences: __table({
     name: 'my_room_preferences',
     indexes: [
@@ -231,6 +262,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MyRoomPreferencesRow),
+  myRoomProposals: __table({
+    name: 'my_room_proposals',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyRoomProposalsRow),
   myRoomSchedule: __table({
     name: 'my_room_schedule',
     indexes: [
@@ -238,6 +276,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MyRoomScheduleRow),
+  myRoomVotes: __table({
+    name: 'my_room_votes',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyRoomVotesRow),
   myRooms: __table({
     name: 'my_rooms',
     indexes: [
@@ -250,9 +295,11 @@ const tablesSchema = __schema({
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
   __reducerSchema("accept", AcceptReducer),
+  __reducerSchema("accept_private_proposal", AcceptPrivateProposalReducer),
   __reducerSchema("add_activity", AddActivityReducer),
   __reducerSchema("advance_bot_watermark", AdvanceBotWatermarkReducer),
   __reducerSchema("bot_add_activity", BotAddActivityReducer),
+  __reducerSchema("cancel_private_proposal", CancelPrivateProposalReducer),
   __reducerSchema("cancel_proposal", CancelProposalReducer),
   __reducerSchema("create_private_room", CreatePrivateRoomReducer),
   __reducerSchema("create_room", CreateRoomReducer),
@@ -261,13 +308,16 @@ const reducersSchema = __reducers(
   __reducerSchema("join", JoinReducer),
   __reducerSchema("join_with_invite", JoinWithInviteReducer),
   __reducerSchema("leave", LeaveReducer),
+  __reducerSchema("leave_private_room", LeavePrivateRoomReducer),
   __reducerSchema("propose", ProposeReducer),
+  __reducerSchema("propose_private_choice", ProposePrivateChoiceReducer),
   __reducerSchema("record_preference", RecordPreferenceReducer),
   __reducerSchema("regenerate_invite", RegenerateInviteReducer),
   __reducerSchema("revoke_invite", RevokeInviteReducer),
   __reducerSchema("send_bot_message", SendBotMessageReducer),
   __reducerSchema("send_chat_message", SendChatMessageReducer),
   __reducerSchema("set_answer", SetAnswerReducer),
+  __reducerSchema("set_private_vote", SetPrivateVoteReducer),
   __reducerSchema("submit_location", SubmitLocationReducer),
 );
 
@@ -281,18 +331,28 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
     readonly "event_log": Omit<typeof tablesSchema.schemaType.tables["eventLog"], "accessorName"> & { readonly accessorName: "event_log" };
     /** @deprecated Use `myBotRoomState` instead. This alias will be removed in the next major version. */
     readonly "my_bot_room_state": Omit<typeof tablesSchema.schemaType.tables["myBotRoomState"], "accessorName"> & { readonly accessorName: "my_bot_room_state" };
+    /** @deprecated Use `myRoomAcceptances` instead. This alias will be removed in the next major version. */
+    readonly "my_room_acceptances": Omit<typeof tablesSchema.schemaType.tables["myRoomAcceptances"], "accessorName"> & { readonly accessorName: "my_room_acceptances" };
     /** @deprecated Use `myRoomChat` instead. This alias will be removed in the next major version. */
     readonly "my_room_chat": Omit<typeof tablesSchema.schemaType.tables["myRoomChat"], "accessorName"> & { readonly accessorName: "my_room_chat" };
     /** @deprecated Use `myRoomChoices` instead. This alias will be removed in the next major version. */
     readonly "my_room_choices": Omit<typeof tablesSchema.schemaType.tables["myRoomChoices"], "accessorName"> & { readonly accessorName: "my_room_choices" };
+    /** @deprecated Use `myRoomDecisions` instead. This alias will be removed in the next major version. */
+    readonly "my_room_decisions": Omit<typeof tablesSchema.schemaType.tables["myRoomDecisions"], "accessorName"> & { readonly accessorName: "my_room_decisions" };
     /** @deprecated Use `myRoomLocations` instead. This alias will be removed in the next major version. */
     readonly "my_room_locations": Omit<typeof tablesSchema.schemaType.tables["myRoomLocations"], "accessorName"> & { readonly accessorName: "my_room_locations" };
     /** @deprecated Use `myRoomMembers` instead. This alias will be removed in the next major version. */
     readonly "my_room_members": Omit<typeof tablesSchema.schemaType.tables["myRoomMembers"], "accessorName"> & { readonly accessorName: "my_room_members" };
+    /** @deprecated Use `myRoomMetrics` instead. This alias will be removed in the next major version. */
+    readonly "my_room_metrics": Omit<typeof tablesSchema.schemaType.tables["myRoomMetrics"], "accessorName"> & { readonly accessorName: "my_room_metrics" };
     /** @deprecated Use `myRoomPreferences` instead. This alias will be removed in the next major version. */
     readonly "my_room_preferences": Omit<typeof tablesSchema.schemaType.tables["myRoomPreferences"], "accessorName"> & { readonly accessorName: "my_room_preferences" };
+    /** @deprecated Use `myRoomProposals` instead. This alias will be removed in the next major version. */
+    readonly "my_room_proposals": Omit<typeof tablesSchema.schemaType.tables["myRoomProposals"], "accessorName"> & { readonly accessorName: "my_room_proposals" };
     /** @deprecated Use `myRoomSchedule` instead. This alias will be removed in the next major version. */
     readonly "my_room_schedule": Omit<typeof tablesSchema.schemaType.tables["myRoomSchedule"], "accessorName"> & { readonly accessorName: "my_room_schedule" };
+    /** @deprecated Use `myRoomVotes` instead. This alias will be removed in the next major version. */
+    readonly "my_room_votes": Omit<typeof tablesSchema.schemaType.tables["myRoomVotes"], "accessorName"> & { readonly accessorName: "my_room_votes" };
     /** @deprecated Use `myRooms` instead. This alias will be removed in the next major version. */
     readonly "my_rooms": Omit<typeof tablesSchema.schemaType.tables["myRooms"], "accessorName"> & { readonly accessorName: "my_rooms" };
   };
@@ -315,12 +375,17 @@ const REMOTE_MODULE = {
 const tableAccessorAliases = {
   "event_log": "eventLog",
   "my_bot_room_state": "myBotRoomState",
+  "my_room_acceptances": "myRoomAcceptances",
   "my_room_chat": "myRoomChat",
   "my_room_choices": "myRoomChoices",
+  "my_room_decisions": "myRoomDecisions",
   "my_room_locations": "myRoomLocations",
   "my_room_members": "myRoomMembers",
+  "my_room_metrics": "myRoomMetrics",
   "my_room_preferences": "myRoomPreferences",
+  "my_room_proposals": "myRoomProposals",
   "my_room_schedule": "myRoomSchedule",
+  "my_room_votes": "myRoomVotes",
   "my_rooms": "myRooms",
 } as const;
 
@@ -339,24 +404,35 @@ function __withTableAccessorAliases<T extends object>(target: T, freeze = false)
   }
   return freeze ? Object.freeze(out) : out;
 }
+
 type __DbViewBase = __DbConnectionImpl<typeof REMOTE_MODULE>["db"];
 export type DbView = __DbViewBase & {
   /** @deprecated Use `eventLog` instead. This alias will be removed in the next major version. */
   readonly "event_log": __DbViewBase["eventLog"];
   /** @deprecated Use `myBotRoomState` instead. This alias will be removed in the next major version. */
   readonly "my_bot_room_state": __DbViewBase["myBotRoomState"];
+  /** @deprecated Use `myRoomAcceptances` instead. This alias will be removed in the next major version. */
+  readonly "my_room_acceptances": __DbViewBase["myRoomAcceptances"];
   /** @deprecated Use `myRoomChat` instead. This alias will be removed in the next major version. */
   readonly "my_room_chat": __DbViewBase["myRoomChat"];
   /** @deprecated Use `myRoomChoices` instead. This alias will be removed in the next major version. */
   readonly "my_room_choices": __DbViewBase["myRoomChoices"];
+  /** @deprecated Use `myRoomDecisions` instead. This alias will be removed in the next major version. */
+  readonly "my_room_decisions": __DbViewBase["myRoomDecisions"];
   /** @deprecated Use `myRoomLocations` instead. This alias will be removed in the next major version. */
   readonly "my_room_locations": __DbViewBase["myRoomLocations"];
   /** @deprecated Use `myRoomMembers` instead. This alias will be removed in the next major version. */
   readonly "my_room_members": __DbViewBase["myRoomMembers"];
+  /** @deprecated Use `myRoomMetrics` instead. This alias will be removed in the next major version. */
+  readonly "my_room_metrics": __DbViewBase["myRoomMetrics"];
   /** @deprecated Use `myRoomPreferences` instead. This alias will be removed in the next major version. */
   readonly "my_room_preferences": __DbViewBase["myRoomPreferences"];
+  /** @deprecated Use `myRoomProposals` instead. This alias will be removed in the next major version. */
+  readonly "my_room_proposals": __DbViewBase["myRoomProposals"];
   /** @deprecated Use `myRoomSchedule` instead. This alias will be removed in the next major version. */
   readonly "my_room_schedule": __DbViewBase["myRoomSchedule"];
+  /** @deprecated Use `myRoomVotes` instead. This alias will be removed in the next major version. */
+  readonly "my_room_votes": __DbViewBase["myRoomVotes"];
   /** @deprecated Use `myRooms` instead. This alias will be removed in the next major version. */
   readonly "my_rooms": __DbViewBase["myRooms"];
 };
@@ -367,18 +443,28 @@ export type Tables = __TablesBase & {
   readonly "event_log": __TablesBase["eventLog"];
   /** @deprecated Use `myBotRoomState` instead. This alias will be removed in the next major version. */
   readonly "my_bot_room_state": __TablesBase["myBotRoomState"];
+  /** @deprecated Use `myRoomAcceptances` instead. This alias will be removed in the next major version. */
+  readonly "my_room_acceptances": __TablesBase["myRoomAcceptances"];
   /** @deprecated Use `myRoomChat` instead. This alias will be removed in the next major version. */
   readonly "my_room_chat": __TablesBase["myRoomChat"];
   /** @deprecated Use `myRoomChoices` instead. This alias will be removed in the next major version. */
   readonly "my_room_choices": __TablesBase["myRoomChoices"];
+  /** @deprecated Use `myRoomDecisions` instead. This alias will be removed in the next major version. */
+  readonly "my_room_decisions": __TablesBase["myRoomDecisions"];
   /** @deprecated Use `myRoomLocations` instead. This alias will be removed in the next major version. */
   readonly "my_room_locations": __TablesBase["myRoomLocations"];
   /** @deprecated Use `myRoomMembers` instead. This alias will be removed in the next major version. */
   readonly "my_room_members": __TablesBase["myRoomMembers"];
+  /** @deprecated Use `myRoomMetrics` instead. This alias will be removed in the next major version. */
+  readonly "my_room_metrics": __TablesBase["myRoomMetrics"];
   /** @deprecated Use `myRoomPreferences` instead. This alias will be removed in the next major version. */
   readonly "my_room_preferences": __TablesBase["myRoomPreferences"];
+  /** @deprecated Use `myRoomProposals` instead. This alias will be removed in the next major version. */
+  readonly "my_room_proposals": __TablesBase["myRoomProposals"];
   /** @deprecated Use `myRoomSchedule` instead. This alias will be removed in the next major version. */
   readonly "my_room_schedule": __TablesBase["myRoomSchedule"];
+  /** @deprecated Use `myRoomVotes` instead. This alias will be removed in the next major version. */
+  readonly "my_room_votes": __TablesBase["myRoomVotes"];
   /** @deprecated Use `myRooms` instead. This alias will be removed in the next major version. */
   readonly "my_rooms": __TablesBase["myRooms"];
 };

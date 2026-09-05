@@ -139,6 +139,15 @@ export const MyRoom = __t.object("MyRoom", {
 });
 export type MyRoom = __Infer<typeof MyRoom>;
 
+export const MyRoomAcceptance = __t.object("MyRoomAcceptance", {
+  acceptanceId: __t.u32(),
+  roomId: __t.u32(),
+  proposalId: __t.u32(),
+  memberName: __t.string(),
+  acceptedAt: __t.timestamp(),
+});
+export type MyRoomAcceptance = __Infer<typeof MyRoomAcceptance>;
+
 export const MyRoomChat = __t.object("MyRoomChat", {
   id: __t.u64(),
   roomId: __t.u32(),
@@ -162,6 +171,16 @@ export const MyRoomChoice = __t.object("MyRoomChoice", {
 });
 export type MyRoomChoice = __Infer<typeof MyRoomChoice>;
 
+export const MyRoomDecision = __t.object("MyRoomDecision", {
+  decisionId: __t.u32(),
+  roomId: __t.u32(),
+  choiceId: __t.u32(),
+  lockedAt: __t.timestamp(),
+  decisionDurationSeconds: __t.u64(),
+  eligibleAcceptanceCount: __t.u32(),
+});
+export type MyRoomDecision = __Infer<typeof MyRoomDecision>;
+
 export const MyRoomLocation = __t.object("MyRoomLocation", {
   id: __t.u64(),
   roomId: __t.u32(),
@@ -183,6 +202,14 @@ export const MyRoomMember = __t.object("MyRoomMember", {
 });
 export type MyRoomMember = __Infer<typeof MyRoomMember>;
 
+export const MyRoomMetrics = __t.object("MyRoomMetrics", {
+  roomId: __t.u32(),
+  decisionCount: __t.u32(),
+  totalDecisionSeconds: __t.u64(),
+  latestLockedAt: __t.option(__t.timestamp()),
+});
+export type MyRoomMetrics = __Infer<typeof MyRoomMetrics>;
+
 export const MyRoomPreference = __t.object("MyRoomPreference", {
   id: __t.u64(),
   roomId: __t.u32(),
@@ -195,6 +222,18 @@ export const MyRoomPreference = __t.object("MyRoomPreference", {
 });
 export type MyRoomPreference = __Infer<typeof MyRoomPreference>;
 
+export const MyRoomProposal = __t.object("MyRoomProposal", {
+  proposalId: __t.u32(),
+  roomId: __t.u32(),
+  choiceId: __t.u32(),
+  proposerName: __t.string(),
+  get status() {
+    return ProposalStatus;
+  },
+  createdAt: __t.timestamp(),
+});
+export type MyRoomProposal = __Infer<typeof MyRoomProposal>;
+
 export const MyRoomSchedule = __t.object("MyRoomSchedule", {
   roomId: __t.u32(),
   startsAt: __t.timestamp(),
@@ -202,6 +241,18 @@ export const MyRoomSchedule = __t.object("MyRoomSchedule", {
   timezone: __t.string(),
 });
 export type MyRoomSchedule = __Infer<typeof MyRoomSchedule>;
+
+export const MyRoomVote = __t.object("MyRoomVote", {
+  voteId: __t.u32(),
+  roomId: __t.u32(),
+  choiceId: __t.u32(),
+  memberName: __t.string(),
+  get state() {
+    return AnswerState;
+  },
+  maxPrice: __t.option(__t.u32()),
+});
+export type MyRoomVote = __Infer<typeof MyRoomVote>;
 
 export const Plan = __t.object("Plan", {
   id: __t.u32(),
@@ -233,6 +284,7 @@ export const PrivateRoom = __t.object("PrivateRoom", {
   get status() {
     return PrivateRoomStatus;
   },
+  lockedChoiceId: __t.option(__t.u32()),
 });
 export type PrivateRoom = __Infer<typeof PrivateRoom>;
 
@@ -246,6 +298,7 @@ export type PrivateRoomChoiceInput = __Infer<typeof PrivateRoomChoiceInput>;
 // The tagged union or sum type for the algebraic type `PrivateRoomStatus`.
 export const PrivateRoomStatus = __t.enum("PrivateRoomStatus", {
   Open: __t.unit(),
+  Locked: __t.unit(),
 });
 export type PrivateRoomStatus = __Infer<typeof PrivateRoomStatus>;
 
@@ -270,6 +323,16 @@ export const ProposalStatus = __t.enum("ProposalStatus", {
 });
 export type ProposalStatus = __Infer<typeof ProposalStatus>;
 
+export const RoomAcceptance = __t.object("RoomAcceptance", {
+  id: __t.u32(),
+  roomId: __t.u32(),
+  proposalId: __t.u32(),
+  memberIdentity: __t.identity(),
+  acceptedAt: __t.timestamp(),
+  acceptanceKey: __t.string(),
+});
+export type RoomAcceptance = __Infer<typeof RoomAcceptance>;
+
 export const RoomChoice = __t.object("RoomChoice", {
   id: __t.u32(),
   roomId: __t.u32(),
@@ -279,6 +342,16 @@ export const RoomChoice = __t.object("RoomChoice", {
   sortOrder: __t.u32(),
 });
 export type RoomChoice = __Infer<typeof RoomChoice>;
+
+export const RoomDecision = __t.object("RoomDecision", {
+  id: __t.u32(),
+  roomId: __t.u32(),
+  choiceId: __t.u32(),
+  lockedAt: __t.timestamp(),
+  decisionDurationSeconds: __t.u64(),
+  eligibleAcceptanceCount: __t.u32(),
+});
+export type RoomDecision = __Infer<typeof RoomDecision>;
 
 export const RoomInvite = __t.object("RoomInvite", {
   id: __t.u32(),
@@ -312,6 +385,26 @@ export const RoomMembershipRole = __t.enum("RoomMembershipRole", {
 });
 export type RoomMembershipRole = __Infer<typeof RoomMembershipRole>;
 
+export const RoomMetrics = __t.object("RoomMetrics", {
+  roomId: __t.u32(),
+  decisionCount: __t.u32(),
+  totalDecisionSeconds: __t.u64(),
+  latestLockedAt: __t.option(__t.timestamp()),
+});
+export type RoomMetrics = __Infer<typeof RoomMetrics>;
+
+export const RoomProposal = __t.object("RoomProposal", {
+  id: __t.u32(),
+  roomId: __t.u32(),
+  choiceId: __t.u32(),
+  proposerIdentity: __t.identity(),
+  get status() {
+    return ProposalStatus;
+  },
+  createdAt: __t.timestamp(),
+});
+export type RoomProposal = __Infer<typeof RoomProposal>;
+
 export const RoomSchedule = __t.object("RoomSchedule", {
   id: __t.u32(),
   roomId: __t.u32(),
@@ -320,3 +413,16 @@ export const RoomSchedule = __t.object("RoomSchedule", {
   timezone: __t.string(),
 });
 export type RoomSchedule = __Infer<typeof RoomSchedule>;
+
+export const RoomVote = __t.object("RoomVote", {
+  id: __t.u32(),
+  roomId: __t.u32(),
+  choiceId: __t.u32(),
+  memberIdentity: __t.identity(),
+  get state() {
+    return AnswerState;
+  },
+  maxPrice: __t.option(__t.u32()),
+  voteKey: __t.string(),
+});
+export type RoomVote = __Infer<typeof RoomVote>;
