@@ -120,7 +120,39 @@ describe("RoomPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add activity" }));
 
     await waitFor(() => {
-      expect(addActivity).toHaveBeenCalledWith("Picnic", 250, 3);
+      expect(addActivity).toHaveBeenCalledWith(
+        "Picnic",
+        250,
+        3,
+        undefined,
+        undefined,
+      );
+    });
+  });
+
+  it("adds optional distance and time metadata", async () => {
+    const addActivity = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <RoomPage
+        view={saturdayOpenView}
+        actions={actionsWith({ addActivity })}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("Activity name"), {
+      target: { value: "Museum" },
+    });
+    fireEvent.change(screen.getByLabelText("Distance in km (optional)"), {
+      target: { value: "5" },
+    });
+    fireEvent.change(
+      screen.getByLabelText("Time budget in minutes (optional)"),
+      { target: { value: "60" } },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Add activity" }));
+
+    await waitFor(() => {
+      expect(addActivity).toHaveBeenCalledWith("Museum", 0, 1, 5, 60);
     });
   });
 

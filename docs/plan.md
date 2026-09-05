@@ -129,3 +129,17 @@ Scope: `client/src/pages/CreateRoomPage.tsx`, `client/src/pages/CreateRoomPage.t
 + [x] Update project status/changelog, commit incremental work, push `client/merged-onboarding-split-chat`, and comment on issue #17.
 
 Assumptions: the existing `CreateRoomPage.onCreate` callback remains the create boundary, so the parent stores `pending-host-name:${shareCode}` after `createRoom` succeeds; the current RoomDataBridge provides the same `RoomActions` contract while issue #16 is unresolved.
+
+## Activity distance and time metadata (2026-09-06)
+
+Goal: add optional display/filter metadata for activity distance in km and time budget in minutes, preserving live Activity field order and keeping feasibility matching unchanged.
+
+Scope: server/spacetimedb/src/lib.rs, regenerated client/src/module_bindings/**, client/src/fixtures/room.ts, client/src/pages/RoomPage.tsx only within the add-activity form block, client/src/components/ActivityCard.tsx, client/src/data/spacetime.ts, and required project logs. Do not touch RoomSidebar/chat or server/api paths outside the named reducers.
+
+- [x] Append the two Activity fields at the struct end and update add_activity/bot_add_activity validation/inserts.
+- [x] Run server fmt/build, regenerate bindings, and update the client action/view contracts.
+- [x] Add optional form inputs and activity-card metadata display without changing chat/sidebar code.
+- [x] Run all requested verification and confirm the origin/main Activity diff is additive-only.
+- [x] Update status/changelog, commit, push the existing branch, and comment on issue #20.
+
+Assumptions: blank optional form fields become undefined; distance/time are display metadata only, not per-friend feasibility constraints.

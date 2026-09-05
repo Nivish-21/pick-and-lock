@@ -54,8 +54,21 @@ export function actionsFor(
   planId: number,
 ): BridgeActions {
   const joinRoom = (name: string) => connection.reducers.join({ planId, name });
-  const addActivity = (name: string, price: number, minPeople: number) =>
-    connection.reducers.addActivity({ planId, name, price, minPeople });
+  const addActivity = (
+    name: string,
+    price: number,
+    minPeople: number,
+    distanceKm?: number,
+    timeMinutes?: number,
+  ) =>
+    connection.reducers.addActivity({
+      planId,
+      name,
+      price,
+      minPeople,
+      distanceKm,
+      timeMinutes,
+    });
   const setAnswer = (
     activityId: number,
     state: AnswerState,

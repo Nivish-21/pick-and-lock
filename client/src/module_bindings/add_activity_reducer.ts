@@ -15,4 +15,6 @@ export default {
   name: __t.string(),
   price: __t.u32(),
   minPeople: __t.u32(),
+  distanceKm: __t.option(__t.u32()),
+  timeMinutes: __t.option(__t.u32()),
 };

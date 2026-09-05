@@ -44,6 +44,8 @@ pub struct Activity {
     pub name: String,
     pub price: u32,
     pub min_people: u32,
+    pub distance_km: Option<u32>,
+    pub time_minutes: Option<u32>,
 }
 #[spacetimedb::table(accessor = friend, public)]
 pub struct Friend {
@@ -838,6 +840,8 @@ pub fn bot_add_activity(
     name: String,
     price: u32,
     min_people: u32,
+    distance_km: Option<u32>,
+    time_minutes: Option<u32>,
 ) -> Result<(), String> {
     require_bot(ctx)?;
     let plan = plan_for(ctx, room_id)?;
@@ -854,6 +858,16 @@ pub fn bot_add_activity(
     if price > 1_000_000 {
         return Err("Price is too high".into());
     }
+    if let Some(distance) = distance_km {
+        if distance > 1000 {
+            return Err("Distance must be 1000 km or less".into());
+        }
+    }
+    if let Some(minutes) = time_minutes {
+        if minutes > 1440 {
+            return Err("Time budget must be 1440 minutes or less".into());
+        }
+    }
     if ctx
         .db
         .activity()
@@ -868,6 +882,8 @@ pub fn bot_add_activity(
         name: name.clone(),
         price,
         min_people,
+        distance_km,
+        time_minutes,
     });
     event(
         ctx,
@@ -1004,6 +1020,8 @@ fn seed_activities(ctx: &ReducerContext, plan_id: u32) {
             name: name.into(),
             price,
             min_people,
+            distance_km: None,
+            time_minutes: None,
         });
     }
 }
@@ -1356,6 +1374,8 @@ pub fn add_activity(
     name: String,
     price: u32,
     min_people: u32,
+    distance_km: Option<u32>,
+    time_minutes: Option<u32>,
 ) -> Result<(), String> {
     let p = plan_for(ctx, plan_id)?;
     if p.status != PlanStatus::Open {
@@ -1372,6 +1392,16 @@ pub fn add_activity(
     if price > 1_000_000 {
         return Err("Price is too high".into());
     }
+    if let Some(distance) = distance_km {
+        if distance > 1000 {
+            return Err("Distance must be 1000 km or less".into());
+        }
+    }
+    if let Some(minutes) = time_minutes {
+        if minutes > 1440 {
+            return Err("Time budget must be 1440 minutes or less".into());
+        }
+    }
     if ctx
         .db
         .activity()
@@ -1386,6 +1416,8 @@ pub fn add_activity(
         name: name.clone(),
         price,
         min_people,
+        distance_km,
+        time_minutes,
     });
     event(
         ctx,
