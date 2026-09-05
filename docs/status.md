@@ -17,3 +17,7 @@ The next execution package is ready: a copy-and-send collaborator launch prompt,
 The repository owner authorised launch by requesting the exact collaborator prompt and live plan. The UI owner may create the Vite workspace on an owned branch; the collaborator may start `server/**` immediately. The owner authenticates to Maincloud now and creates `pick-and-lock` by publishing the merged, tested server core.
 
 Maincloud owner authentication completed successfully on 2026-09-05. The next owner-side database action remains the first non-destructive publish after server-core merge; no database, token, or deployment secret has been committed.
+
+UI implementation is authorised and starts with U1 in `docs/ui-execution-log.md`. Every completed UI subtask is committed and pushed before the next starts. The server lane remains independent until U6.
+
+U1 completed successfully: the React/Vite workspace, semantic token system, and durable product context are ready. `npm run lint --prefix client` and `npm run build --prefix client` pass. Next: U2 fixtures and the frozen presentational contract.

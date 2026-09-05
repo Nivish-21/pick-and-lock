@@ -23,3 +23,7 @@ The plan treated an earlier statement as meaning the Sunday code freeze had alre
 ## 2026-09-05 — Assumed a nested web-tool result shape
 
 A repository-comparison call tried to read `r.content` without inspecting the wrapper result, causing a `TypeError`. Serialize or inspect an unfamiliar tool result before accessing nested fields.
+
+## 2026-09-05 — Text patch attempted a binary asset deletion
+
+An `apply_patch` batch included Vite's PNG asset, which cannot be read as UTF-8 patch context and caused the entire batch to abort. Keep binary deletion out of text patches and stage only the needed source files until explicit asset cleanup is handled separately.

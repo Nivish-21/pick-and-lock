@@ -1,0 +1,55 @@
+# Product
+
+<!-- impeccable:product-schema 1 -->
+
+## Platform
+
+web
+
+## Stack
+
+React, TypeScript, and Vite client. Rust SpacetimeDB module on Maincloud.
+
+## Users
+
+Friends coordinating one shared Saturday activity from a link. They need to answer quickly on a phone without an account or password.
+
+## Product Purpose
+
+Pick & Lock turns group-chat uncertainty into one feasible, confirmed activity. Success is a group visibly locking an activity only after enough eligible people agree, then automatically reopening when a required person drops out.
+
+## Positioning
+
+This is not a poll or RSVP page. The shared SpacetimeDB state enforces eligibility, an atomic lock, and an automatic reopen.
+
+## Operating Context
+
+Six friends use the same Saturday room. Bowling costs INR 400 and needs four people; Escape room costs INR 600 and needs five; Game night is free and needs three.
+
+## Capabilities and Constraints
+
+- Join by link with a display name only.
+- Answer in, out, or conditional with a maximum price.
+- Show live feasibility, presence, undecided friends, proposals, acceptances, events, lock, and reopen.
+- The React client is a read-only projection of SpacetimeDB reducer-owned state.
+- Email is optional after join and cannot block room entry.
+- No chat, authentication, payments, maps, bookings, generic scoring, AI suggestions, or extra product backend.
+
+## Brand Commitments
+
+The product name is Pick & Lock. Voice is direct, social, and concrete. The UI must make the lock and reopen state change unmistakable across two phones or browser tabs.
+
+## Evidence on Hand
+
+Authoritative product requirements live in `docs/source/pick-and-lock-build-spec.md`. The design deck is in `docs/source/the-plan-deck.pdf`. There are no approved logos, testimonials, customer claims, or photography assets.
+
+## Product Principles
+
+- Make the feasible choice obvious.
+- Make shared state changes immediate and legible.
+- Require no account or explanation to join.
+- Never imply certainty before reducer authority confirms it.
+
+## Accessibility & Inclusion
+
+Mobile-first web UI. Keyboard focus, text equivalents for status colour, 44px minimum touch controls, reduced motion, and screen-reader announcement of a reopen are required.

@@ -1,0 +1,36 @@
+:root {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --ink: #10212d;
+  --ink-soft: #52606a;
+  --canvas: #f5f6f2;
+  --surface: #ffffff;
+  --surface-muted: #e9eeeb;
+  --line: #cbd6d2;
+  --signal: #d89121;
+  --signal-strong: #a8650f;
+  --success: #176a4b;
+  --danger: #a43e36;
+  --focus: #0d6f8a;
+  --radius-control: 0.75rem;
+  --radius-panel: 1rem;
+  --shadow-panel: 0 1.2rem 3rem rgb(16 33 45 / 8%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #edf4ef;
+    --ink-soft: #b3c1ba;
+    --canvas: #0b1923;
+    --surface: #102530;
+    --surface-muted: #18313d;
+    --line: #34505b;
+    --signal: #f0ad45;
+    --signal-strong: #ffd080;
+    --success: #73d4a9;
+    --danger: #ff9e94;
+    --focus: #75d4eb;
+    --shadow-panel: 0 1.2rem 3rem rgb(0 0 0 / 24%);
+  }
+}

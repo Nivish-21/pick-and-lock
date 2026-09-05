@@ -9,3 +9,5 @@
 - Added the live-execution plan, collaborator launch prompt, and Maincloud database-owner runbook so both builders can start without a second planning pass.
 - Recorded launch authority: UI workspace and server-core work can start in parallel; Maincloud database creation is deferred to the owner's first tested-module publish.
 - Recorded successful Maincloud owner authentication; database creation remains correctly deferred until the tested server module is merged and published.
+- Started the resumable UI execution lane with an explicit six-subtask log and durable product context for the selected design workflow.
+- Completed UI U1: created the React/Vite client, removed the visible starter experience, added departure-board semantic tokens, and verified lint plus production build.
