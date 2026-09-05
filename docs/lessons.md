@@ -19,3 +19,7 @@ A chained verification command ran `npx prettier` before `rg` and `rtk`; the npm
 ## 2026-09-05 — Incorrect hackathon-time inference
 
 The plan treated an earlier statement as meaning the Sunday code freeze had already passed. The user clarified the actual time was 17:46 Saturday, leaving 14 hours 44 minutes. Time-sensitive schedule claims require an explicit timestamp check before they drive scope decisions.
+
+## 2026-09-05 — Assumed a nested web-tool result shape
+
+A repository-comparison call tried to read `r.content` without inspecting the wrapper result, causing a `TypeError`. Serialize or inspect an unfamiliar tool result before accessing nested fields.
