@@ -7,6 +7,8 @@ export type ActivityView = {
   name: string;
   price: number;
   minPeople: number;
+  distanceKm?: number;
+  timeMinutes?: number;
   eligibleCount: number;
   possible: boolean;
   callerAnswer: { state: AnswerState; maxPrice?: number } | null;
@@ -48,6 +50,8 @@ export type RoomActions = {
     name: string,
     price: number,
     minPeople: number,
+    distanceKm?: number,
+    timeMinutes?: number,
   ) => Promise<void>;
   setAnswer: (
     activityId: number,

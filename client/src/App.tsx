@@ -4,10 +4,15 @@ import { createRoom } from "./data/spacetime";
 import { LandingPage } from "./pages/LandingPage";
 import { CreateRoomPage } from "./pages/CreateRoomPage";
 import { RoomPage } from "./pages/RoomPage";
+import { InsightsPage } from "./pages/InsightsPage";
 import { parseRoomRoute } from "./room-route";
 import type { RoomActions, RoomView } from "./fixtures/room";
 
 function App() {
+  if (window.location.pathname.replace(/\/$/, "") === "/insights") {
+    return <InsightsPage />;
+  }
+
   const roomCode = parseRoomRoute(window.location.pathname);
 
   if (roomCode !== null) {

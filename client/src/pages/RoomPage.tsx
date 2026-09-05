@@ -51,6 +51,8 @@ export function RoomPage({ view, actions }: RoomPageProps) {
   const [activityName, setActivityName] = useState("");
   const [activityPrice, setActivityPrice] = useState("0");
   const [activityMinPeople, setActivityMinPeople] = useState("1");
+  const [activityDistance, setActivityDistance] = useState("");
+  const [activityTimeMinutes, setActivityTimeMinutes] = useState("");
   const proposal = view.pendingProposal;
   const lockedActivity = view.activities.find(
     (activity) => activity.id === view.lockedActivityId,
@@ -83,6 +85,10 @@ export function RoomPage({ view, actions }: RoomPageProps) {
         activityName.trim(),
         Number(activityPrice),
         Number(activityMinPeople),
+        activityDistance.trim() === "" ? undefined : Number(activityDistance),
+        activityTimeMinutes.trim() === ""
+          ? undefined
+          : Number(activityTimeMinutes),
       ),
     );
   }
@@ -230,6 +236,26 @@ export function RoomPage({ view, actions }: RoomPageProps) {
                 type="number"
                 value={activityMinPeople}
                 onChange={(event) => setActivityMinPeople(event.target.value)}
+              />
+            </label>
+            <label>
+              Distance in km (optional)
+              <input
+                min="0"
+                max="1000"
+                type="number"
+                value={activityDistance}
+                onChange={(event) => setActivityDistance(event.target.value)}
+              />
+            </label>
+            <label>
+              Time budget in minutes (optional)
+              <input
+                min="0"
+                max="1440"
+                type="number"
+                value={activityTimeMinutes}
+                onChange={(event) => setActivityTimeMinutes(event.target.value)}
               />
             </label>
             <button type="submit">Add activity</button>

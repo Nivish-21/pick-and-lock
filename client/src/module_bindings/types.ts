@@ -26,6 +26,8 @@ export const Activity = __t.object("Activity", {
   name: __t.string(),
   price: __t.u32(),
   minPeople: __t.u32(),
+  distanceKm: __t.option(__t.u32()),
+  timeMinutes: __t.option(__t.u32()),
 });
 export type Activity = __Infer<typeof Activity>;
 
