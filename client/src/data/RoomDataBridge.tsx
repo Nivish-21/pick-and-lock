@@ -4,7 +4,28 @@ import { buildRoomView } from "./planSelectors";
 import { actionsFor, createConnection, shareCodeFromLocation } from "./spacetime";
 import type { DbConnection } from "../module_bindings";
 
-type Props = { children: (view: RoomView, actions: RoomActions) => ReactNode };
+export type BridgeRoomView = RoomView & {
+  chatMessages: Array<{
+    id: number | bigint;
+    senderName: string;
+    isBot: boolean;
+    body: string;
+    kind: string;
+    payloadJson: string;
+  }>;
+  preferences: Array<{
+    id: number | bigint;
+    friendName: string;
+    statement: string;
+    category: string;
+  }>;
+};
+
+export type BridgeRoomActions = RoomActions & {
+  sendChatMessage: (body: string) => Promise<void>;
+};
+
+type Props = { children: (view: BridgeRoomView, actions: BridgeRoomActions) => ReactNode };
 
 export function RoomDataBridge({ children }: Props) {
   const [connection, setConnection] = useState<DbConnection | null>(null);
@@ -24,7 +45,7 @@ export function RoomDataBridge({ children }: Props) {
         setConnection(connected);
         setIdentity(connected.identity);
         const cache = connected.db as unknown as Record<string, { onInsert: (callback: () => void) => void; onUpdate?: (callback: () => void) => void; onDelete?: (callback: () => void) => void }>;
-        for (const table of ["plan", "activity", "friend", "answer", "proposal", "acceptance", "eventLog"]) {
+        for (const table of ["plan", "activity", "friend", "answer", "proposal", "acceptance", "eventLog", "myRoomChat", "myRoomPreferences"]) {
           cache[table]?.onInsert(refresh);
           cache[table]?.onUpdate?.(refresh);
           cache[table]?.onDelete?.(refresh);
@@ -37,6 +58,7 @@ export function RoomDataBridge({ children }: Props) {
             setPlanId(id);
             const tables = ["activity", "friend", "answer", "proposal", "acceptance", "event_log"];
             const scoped = tables.map((table) => `SELECT * FROM ${table} WHERE plan_id = ${id}`);
+            scoped.push("SELECT * FROM my_room_chat", "SELECT * FROM my_room_preferences");
             connected.subscriptionBuilder()
               .onApplied(() => { setReady(true); refresh(); })
               .onError(() => setError("Room subscription failed"))
@@ -54,6 +76,26 @@ export function RoomDataBridge({ children }: Props) {
 
   if (error) return <p role="alert">{error}</p>;
   if (!connection || planId == null || !ready || !identity) return <p>Connecting to the room…</p>;
-  const view = buildRoomView(connection.db, planId, identity);
-  return <>{children(view, actionsFor(connection, planId))}</>;
+  const view: BridgeRoomView = {
+    ...buildRoomView(connection.db, planId, identity),
+    chatMessages: [...connection.db.myRoomChat].map((message) => ({
+      id: message.id,
+      senderName: message.senderName,
+      isBot: message.isBot,
+      body: message.body,
+      kind: message.kind,
+      payloadJson: message.payloadJson,
+    })),
+    preferences: [...connection.db.myRoomPreferences].map((preference) => ({
+      id: preference.id,
+      friendName: preference.friendName,
+      statement: preference.statement,
+      category: preference.category,
+    })),
+  };
+  const actions: BridgeRoomActions = {
+    ...actionsFor(connection, planId),
+    sendChatMessage: (body) => connection.reducers.sendChatMessage({ roomId: planId, body }),
+  };
+  return <>{children(view, actions)}</>;
 }
