@@ -35,3 +35,7 @@ An `apply_patch` batch included Vite's PNG asset, which cannot be read as UTF-8 
 ## 2026-09-05 — Used pre-formatting TypeScript as a patch anchor
 
 A U3 patch expected an App component without semicolons, but Prettier had reformatted it after U1. Re-read exact current source immediately before each multi-file patch and split it when one formatted anchor can abort the whole task.
+
+## 2026-09-05 — Repeated stale App import formatting in U4 patch
+
+The U4 multi-file patch again assumed single-quoted imports while the formatter had changed `client/src/App.tsx` to double quotes. Use standalone file additions first and a separate, exact-context App patch.

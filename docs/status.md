@@ -27,3 +27,5 @@ U2 completed successfully: UI fixtures cover each core room lifecycle state and 
 U3 completed pending verification: the landing page applies the departure-board direction, validates a name locally, and previews actual fixture state. Next: U4 room screens and interactive fixture states.
 
 U3 verification passed: lint and production build pass; desktop and 390px browser captures were inspected; invalid-name rejection and successful name-only join were exercised. Next: U4 room screens and interactive fixture states.
+
+U4 completed successfully: the room UI now renders Choices, proposal, Locked, and reopened states against the frozen UI facade. It is still deliberately fixture-driven, so the server lane remains independent until U6. Lint, production build, desktop/mobile inspection, and the Impeccable deterministic scan passed. Next: U5 focused UI tests and accessibility verification.

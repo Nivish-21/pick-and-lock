@@ -1,15 +1,13 @@
 import { useState } from "react";
+import { fixtureActions, saturdayOpenView } from "./fixtures/room";
 import { LandingPage } from "./pages/LandingPage";
+import { RoomPage } from "./pages/RoomPage";
 
 function App() {
   const [name, setName] = useState<string | null>(null);
 
   if (name) {
-    return (
-      <main className="landing-shell" aria-live="polite">
-        <p>Welcome, {name}. Next, tell the group what works for you.</p>
-      </main>
-    );
+    return <RoomPage view={saturdayOpenView} actions={fixtureActions} />;
   }
 
   return <LandingPage onJoin={setName} />;
