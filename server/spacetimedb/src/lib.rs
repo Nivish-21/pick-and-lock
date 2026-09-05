@@ -804,6 +804,14 @@ fn shared_story_from_parts(
     }
 }
 
+fn refreshed_shared_story(
+    published: SharedRoomStory,
+    mut current: SharedRoomStory,
+) -> SharedRoomStory {
+    current.published_at = published.published_at;
+    current
+}
+
 fn story_id_to_unpublish(story_id: &str, room_id: &str) -> Option<String> {
     (story_id == room_id).then(|| story_id.to_string())
 }
@@ -875,6 +883,33 @@ fn save_public_share_settings(ctx: &ReducerContext, room_id: u32, show_schedule:
             show_schedule,
         });
     }
+}
+
+fn refresh_published_story(ctx: &ReducerContext, room_id: u32) -> Result<(), String> {
+    let room = private_room_for(ctx, room_id)?;
+    let Some(published) = ctx
+        .db
+        .shared_room_story()
+        .id()
+        .find(room.public_room_id.clone())
+    else {
+        return Ok(());
+    };
+    let show_schedule = ctx
+        .db
+        .room_public_share()
+        .room_id()
+        .find(room_id)
+        .is_some_and(|settings| settings.show_schedule);
+    let published_at = published.published_at;
+    save_shared_story(
+        ctx,
+        refreshed_shared_story(
+            published,
+            shared_story_for(ctx, &room, show_schedule, published_at),
+        ),
+    );
+    Ok(())
 }
 
 fn private_eligible_vote_count(ctx: &ReducerContext, choice: &RoomChoice) -> u32 {
@@ -1857,6 +1892,7 @@ pub fn accept_private_proposal(ctx: &ReducerContext, proposal_id: u32) -> Result
         ctx.db.room_proposal().id().update(proposal);
         ctx.db.private_room().id().update(room);
         ctx.db.room_metrics().room_id().update(metrics);
+        refresh_published_story(ctx, choice.room_id)?;
     }
     Ok(())
 }
@@ -1908,6 +1944,7 @@ pub fn leave_private_room(ctx: &ReducerContext, room_id: u32) -> Result<(), Stri
         room.status = reopened_private_room_status(room.status, accepted_locked_proposal);
         room.locked_choice_id = None;
         ctx.db.private_room().id().update(room);
+        refresh_published_story(ctx, room_id)?;
     }
     Ok(())
 }
@@ -2587,6 +2624,80 @@ mod tests {
         assert_eq!(story.decision_count, 1);
         assert_eq!(story.starts_at, None);
         assert_eq!(story.timezone, None);
+    }
+
+    #[test]
+    fn refreshing_a_published_story_exposes_the_new_lock_without_republishing() {
+        let published_at = Timestamp::from_micros_since_unix_epoch(1_000_000);
+        let locked_at = Timestamp::from_micros_since_unix_epoch(2_000_000);
+        let published = shared_story_from_parts(
+            "DINNER1".into(),
+            "Dinner plan".into(),
+            PrivateRoomStatus::Open,
+            vec!["Bowling".into()],
+            None,
+            0,
+            published_at,
+            published_at,
+            None,
+        );
+
+        let refreshed = refreshed_shared_story(
+            published,
+            shared_story_from_parts(
+                "DINNER1".into(),
+                "Dinner plan".into(),
+                PrivateRoomStatus::Locked,
+                vec!["Bowling".into()],
+                Some("Bowling".into()),
+                1,
+                locked_at,
+                locked_at,
+                None,
+            ),
+        );
+
+        assert_eq!(refreshed.published_at, published_at);
+        assert_eq!(refreshed.updated_at, locked_at);
+        assert!(matches!(refreshed.status, PrivateRoomStatus::Locked));
+        assert_eq!(refreshed.selected_choice_label.as_deref(), Some("Bowling"));
+        assert_eq!(refreshed.decision_count, 1);
+    }
+
+    #[test]
+    fn refreshing_a_published_story_exposes_reopen_without_erasing_history() {
+        let published_at = Timestamp::from_micros_since_unix_epoch(1_000_000);
+        let reopened_at = Timestamp::from_micros_since_unix_epoch(3_000_000);
+        let refreshed = refreshed_shared_story(
+            shared_story_from_parts(
+                "DINNER1".into(),
+                "Dinner plan".into(),
+                PrivateRoomStatus::Locked,
+                vec!["Bowling".into()],
+                Some("Bowling".into()),
+                1,
+                published_at,
+                published_at,
+                None,
+            ),
+            shared_story_from_parts(
+                "DINNER1".into(),
+                "Dinner plan".into(),
+                PrivateRoomStatus::Open,
+                vec!["Bowling".into()],
+                None,
+                1,
+                reopened_at,
+                reopened_at,
+                None,
+            ),
+        );
+
+        assert_eq!(refreshed.published_at, published_at);
+        assert_eq!(refreshed.updated_at, reopened_at);
+        assert!(matches!(refreshed.status, PrivateRoomStatus::Open));
+        assert_eq!(refreshed.selected_choice_label, None);
+        assert_eq!(refreshed.decision_count, 1);
     }
 
     #[test]
