@@ -13,6 +13,19 @@ Start with [the product brief](product-brief.md), then read [the architecture co
 
 The written build spec wins whenever it conflicts with the deck. No implementation files are included in this planning commit.
 
+## Current repository truth
+
+Start with the root [README](../README.md), then [project handoff](project-handoff.md). The root README records the live demo, working version-1 behaviour, active v2 issue lanes, local quality checks, and the required collaboration workflow.
+
+For v2 work, read these before opening a task branch:
+
+| Document                                                                                                | Purpose                                                            |
+| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| [Private rooms v2 specification](private-rooms-and-scheduling-spec.md)                                  | Invite-only rooms, schedule, custom choices, and privacy boundary. |
+| [Public sharing specification](public-sharing-and-cta-spec.md)                                          | Creator-authorised read-only public stories and CTA boundary.      |
+| [Agent collaboration protocol](agent-collaboration-protocol.md)                                         | GitHub issue claim, worktree, PR handoff, and dependency rules.    |
+| [Public-sharing execution plan](superpowers/plans/2026-09-05-public-sharing-and-agent-collaboration.md) | Current task order and acceptance checks.                          |
+
 ## Current execution documents
 
 The current plan supersedes the earlier single-lane schedule:

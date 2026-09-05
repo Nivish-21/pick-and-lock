@@ -75,3 +75,9 @@
 - Pushed the planning package as `45626e6` to `origin/main`.
 - Created GitHub labels plus issues #1–#6 with explicit ownership, dependency, and acceptance boundaries.
 - Started disjoint private-room server (#2) and public-story UI (#3) worktrees; reserved the independent calendar-event builder (#6) for a collaborator.
+
+# 2026-09-05 — README operating status
+
+- Added a root README with the live demo, current product state, architecture, active v2 lanes, local checks, safety constraints, and agent workflow.
+- Updated the docs index to route incoming contributors to the current handoff, v2 specifications, collaboration protocol, and execution plan.
+- Added an execution-plan rule requiring README status updates with every merge, publish, deployment, or lane-state change.

@@ -140,3 +140,18 @@
 - Spec coverage: private-by-default, creator opt-in, schedule consent, public projection, CTA, unpublish, no-leak proof, v1 coexistence, and autonomous collaboration map to Tasks 1–5.
 - Placeholder scan: every task names its files, owner, interface, checks, and handoff.
 - Type consistency: `PublicStoryBridge` produces `PublicRoomStory`, `SharedRoomStory` renders it, and the bridge reads only `shared_room_story`.
+
+### Task 6: Maintain the incoming-contributor README
+
+**Owner:** Repository owner.
+
+**Files:**
+
+- Create: `README.md`
+- Modify: `docs/README.md`
+
+**Produces:** One current entry point that states working behaviour, active lanes, safety boundaries, local checks, and the agent task queue.
+
+- [x] Replace the missing root-level project entry point with a product README.
+- [x] Link the root README from the documentation index and add v2 document routing.
+- [ ] After every merge, publish, deployment, or lane-state change, update the README status table in the same documentation commit.
