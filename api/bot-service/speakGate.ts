@@ -2,6 +2,7 @@ export type SpeakGateMessage = {
   body: string;
   senderName: string;
   isBot?: boolean;
+  kind?: string;
 };
 
 export type SpeakGateState = {
@@ -63,7 +64,10 @@ export function decideSpeak(input: SpeakGateInput): SpeakGateResult {
   if (input.locationJustSubmitted) {
     return { allowed: true, trigger: "location-submitted", reason: "new location" };
   }
-  if (input.decisionMilestone) {
+  const humanDecisionMilestone = input.decisionMilestone && input.messages.some(
+    (message) => !message.isBot && message.kind === "recap",
+  );
+  if (humanDecisionMilestone) {
     return { allowed: true, trigger: "decision-milestone", reason: "decision milestone" };
   }
 
