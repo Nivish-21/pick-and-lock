@@ -114,6 +114,7 @@ pub struct EventLog {
 #[derive(SpacetimeType, Clone, Copy, PartialEq, Eq)]
 pub enum PrivateRoomStatus {
     Open,
+    Locked,
 }
 
 #[derive(SpacetimeType, Clone, Copy, PartialEq, Eq)]
@@ -141,6 +142,8 @@ pub struct PrivateRoom {
     pub title: String,
     pub created_at: Timestamp,
     pub status: PrivateRoomStatus,
+    #[default(None)]
+    pub locked_choice_id: Option<u32>,
 }
 
 #[spacetimedb::table(accessor = room_schedule, private)]
@@ -200,6 +203,74 @@ pub struct RoomInvite {
     pub revoked_at: Option<Timestamp>,
 }
 
+#[spacetimedb::table(accessor = room_vote, private)]
+pub struct RoomVote {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u32,
+    #[index(btree)]
+    pub room_id: u32,
+    #[index(btree)]
+    pub choice_id: u32,
+    #[index(btree)]
+    pub member_identity: Identity,
+    pub state: AnswerState,
+    pub max_price: Option<u32>,
+    #[unique]
+    pub vote_key: String,
+}
+
+#[derive(Clone)]
+#[spacetimedb::table(accessor = room_proposal, private)]
+pub struct RoomProposal {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u32,
+    #[index(btree)]
+    pub room_id: u32,
+    pub choice_id: u32,
+    pub proposer_identity: Identity,
+    pub status: ProposalStatus,
+    pub created_at: Timestamp,
+}
+
+#[spacetimedb::table(accessor = room_acceptance, private)]
+pub struct RoomAcceptance {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u32,
+    #[index(btree)]
+    pub room_id: u32,
+    #[index(btree)]
+    pub proposal_id: u32,
+    pub member_identity: Identity,
+    pub accepted_at: Timestamp,
+    #[unique]
+    pub acceptance_key: String,
+}
+
+#[spacetimedb::table(accessor = room_decision, private)]
+pub struct RoomDecision {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u32,
+    #[index(btree)]
+    pub room_id: u32,
+    pub choice_id: u32,
+    pub locked_at: Timestamp,
+    pub decision_duration_seconds: u64,
+    pub eligible_acceptance_count: u32,
+}
+
+#[spacetimedb::table(accessor = room_metrics, private)]
+pub struct RoomMetrics {
+    #[primary_key]
+    pub room_id: u32,
+    pub decision_count: u32,
+    pub total_decision_seconds: u64,
+    pub latest_locked_at: Option<Timestamp>,
+}
+
 #[derive(SpacetimeType)]
 pub struct MyRoom {
     pub room_id: u32,
@@ -234,6 +305,53 @@ pub struct MyRoomMember {
     pub display_name: String,
     pub joined_at: Timestamp,
     pub role: RoomMembershipRole,
+}
+
+#[derive(SpacetimeType)]
+pub struct MyRoomVote {
+    pub vote_id: u32,
+    pub room_id: u32,
+    pub choice_id: u32,
+    pub member_name: String,
+    pub state: AnswerState,
+    pub max_price: Option<u32>,
+}
+
+#[derive(SpacetimeType)]
+pub struct MyRoomProposal {
+    pub proposal_id: u32,
+    pub room_id: u32,
+    pub choice_id: u32,
+    pub proposer_name: String,
+    pub status: ProposalStatus,
+    pub created_at: Timestamp,
+}
+
+#[derive(SpacetimeType)]
+pub struct MyRoomAcceptance {
+    pub acceptance_id: u32,
+    pub room_id: u32,
+    pub proposal_id: u32,
+    pub member_name: String,
+    pub accepted_at: Timestamp,
+}
+
+#[derive(SpacetimeType)]
+pub struct MyRoomDecision {
+    pub decision_id: u32,
+    pub room_id: u32,
+    pub choice_id: u32,
+    pub locked_at: Timestamp,
+    pub decision_duration_seconds: u64,
+    pub eligible_acceptance_count: u32,
+}
+
+#[derive(SpacetimeType)]
+pub struct MyRoomMetrics {
+    pub room_id: u32,
+    pub decision_count: u32,
+    pub total_decision_seconds: u64,
+    pub latest_locked_at: Option<Timestamp>,
 }
 
 fn friend_for(ctx: &ReducerContext, plan_id: u32) -> Option<Friend> {
@@ -387,6 +505,85 @@ fn view_active_room_ids(ctx: &ViewContext) -> Vec<u32> {
     )
 }
 
+fn room_member_name(ctx: &ViewContext, room_id: u32, identity: Identity) -> Option<String> {
+    ctx.db
+        .room_membership()
+        .room_id()
+        .filter(room_id)
+        .find(|membership| {
+            membership.room_id == room_id
+                && membership.identity == identity
+                && membership.left_at.is_none()
+        })
+        .map(|membership| membership.display_name)
+}
+
+fn private_vote_key(room_id: u32, choice_id: u32, identity: Identity) -> String {
+    format!("{room_id}:{choice_id}:{identity}")
+}
+
+fn private_acceptance_key(proposal_id: u32, identity: Identity) -> String {
+    format!("{proposal_id}:{identity}")
+}
+
+fn private_vote_is_eligible(
+    state: AnswerState,
+    max_price: Option<u32>,
+    choice_price: Option<u32>,
+) -> bool {
+    match state {
+        AnswerState::In => true,
+        AnswerState::Conditional => max_price.unwrap_or(0) >= choice_price.unwrap_or(0),
+        AnswerState::Out => false,
+    }
+}
+
+fn has_pending_private_proposal<I>(mut proposals: I, room_id: u32) -> bool
+where
+    I: Iterator<Item = RoomProposal>,
+{
+    proposals
+        .any(|proposal| proposal.room_id == room_id && proposal.status == ProposalStatus::Pending)
+}
+
+fn private_acceptance_locks(eligible_acceptance_count: u32, min_people: u32) -> bool {
+    eligible_acceptance_count >= min_people
+}
+
+fn private_decision_duration_seconds(locked_at: Timestamp, proposed_at: Timestamp) -> u64 {
+    locked_at
+        .to_micros_since_unix_epoch()
+        .saturating_sub(proposed_at.to_micros_since_unix_epoch())
+        .max(0) as u64
+        / 1_000_000
+}
+
+fn next_private_metrics(
+    decision_count: u32,
+    total_decision_seconds: u64,
+    decision_duration_seconds: u64,
+) -> (u32, u64) {
+    (
+        decision_count + 1,
+        total_decision_seconds + decision_duration_seconds,
+    )
+}
+
+fn should_reopen_private_room(status: PrivateRoomStatus, accepted_locked_proposal: bool) -> bool {
+    status == PrivateRoomStatus::Locked && accepted_locked_proposal
+}
+
+fn reopened_private_room_status(
+    status: PrivateRoomStatus,
+    accepted_locked_proposal: bool,
+) -> PrivateRoomStatus {
+    if should_reopen_private_room(status, accepted_locked_proposal) {
+        PrivateRoomStatus::Open
+    } else {
+        status
+    }
+}
+
 fn private_room_by_public_id(
     ctx: &ReducerContext,
     public_room_id: &str,
@@ -403,6 +600,69 @@ fn membership_for(ctx: &ReducerContext, room_id: u32) -> Option<RoomMembership> 
         .room_membership()
         .iter()
         .find(|membership| membership.room_id == room_id && membership.identity == ctx.sender())
+}
+
+fn active_membership_for(ctx: &ReducerContext, room_id: u32) -> Result<RoomMembership, String> {
+    membership_for(ctx, room_id)
+        .filter(|membership| membership.left_at.is_none())
+        .ok_or_else(|| "Join the room first".into())
+}
+
+fn private_room_for(ctx: &ReducerContext, room_id: u32) -> Result<PrivateRoom, String> {
+    ctx.db
+        .private_room()
+        .id()
+        .find(room_id)
+        .ok_or_else(|| "Room not found".into())
+}
+
+fn private_choice_for(ctx: &ReducerContext, choice_id: u32) -> Result<RoomChoice, String> {
+    ctx.db
+        .room_choice()
+        .id()
+        .find(choice_id)
+        .ok_or_else(|| "Choice not found".into())
+}
+
+fn private_eligible_vote_count(ctx: &ReducerContext, choice: &RoomChoice) -> u32 {
+    ctx.db
+        .room_vote()
+        .choice_id()
+        .filter(choice.id)
+        .filter(|vote| {
+            vote.room_id == choice.room_id
+                && private_vote_is_eligible(vote.state, vote.max_price, choice.price)
+                && ctx.db.room_membership().iter().any(|membership| {
+                    membership.room_id == choice.room_id
+                        && membership.identity == vote.member_identity
+                        && membership.left_at.is_none()
+                })
+        })
+        .count() as u32
+}
+
+fn private_eligible_acceptance_count(
+    ctx: &ReducerContext,
+    proposal_id: u32,
+    choice: &RoomChoice,
+) -> u32 {
+    ctx.db
+        .room_acceptance()
+        .proposal_id()
+        .filter(proposal_id)
+        .filter(|acceptance| {
+            ctx.db.room_membership().iter().any(|membership| {
+                membership.room_id == choice.room_id
+                    && membership.identity == acceptance.member_identity
+                    && membership.left_at.is_none()
+            }) && ctx.db.room_vote().iter().any(|vote| {
+                vote.room_id == choice.room_id
+                    && vote.choice_id == choice.id
+                    && vote.member_identity == acceptance.member_identity
+                    && private_vote_is_eligible(vote.state, vote.max_price, choice.price)
+            })
+        })
+        .count() as u32
 }
 
 fn creator_private_room(ctx: &ReducerContext, public_room_id: &str) -> Result<PrivateRoom, String> {
@@ -526,6 +786,95 @@ pub fn my_room_members(ctx: &ViewContext) -> Vec<MyRoomMember> {
         .collect()
 }
 
+#[spacetimedb::view(accessor = my_room_votes, public, primary_key = vote_id)]
+pub fn my_room_votes(ctx: &ViewContext) -> Vec<MyRoomVote> {
+    view_active_room_ids(ctx)
+        .into_iter()
+        .flat_map(|room_id| ctx.db.room_vote().room_id().filter(room_id))
+        .filter_map(|vote| {
+            room_member_name(ctx, vote.room_id, vote.member_identity).map(|member_name| {
+                MyRoomVote {
+                    vote_id: vote.id,
+                    room_id: vote.room_id,
+                    choice_id: vote.choice_id,
+                    member_name,
+                    state: vote.state,
+                    max_price: vote.max_price,
+                }
+            })
+        })
+        .collect()
+}
+
+#[spacetimedb::view(accessor = my_room_proposals, public, primary_key = proposal_id)]
+pub fn my_room_proposals(ctx: &ViewContext) -> Vec<MyRoomProposal> {
+    view_active_room_ids(ctx)
+        .into_iter()
+        .flat_map(|room_id| ctx.db.room_proposal().room_id().filter(room_id))
+        .filter_map(|proposal| {
+            room_member_name(ctx, proposal.room_id, proposal.proposer_identity).map(
+                |proposer_name| MyRoomProposal {
+                    proposal_id: proposal.id,
+                    room_id: proposal.room_id,
+                    choice_id: proposal.choice_id,
+                    proposer_name,
+                    status: proposal.status,
+                    created_at: proposal.created_at,
+                },
+            )
+        })
+        .collect()
+}
+
+#[spacetimedb::view(accessor = my_room_acceptances, public, primary_key = acceptance_id)]
+pub fn my_room_acceptances(ctx: &ViewContext) -> Vec<MyRoomAcceptance> {
+    view_active_room_ids(ctx)
+        .into_iter()
+        .flat_map(|room_id| ctx.db.room_acceptance().room_id().filter(room_id))
+        .filter_map(|acceptance| {
+            room_member_name(ctx, acceptance.room_id, acceptance.member_identity).map(
+                |member_name| MyRoomAcceptance {
+                    acceptance_id: acceptance.id,
+                    room_id: acceptance.room_id,
+                    proposal_id: acceptance.proposal_id,
+                    member_name,
+                    accepted_at: acceptance.accepted_at,
+                },
+            )
+        })
+        .collect()
+}
+
+#[spacetimedb::view(accessor = my_room_decisions, public, primary_key = decision_id)]
+pub fn my_room_decisions(ctx: &ViewContext) -> Vec<MyRoomDecision> {
+    view_active_room_ids(ctx)
+        .into_iter()
+        .flat_map(|room_id| ctx.db.room_decision().room_id().filter(room_id))
+        .map(|decision| MyRoomDecision {
+            decision_id: decision.id,
+            room_id: decision.room_id,
+            choice_id: decision.choice_id,
+            locked_at: decision.locked_at,
+            decision_duration_seconds: decision.decision_duration_seconds,
+            eligible_acceptance_count: decision.eligible_acceptance_count,
+        })
+        .collect()
+}
+
+#[spacetimedb::view(accessor = my_room_metrics, public, primary_key = room_id)]
+pub fn my_room_metrics(ctx: &ViewContext) -> Vec<MyRoomMetrics> {
+    view_active_room_ids(ctx)
+        .into_iter()
+        .filter_map(|room_id| ctx.db.room_metrics().room_id().find(room_id))
+        .map(|metrics| MyRoomMetrics {
+            room_id: metrics.room_id,
+            decision_count: metrics.decision_count,
+            total_decision_seconds: metrics.total_decision_seconds,
+            latest_locked_at: metrics.latest_locked_at,
+        })
+        .collect()
+}
+
 fn seed_activities(ctx: &ReducerContext, plan_id: u32) {
     for (name, price, min_people) in [
         ("Bowling", 400, 4),
@@ -617,6 +966,7 @@ pub fn create_private_room(
         title,
         created_at: ctx.timestamp,
         status: PrivateRoomStatus::Open,
+        locked_choice_id: None,
     });
     ctx.db.room_schedule().insert(RoomSchedule {
         id: 0,
@@ -644,6 +994,12 @@ pub fn create_private_room(
         joined_at: ctx.timestamp,
         role: RoomMembershipRole::Creator,
         left_at: None,
+    });
+    ctx.db.room_metrics().insert(RoomMetrics {
+        room_id: room.id,
+        decision_count: 0,
+        total_decision_seconds: 0,
+        latest_locked_at: None,
     });
     insert_invite(
         ctx,
@@ -727,6 +1083,207 @@ pub fn regenerate_invite(
     let room = creator_private_room(ctx, public_room_id.trim())?;
     revoke_active_invites(ctx, room.id);
     insert_invite(ctx, room.id, token, expires_at, max_uses)
+}
+
+#[spacetimedb::reducer]
+pub fn set_private_vote(
+    ctx: &ReducerContext,
+    choice_id: u32,
+    state: AnswerState,
+    max_price: Option<u32>,
+) -> Result<(), String> {
+    let choice = private_choice_for(ctx, choice_id)?;
+    let room = private_room_for(ctx, choice.room_id)?;
+    active_membership_for(ctx, choice.room_id)?;
+    if room.status != PrivateRoomStatus::Open {
+        return Err("Room is locked".into());
+    }
+    if state == AnswerState::Conditional && max_price.is_none() {
+        return Err("Conditional votes need a maximum price".into());
+    }
+    if state != AnswerState::Conditional && max_price.is_some() {
+        return Err("Only conditional votes can set a maximum price".into());
+    }
+    let vote_key = private_vote_key(choice.room_id, choice.id, ctx.sender());
+    if let Some(mut vote) = ctx.db.room_vote().vote_key().find(vote_key.clone()) {
+        vote.state = state;
+        vote.max_price = max_price;
+        ctx.db.room_vote().id().update(vote);
+    } else {
+        ctx.db.room_vote().insert(RoomVote {
+            id: 0,
+            room_id: choice.room_id,
+            choice_id: choice.id,
+            member_identity: ctx.sender(),
+            state,
+            max_price,
+            vote_key,
+        });
+    }
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+pub fn propose_private_choice(ctx: &ReducerContext, choice_id: u32) -> Result<(), String> {
+    let choice = private_choice_for(ctx, choice_id)?;
+    let room = private_room_for(ctx, choice.room_id)?;
+    active_membership_for(ctx, choice.room_id)?;
+    if room.status != PrivateRoomStatus::Open {
+        return Err("Room is locked".into());
+    }
+    if has_pending_private_proposal(ctx.db.room_proposal().iter(), choice.room_id) {
+        return Err("A proposal is already pending".into());
+    }
+    let vote = ctx
+        .db
+        .room_vote()
+        .vote_key()
+        .find(private_vote_key(choice.room_id, choice.id, ctx.sender()))
+        .ok_or("Vote before proposing")?;
+    if !private_vote_is_eligible(vote.state, vote.max_price, choice.price) {
+        return Err("You are not eligible for this choice".into());
+    }
+    if private_eligible_vote_count(ctx, &choice) < choice.min_people {
+        return Err("This choice is not possible yet".into());
+    }
+    ctx.db.room_proposal().insert(RoomProposal {
+        id: 0,
+        room_id: choice.room_id,
+        choice_id: choice.id,
+        proposer_identity: ctx.sender(),
+        status: ProposalStatus::Pending,
+        created_at: ctx.timestamp,
+    });
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+pub fn accept_private_proposal(ctx: &ReducerContext, proposal_id: u32) -> Result<(), String> {
+    let mut proposal = ctx
+        .db
+        .room_proposal()
+        .id()
+        .find(proposal_id)
+        .ok_or("Proposal not found")?;
+    if proposal.status != ProposalStatus::Pending {
+        return Err("Proposal is no longer pending".into());
+    }
+    let choice = private_choice_for(ctx, proposal.choice_id)?;
+    let mut room = private_room_for(ctx, proposal.room_id)?;
+    active_membership_for(ctx, proposal.room_id)?;
+    if room.status != PrivateRoomStatus::Open {
+        return Err("Room is locked".into());
+    }
+    let vote = ctx
+        .db
+        .room_vote()
+        .vote_key()
+        .find(private_vote_key(choice.room_id, choice.id, ctx.sender()))
+        .ok_or("Vote before accepting")?;
+    if !private_vote_is_eligible(vote.state, vote.max_price, choice.price) {
+        return Err("You are not eligible to accept".into());
+    }
+    let acceptance_key = private_acceptance_key(proposal.id, ctx.sender());
+    if ctx
+        .db
+        .room_acceptance()
+        .acceptance_key()
+        .find(acceptance_key.clone())
+        .is_some()
+    {
+        return Err("You already accepted".into());
+    }
+    ctx.db.room_acceptance().insert(RoomAcceptance {
+        id: 0,
+        room_id: proposal.room_id,
+        proposal_id: proposal.id,
+        member_identity: ctx.sender(),
+        accepted_at: ctx.timestamp,
+        acceptance_key,
+    });
+    let eligible_acceptance_count = private_eligible_acceptance_count(ctx, proposal.id, &choice);
+    if private_acceptance_locks(eligible_acceptance_count, choice.min_people) {
+        let mut metrics = ctx
+            .db
+            .room_metrics()
+            .room_id()
+            .find(proposal.room_id)
+            .ok_or("Room metrics not found")?;
+        let decision_duration_seconds =
+            private_decision_duration_seconds(ctx.timestamp, proposal.created_at);
+        (metrics.decision_count, metrics.total_decision_seconds) = next_private_metrics(
+            metrics.decision_count,
+            metrics.total_decision_seconds,
+            decision_duration_seconds,
+        );
+        metrics.latest_locked_at = Some(ctx.timestamp);
+        proposal.status = ProposalStatus::Locked;
+        room.status = PrivateRoomStatus::Locked;
+        room.locked_choice_id = Some(choice.id);
+        ctx.db.room_decision().insert(RoomDecision {
+            id: 0,
+            room_id: proposal.room_id,
+            choice_id: choice.id,
+            locked_at: ctx.timestamp,
+            decision_duration_seconds,
+            eligible_acceptance_count,
+        });
+        ctx.db.room_proposal().id().update(proposal);
+        ctx.db.private_room().id().update(room);
+        ctx.db.room_metrics().room_id().update(metrics);
+    }
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+pub fn cancel_private_proposal(ctx: &ReducerContext, proposal_id: u32) -> Result<(), String> {
+    let mut proposal = ctx
+        .db
+        .room_proposal()
+        .id()
+        .find(proposal_id)
+        .ok_or("Proposal not found")?;
+    active_membership_for(ctx, proposal.room_id)?;
+    if proposal.status != ProposalStatus::Pending {
+        return Err("Proposal is no longer pending".into());
+    }
+    if proposal.proposer_identity != ctx.sender() {
+        return Err("Only the proposer can cancel".into());
+    }
+    proposal.status = ProposalStatus::Cancelled;
+    ctx.db.room_proposal().id().update(proposal);
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+pub fn leave_private_room(ctx: &ReducerContext, room_id: u32) -> Result<(), String> {
+    let mut membership = active_membership_for(ctx, room_id)?;
+    let mut room = private_room_for(ctx, room_id)?;
+    let accepted_locked_proposal = room.locked_choice_id.is_some_and(|choice_id| {
+        ctx.db.room_proposal().iter().any(|proposal| {
+            proposal.room_id == room_id
+                && proposal.choice_id == choice_id
+                && proposal.status == ProposalStatus::Locked
+                && ctx.db.room_acceptance().iter().any(|acceptance| {
+                    acceptance.proposal_id == proposal.id
+                        && acceptance.member_identity == ctx.sender()
+                })
+        })
+    });
+    membership.left_at = Some(ctx.timestamp);
+    ctx.db.room_membership().id().update(membership);
+    if should_reopen_private_room(room.status, accepted_locked_proposal) {
+        if let Some(mut proposal) = ctx.db.room_proposal().iter().find(|proposal| {
+            proposal.room_id == room_id && proposal.status == ProposalStatus::Locked
+        }) {
+            proposal.status = ProposalStatus::Reopened;
+            ctx.db.room_proposal().id().update(proposal);
+        }
+        room.status = reopened_private_room_status(room.status, accepted_locked_proposal);
+        room.locked_choice_id = None;
+        ctx.db.private_room().id().update(room);
+    }
+    Ok(())
 }
 
 #[spacetimedb::reducer]
@@ -1185,5 +1742,79 @@ mod tests {
             membership_key(invite.room_id, other_sender)
         );
         assert_eq!(membership(9, sender, None).identity, sender);
+    }
+
+    #[test]
+    fn only_one_private_proposal_can_be_pending_per_room() {
+        let proposal = RoomProposal {
+            id: 1,
+            room_id: 7,
+            choice_id: 3,
+            proposer_identity: identity(1),
+            status: ProposalStatus::Pending,
+            created_at: Timestamp::UNIX_EPOCH,
+        };
+
+        assert!(has_pending_private_proposal(
+            [proposal.clone()].into_iter(),
+            7
+        ));
+        assert!(!has_pending_private_proposal([proposal].into_iter(), 8));
+    }
+
+    #[test]
+    fn final_private_acceptance_locks_once_and_updates_metrics_once() {
+        let proposed_at = Timestamp::from_micros_since_unix_epoch(1_000_000);
+        let locked_at = Timestamp::from_micros_since_unix_epoch(3_500_000);
+        let (decision_count, total_decision_seconds) = next_private_metrics(
+            0,
+            0,
+            private_decision_duration_seconds(locked_at, proposed_at),
+        );
+
+        assert!(private_acceptance_locks(2, 2));
+        assert_eq!(decision_count, 1);
+        assert_eq!(total_decision_seconds, 2);
+    }
+
+    #[test]
+    fn non_eligible_private_votes_cannot_propose_or_accept() {
+        assert!(!private_vote_is_eligible(
+            AnswerState::Conditional,
+            Some(399),
+            Some(400)
+        ));
+        assert!(!private_vote_is_eligible(AnswerState::Out, None, Some(0)));
+        assert!(private_vote_is_eligible(
+            AnswerState::Conditional,
+            Some(400),
+            Some(400)
+        ));
+    }
+
+    #[test]
+    fn accepting_member_leave_reopens_a_locked_private_room() {
+        assert!(should_reopen_private_room(PrivateRoomStatus::Locked, true));
+        assert!(!should_reopen_private_room(
+            PrivateRoomStatus::Locked,
+            false
+        ));
+    }
+
+    #[test]
+    fn reopening_preserves_private_decision_and_metrics_history() {
+        let metrics = RoomMetrics {
+            room_id: 7,
+            decision_count: 1,
+            total_decision_seconds: 2,
+            latest_locked_at: Some(Timestamp::from_micros_since_unix_epoch(3_500_000)),
+        };
+
+        assert_eq!(metrics.decision_count, 1);
+        assert_eq!(metrics.total_decision_seconds, 2);
+        assert!(
+            reopened_private_room_status(PrivateRoomStatus::Locked, true)
+                == PrivateRoomStatus::Open
+        );
     }
 }

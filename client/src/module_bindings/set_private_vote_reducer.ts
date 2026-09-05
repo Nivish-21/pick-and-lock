@@ -11,20 +11,13 @@ import {
 } from "spacetimedb";
 
 import {
-  PrivateRoomChoiceInput,
+  AnswerState,
 } from "./types";
 
 export default {
-  publicRoomId: __t.string(),
-  title: __t.string(),
-  creatorDisplayName: __t.string(),
-  startsAt: __t.timestamp(),
-  endsAt: __t.timestamp(),
-  timezone: __t.string(),
-  get choices() {
-    return __t.array(PrivateRoomChoiceInput);
+  choiceId: __t.u32(),
+  get state() {
+    return AnswerState;
   },
-  inviteToken: __t.string(),
-  inviteExpiresAt: __t.option(__t.timestamp()),
-  inviteMaxUses: __t.option(__t.u32()),
+  maxPrice: __t.option(__t.u32()),
 };

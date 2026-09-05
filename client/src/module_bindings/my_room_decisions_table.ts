@@ -9,17 +9,12 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import {
-  PrivateRoomStatus,
-} from "./types";
-
 
 export default __t.row({
-  roomId: __t.u32().primaryKey().name("room_id"),
-  publicRoomId: __t.string().name("public_room_id"),
-  title: __t.string(),
-  createdAt: __t.timestamp().name("created_at"),
-  get status() {
-    return PrivateRoomStatus;
-  },
+  decisionId: __t.u32().primaryKey().name("decision_id"),
+  roomId: __t.u32().name("room_id"),
+  choiceId: __t.u32().name("choice_id"),
+  lockedAt: __t.timestamp().name("locked_at"),
+  decisionDurationSeconds: __t.u64().name("decision_duration_seconds"),
+  eligibleAcceptanceCount: __t.u32().name("eligible_acceptance_count"),
 });

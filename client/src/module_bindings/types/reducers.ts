@@ -7,6 +7,8 @@ import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
 import AcceptReducer from "../accept_reducer";
+import AcceptPrivateProposalReducer from "../accept_private_proposal_reducer";
+import CancelPrivateProposalReducer from "../cancel_private_proposal_reducer";
 import CancelProposalReducer from "../cancel_proposal_reducer";
 import CreatePrivateRoomReducer from "../create_private_room_reducer";
 import CreateRoomReducer from "../create_room_reducer";
@@ -14,12 +16,17 @@ import DropOutReducer from "../drop_out_reducer";
 import JoinReducer from "../join_reducer";
 import JoinWithInviteReducer from "../join_with_invite_reducer";
 import LeaveReducer from "../leave_reducer";
+import LeavePrivateRoomReducer from "../leave_private_room_reducer";
 import ProposeReducer from "../propose_reducer";
+import ProposePrivateChoiceReducer from "../propose_private_choice_reducer";
 import RegenerateInviteReducer from "../regenerate_invite_reducer";
 import RevokeInviteReducer from "../revoke_invite_reducer";
 import SetAnswerReducer from "../set_answer_reducer";
+import SetPrivateVoteReducer from "../set_private_vote_reducer";
 
 export type AcceptParams = __Infer<typeof AcceptReducer>;
+export type AcceptPrivateProposalParams = __Infer<typeof AcceptPrivateProposalReducer>;
+export type CancelPrivateProposalParams = __Infer<typeof CancelPrivateProposalReducer>;
 export type CancelProposalParams = __Infer<typeof CancelProposalReducer>;
 export type CreatePrivateRoomParams = __Infer<typeof CreatePrivateRoomReducer>;
 export type CreateRoomParams = __Infer<typeof CreateRoomReducer>;
@@ -27,7 +34,10 @@ export type DropOutParams = __Infer<typeof DropOutReducer>;
 export type JoinParams = __Infer<typeof JoinReducer>;
 export type JoinWithInviteParams = __Infer<typeof JoinWithInviteReducer>;
 export type LeaveParams = __Infer<typeof LeaveReducer>;
+export type LeavePrivateRoomParams = __Infer<typeof LeavePrivateRoomReducer>;
 export type ProposeParams = __Infer<typeof ProposeReducer>;
+export type ProposePrivateChoiceParams = __Infer<typeof ProposePrivateChoiceReducer>;
 export type RegenerateInviteParams = __Infer<typeof RegenerateInviteReducer>;
 export type RevokeInviteParams = __Infer<typeof RevokeInviteReducer>;
 export type SetAnswerParams = __Infer<typeof SetAnswerReducer>;
+export type SetPrivateVoteParams = __Infer<typeof SetPrivateVoteReducer>;

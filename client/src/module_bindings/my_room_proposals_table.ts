@@ -10,16 +10,17 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 import {
-  PrivateRoomStatus,
+  ProposalStatus,
 } from "./types";
 
 
 export default __t.row({
-  roomId: __t.u32().primaryKey().name("room_id"),
-  publicRoomId: __t.string().name("public_room_id"),
-  title: __t.string(),
-  createdAt: __t.timestamp().name("created_at"),
+  proposalId: __t.u32().primaryKey().name("proposal_id"),
+  roomId: __t.u32().name("room_id"),
+  choiceId: __t.u32().name("choice_id"),
+  proposerName: __t.string().name("proposer_name"),
   get status() {
-    return PrivateRoomStatus;
+    return ProposalStatus;
   },
+  createdAt: __t.timestamp().name("created_at"),
 });
