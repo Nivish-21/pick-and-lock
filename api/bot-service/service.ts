@@ -3,6 +3,7 @@ import { RoomDebouncer } from "./debounce";
 import { askModerator, type ModeratorMessage } from "./openai";
 import { findNearbyPlaces } from "./places";
 import { decideSpeak, type SpeakGateMessage, type SpeakGateState } from "./speakGate";
+import { extractPollIdeas } from "./pollAuthoring";
 
 type CachedMessage = SpeakGateMessage & {
   id: number;
@@ -56,6 +57,7 @@ export class RoomBotService {
   private readonly locations = new Map<number, CachedLocation[]>();
   private readonly states = new Map<number, CachedState>();
   private readonly lastActivity = new Map<number, number>();
+  private readonly activities = new Map<number, Array<{ name: string }>>();
   private readonly debouncer: RoomDebouncer<{ type: "message" | "location"; id: number }>;
 
   constructor(private readonly config: BotServiceConfig) {
@@ -123,6 +125,14 @@ export class RoomBotService {
     });
     connection.db.myBotRoomState.onInsert((_context, row) => this.cacheState(row));
     connection.db.myBotRoomState.onUpdate((_context, _oldRow, row) => this.cacheState(row));
+    connection.db.plan.onInsert((_context, row) => {
+      void connection.reducers.ensureBotFriend({ planId: row.id }).catch(() => undefined);
+    });
+    connection.db.activity.onInsert((_context, row) => {
+      const activities = this.activities.get(row.planId) ?? [];
+      if (!activities.some((activity) => activity.name === row.name)) activities.push({ name: row.name });
+      this.activities.set(row.planId, activities);
+    });
 
     connection.subscriptionBuilder()
       .onApplied(() => {
@@ -130,6 +140,15 @@ export class RoomBotService {
         this.preferences.clear();
         this.locations.clear();
         this.lastActivity.clear();
+        this.activities.clear();
+        for (const row of connection.db.activity) {
+          const activities = this.activities.get(row.planId) ?? [];
+          activities.push({ name: row.name });
+          this.activities.set(row.planId, activities);
+        }
+        for (const row of connection.db.plan) {
+          void connection.reducers.ensureBotFriend({ planId: row.id }).catch(() => undefined);
+        }
         for (const row of connection.db.myRoomChat) {
           const roomMessages = this.messages.get(row.roomId) ?? [];
           roomMessages.push({
@@ -168,6 +187,8 @@ export class RoomBotService {
         "SELECT * FROM my_room_preferences",
         "SELECT * FROM my_room_locations",
         "SELECT * FROM my_bot_room_state",
+        "SELECT * FROM activity",
+        "SELECT * FROM plan",
       ]);
   }
 
@@ -219,6 +240,45 @@ export class RoomBotService {
         .join("; "),
     });
 
+    const ideas = newMessages.length > 0
+      ? extractPollIdeas(result.activity_ideas, (this.activities.get(roomId) ?? []).map((activity) => activity.name))
+      : [];
+    let authoredNames: string[] = [];
+    if (ideas.length > 0) {
+      await this.connection.reducers.sendBotMessage({
+        roomId,
+        body: "Drafting a few options from the chat...",
+        kind: "text",
+        payloadJson: "{}",
+      }).catch(() => undefined);
+      for (const idea of ideas) {
+        try {
+          await this.connection.reducers.botAddActivity({
+            roomId,
+            name: idea.name,
+            price: idea.price,
+            minPeople: idea.minPeople,
+          });
+          authoredNames.push(idea.name);
+          const activities = this.activities.get(roomId) ?? [];
+          activities.push({ name: idea.name });
+          this.activities.set(roomId, activities);
+        } catch {
+          // A concurrent human add or another bot cycle may have claimed the name.
+        }
+      }
+      if (authoredNames.length > 0) {
+        setTimeout(() => {
+          void this.connection.reducers.sendBotMessage({
+            roomId,
+            body: `Added to the poll: ${authoredNames.join(", ")}.`,
+            kind: "recap",
+            payloadJson: JSON.stringify({ activities: authoredNames }),
+          }).catch(() => undefined);
+        }, 26_000);
+      }
+    }
+
     for (const preference of result.extracted_preferences) {
       await this.connection.reducers.recordPreference({
         roomId,
@@ -228,7 +288,7 @@ export class RoomBotService {
         sourceMessageId: BigInt(newMessages.at(-1)?.id ?? 0),
       });
     }
-    if (result.reply_text && gate.allowed) {
+    if (result.reply_text && gate.allowed && authoredNames.length === 0) {
       await this.connection.reducers.sendBotMessage({
         roomId,
         body: result.reply_text,

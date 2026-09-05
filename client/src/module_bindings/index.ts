@@ -37,10 +37,12 @@ import {
 import AcceptReducer from "./accept_reducer";
 import AddActivityReducer from "./add_activity_reducer";
 import AdvanceBotWatermarkReducer from "./advance_bot_watermark_reducer";
+import BotAddActivityReducer from "./bot_add_activity_reducer";
 import CancelProposalReducer from "./cancel_proposal_reducer";
 import CreatePrivateRoomReducer from "./create_private_room_reducer";
 import CreateRoomReducer from "./create_room_reducer";
 import DropOutReducer from "./drop_out_reducer";
+import EnsureBotFriendReducer from "./ensure_bot_friend_reducer";
 import JoinReducer from "./join_reducer";
 import JoinWithInviteReducer from "./join_with_invite_reducer";
 import LeaveReducer from "./leave_reducer";
@@ -149,6 +151,9 @@ const tablesSchema = __schema({
       { accessor: 'id', name: 'friend_id_idx_btree', algorithm: 'btree', columns: [
         'id',
       ] },
+      { accessor: 'identity', name: 'friend_identity_idx_btree', algorithm: 'btree', columns: [
+        'identity',
+      ] },
       { accessor: 'plan_id', name: 'friend_plan_id_idx_btree', algorithm: 'btree', columns: [
         'planId',
       ] },
@@ -247,10 +252,12 @@ const reducersSchema = __reducers(
   __reducerSchema("accept", AcceptReducer),
   __reducerSchema("add_activity", AddActivityReducer),
   __reducerSchema("advance_bot_watermark", AdvanceBotWatermarkReducer),
+  __reducerSchema("bot_add_activity", BotAddActivityReducer),
   __reducerSchema("cancel_proposal", CancelProposalReducer),
   __reducerSchema("create_private_room", CreatePrivateRoomReducer),
   __reducerSchema("create_room", CreateRoomReducer),
   __reducerSchema("drop_out", DropOutReducer),
+  __reducerSchema("ensure_bot_friend", EnsureBotFriendReducer),
   __reducerSchema("join", JoinReducer),
   __reducerSchema("join_with_invite", JoinWithInviteReducer),
   __reducerSchema("leave", LeaveReducer),

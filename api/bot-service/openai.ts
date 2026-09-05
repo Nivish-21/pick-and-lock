@@ -13,12 +13,19 @@ export type ModeratorResult = {
     category: "dietary" | "budget" | "timing" | "access" | "other";
   }>;
   place_query_needed: boolean;
+  activity_ideas: Array<{
+    name?: unknown;
+    price?: unknown;
+    min_people?: unknown;
+    confidence?: unknown;
+  }>;
 };
 
 const emptyResult: ModeratorResult = {
   reply_text: null,
   extracted_preferences: [],
   place_query_needed: false,
+  activity_ideas: [],
 };
 
 export async function askModerator(
@@ -47,7 +54,7 @@ export async function askModerator(
           {
             role: "system",
             content:
-              'You are AI Concierge in a friend decision room. Return JSON with exactly reply_text (string or null), extracted_preferences (array of {friend_id, statement, category}), and place_query_needed (boolean). Extract only explicit preferences. Keep replies concise. If allowed_to_speak is false, reply_text must be null.',
+              'You are AI Concierge in a friend decision room. Return JSON with exactly reply_text (string or null), extracted_preferences (array of {friend_id, statement, category}), place_query_needed (boolean), and activity_ideas (array of {name, price, min_people, confidence}). Extract only explicit preferences and activity or venue ideas that the group is considering. Use confidence from 0 to 1. Keep replies concise. If allowed_to_speak is false, reply_text must be null.',
           },
           {
             role: "user",
@@ -80,6 +87,7 @@ export async function askModerator(
         ? parsed.extracted_preferences
         : [],
       place_query_needed: parsed.place_query_needed === true,
+      activity_ideas: Array.isArray(parsed.activity_ideas) ? parsed.activity_ideas : [],
     };
   } catch {
     return emptyResult;

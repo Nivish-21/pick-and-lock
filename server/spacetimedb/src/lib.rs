@@ -52,6 +52,7 @@ pub struct Friend {
     pub id: u32,
     #[index(btree)]
     pub plan_id: u32,
+    #[index(btree)]
     pub identity: Identity,
     #[unique]
     pub friend_key: String,
@@ -486,6 +487,16 @@ fn view_active_room_ids(ctx: &ViewContext) -> Vec<u32> {
     )
 }
 
+fn view_plan_ids(ctx: &ViewContext) -> Vec<u32> {
+    ctx.db
+        .friend()
+        .identity()
+        .filter(ctx.sender())
+        .filter(|friend| friend.dropped_at.is_none())
+        .map(|friend| friend.plan_id)
+        .collect()
+}
+
 fn private_room_by_public_id(
     ctx: &ReducerContext,
     public_room_id: &str,
@@ -502,12 +513,6 @@ fn membership_for(ctx: &ReducerContext, room_id: u32) -> Option<RoomMembership> 
         .room_membership()
         .iter()
         .find(|membership| membership.room_id == room_id && membership.identity == ctx.sender())
-}
-
-fn active_private_membership(ctx: &ReducerContext, room_id: u32) -> Result<RoomMembership, String> {
-    membership_for(ctx, room_id)
-        .filter(|membership| membership.left_at.is_none())
-        .ok_or_else(|| "Join the room first".into())
 }
 
 fn configured_bot_identity() -> Option<Identity> {
@@ -679,7 +684,7 @@ pub fn my_room_members(ctx: &ViewContext) -> Vec<MyRoomMember> {
 
 #[spacetimedb::view(accessor = my_room_chat, public, primary_key = id)]
 pub fn my_room_chat(ctx: &ViewContext) -> Vec<MyRoomChat> {
-    let room_ids = view_active_room_ids(ctx);
+    let room_ids = view_plan_ids(ctx);
     room_ids
         .into_iter()
         .flat_map(|room_id| ctx.db.chat_message().room_id().filter(room_id))
@@ -699,7 +704,7 @@ pub fn my_room_chat(ctx: &ViewContext) -> Vec<MyRoomChat> {
 
 #[spacetimedb::view(accessor = my_room_preferences, public, primary_key = id)]
 pub fn my_room_preferences(ctx: &ViewContext) -> Vec<MyRoomPreference> {
-    let room_ids = view_active_room_ids(ctx);
+    let room_ids = view_plan_ids(ctx);
     room_ids
         .into_iter()
         .flat_map(|room_id| ctx.db.member_preference().room_id().filter(room_id))
@@ -718,7 +723,7 @@ pub fn my_room_preferences(ctx: &ViewContext) -> Vec<MyRoomPreference> {
 
 #[spacetimedb::view(accessor = my_room_locations, public, primary_key = id)]
 pub fn my_room_locations(ctx: &ViewContext) -> Vec<MyRoomLocation> {
-    let room_ids = view_active_room_ids(ctx);
+    let room_ids = view_plan_ids(ctx);
     room_ids
         .into_iter()
         .flat_map(|room_id| ctx.db.location_submission().room_id().filter(room_id))
@@ -735,7 +740,7 @@ pub fn my_room_locations(ctx: &ViewContext) -> Vec<MyRoomLocation> {
 
 #[spacetimedb::view(accessor = my_bot_room_state, public, primary_key = room_id)]
 pub fn my_bot_room_state(ctx: &ViewContext) -> Vec<MyBotRoomState> {
-    let room_ids = view_active_room_ids(ctx);
+    let room_ids = view_plan_ids(ctx);
     room_ids
         .into_iter()
         .filter_map(|room_id| ctx.db.bot_room_state().room_id().find(room_id))
@@ -751,7 +756,8 @@ pub fn my_bot_room_state(ctx: &ViewContext) -> Vec<MyBotRoomState> {
 
 #[spacetimedb::reducer]
 pub fn send_chat_message(ctx: &ReducerContext, room_id: u32, body: String) -> Result<(), String> {
-    let membership = active_private_membership(ctx, room_id)?;
+    let friend = friend_for(ctx, room_id).ok_or("Join the plan first")?;
+    plan_for(ctx, room_id)?;
     let body = body.trim().to_string();
     if body.is_empty() || body.len() > 500 {
         return Err("Message must be 1-500 characters".into());
@@ -760,7 +766,7 @@ pub fn send_chat_message(ctx: &ReducerContext, room_id: u32, body: String) -> Re
         id: 0,
         room_id,
         sender_identity: ctx.sender(),
-        sender_name: membership.display_name,
+        sender_name: friend.name,
         is_bot: false,
         body,
         kind: "text".into(),
@@ -779,9 +785,7 @@ pub fn send_bot_message(
     payload_json: String,
 ) -> Result<(), String> {
     require_bot(ctx)?;
-    if ctx.db.private_room().id().find(room_id).is_none() {
-        return Err("Room not found".into());
-    }
+    plan_for(ctx, room_id)?;
     let body = body.trim().to_string();
     if body.is_empty() || body.len() > 500 || !valid_chat_kind(&kind) {
         return Err("Bot message is invalid".into());
@@ -828,6 +832,74 @@ pub fn send_bot_message(
 }
 
 #[spacetimedb::reducer]
+pub fn bot_add_activity(
+    ctx: &ReducerContext,
+    room_id: u32,
+    name: String,
+    price: u32,
+    min_people: u32,
+) -> Result<(), String> {
+    require_bot(ctx)?;
+    let plan = plan_for(ctx, room_id)?;
+    if plan.status != PlanStatus::Open {
+        return Err("Plan is locked".into());
+    }
+    let name = name.trim().to_string();
+    if name.is_empty() || name.len() > 60 {
+        return Err("Activity name must be 1-60 characters".into());
+    }
+    if min_people == 0 || min_people > 50 {
+        return Err("Minimum people must be between 1 and 50".into());
+    }
+    if price > 1_000_000 {
+        return Err("Price is too high".into());
+    }
+    if ctx
+        .db
+        .activity()
+        .iter()
+        .any(|activity| activity.plan_id == room_id && activity.name.eq_ignore_ascii_case(&name))
+    {
+        return Err("That option already exists".into());
+    }
+    let activity = ctx.db.activity().insert(Activity {
+        id: 0,
+        plan_id: room_id,
+        name: name.clone(),
+        price,
+        min_people,
+    });
+    event(
+        ctx,
+        room_id,
+        "activity_added",
+        None,
+        Some(activity.id),
+        format!("New option added: {}", name),
+    );
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+pub fn ensure_bot_friend(ctx: &ReducerContext, plan_id: u32) -> Result<(), String> {
+    require_bot(ctx)?;
+    plan_for(ctx, plan_id)?;
+    if friend_for(ctx, plan_id).is_none() {
+        ctx.db.friend().insert(Friend {
+            id: 0,
+            plan_id,
+            identity: ctx.sender(),
+            friend_key: format!("{}:{}", plan_id, ctx.sender()),
+            name: "AI Concierge".into(),
+            online: true,
+            joined_at: ctx.timestamp,
+            dropped_at: None,
+        });
+    }
+    Ok(())
+}
+
+#[spacetimedb::reducer]
 pub fn record_preference(
     ctx: &ReducerContext,
     room_id: u32,
@@ -837,12 +909,13 @@ pub fn record_preference(
     source_message_id: u64,
 ) -> Result<(), String> {
     require_bot(ctx)?;
+    plan_for(ctx, room_id)?;
     let member = ctx
         .db
-        .room_membership()
+        .friend()
         .id()
         .find(friend_id)
-        .filter(|membership| membership.room_id == room_id && membership.left_at.is_none())
+        .filter(|friend| friend.plan_id == room_id && friend.dropped_at.is_none())
         .ok_or("Member not found")?;
     let statement = statement.trim().to_string();
     if statement.is_empty() || statement.len() > 240 {
@@ -867,7 +940,7 @@ pub fn record_preference(
         id: 0,
         room_id,
         friend_id,
-        friend_name: member.display_name,
+        friend_name: member.name,
         statement,
         category,
         source_message_id,
@@ -883,7 +956,8 @@ pub fn submit_location(
     lat: f64,
     lng: f64,
 ) -> Result<(), String> {
-    let member = active_private_membership(ctx, room_id)?;
+    let member = friend_for(ctx, room_id).ok_or("Join the plan first")?;
+    plan_for(ctx, room_id)?;
     if !lat.is_finite()
         || !lng.is_finite()
         || !(-90.0..=90.0).contains(&lat)
@@ -909,6 +983,7 @@ pub fn advance_bot_watermark(
     last_processed_message_id: u64,
 ) -> Result<(), String> {
     require_bot(ctx)?;
+    plan_for(ctx, room_id)?;
     let mut state = bot_state_for(ctx, room_id);
     if last_processed_message_id > state.last_processed_message_id {
         state.last_processed_message_id = last_processed_message_id;
