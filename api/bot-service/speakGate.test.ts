@@ -37,6 +37,28 @@ describe("decideSpeak", () => {
     ).toMatchObject({ allowed: false, trigger: "none" });
   });
 
+  it("does not treat a bot recap as a new decision milestone", () => {
+    expect(
+      decideSpeak({
+        messages: [{ senderName: "AI Concierge", body: "Added Bowling.", isBot: true, kind: "recap" }],
+        now: 1000,
+        state,
+        decisionMilestone: true,
+      }),
+    ).toMatchObject({ allowed: false, trigger: "none" });
+  });
+
+  it("allows a human decision recap to trigger a response", () => {
+    expect(
+      decideSpeak({
+        messages: [{ senderName: "Priya", body: "Bowling works for everyone.", kind: "recap" }],
+        now: 1000,
+        state,
+        decisionMilestone: true,
+      }),
+    ).toMatchObject({ allowed: true, trigger: "decision-milestone" });
+  });
+
   it("always reacts to a fresh location unless cooldown blocks it", () => {
     expect(decideSpeak({ messages: [], now: 1000, state, locationJustSubmitted: true })).toMatchObject({ allowed: true });
     expect(

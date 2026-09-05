@@ -61,7 +61,7 @@ export class RoomBotService {
   private readonly debouncer: RoomDebouncer<{ type: "message" | "location"; id: number }>;
 
   constructor(private readonly config: BotServiceConfig) {
-    this.debouncer = new RoomDebouncer(3_000, async (batch) => {
+    this.debouncer = new RoomDebouncer(2_000, async (batch) => {
       const byRoom = new Map<number, Array<{ type: "message" | "location"; id: number }>>();
       for (const entry of batch) {
         const roomBatch = byRoom.get(entry.roomId) ?? [];
@@ -227,7 +227,7 @@ export class RoomBotService {
       now: Date.now(),
       state: previousState,
       locationJustSubmitted,
-      decisionMilestone: newMessages.some((message) => message.kind === "recap"),
+      decisionMilestone: newMessages.some((message) => !message.isBot && message.kind === "recap"),
       lastActivityAt: this.lastActivity.get(roomId),
       everyoneAnswered: false,
     });

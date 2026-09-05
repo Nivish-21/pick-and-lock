@@ -12,9 +12,9 @@ export async function fetchWithRetry(
   init: RequestInit,
   options: RetryFetchOptions = {},
 ): Promise<Response> {
-  const timeoutMs = options.timeoutMs ?? 8_000;
+  const timeoutMs = options.timeoutMs ?? 6_000;
   const retries = options.retries ?? 1;
-  const backoffMs = options.backoffMs ?? 250;
+  const backoffMs = options.backoffMs ?? 150;
   const fetchImpl = options.fetchImpl ?? fetch;
   let lastError: unknown;
 
