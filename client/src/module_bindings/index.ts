@@ -53,6 +53,7 @@ import LeavePrivateRoomReducer from "./leave_private_room_reducer";
 import ProposeReducer from "./propose_reducer";
 import ProposePrivateChoiceReducer from "./propose_private_choice_reducer";
 import PublishRoomReducer from "./publish_room_reducer";
+import RecordMemberEmailReducer from "./record_member_email_reducer";
 import RecordPreferenceReducer from "./record_preference_reducer";
 import RegenerateInviteReducer from "./regenerate_invite_reducer";
 import RevokeInviteReducer from "./revoke_invite_reducer";
@@ -338,6 +339,7 @@ const reducersSchema = __reducers(
   __reducerSchema("propose", ProposeReducer),
   __reducerSchema("propose_private_choice", ProposePrivateChoiceReducer),
   __reducerSchema("publish_room", PublishRoomReducer),
+  __reducerSchema("record_member_email", RecordMemberEmailReducer),
   __reducerSchema("record_preference", RecordPreferenceReducer),
   __reducerSchema("regenerate_invite", RegenerateInviteReducer),
   __reducerSchema("revoke_invite", RevokeInviteReducer),

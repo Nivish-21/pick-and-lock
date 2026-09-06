@@ -66,6 +66,8 @@ pub struct Friend {
     pub online: bool,
     pub joined_at: Timestamp,
     pub dropped_at: Option<Timestamp>,
+    #[default(None)]
+    pub email: Option<String>,
 }
 #[spacetimedb::table(accessor = answer, public)]
 pub struct Answer {
@@ -1518,6 +1520,7 @@ pub fn ensure_bot_friend(ctx: &ReducerContext, plan_id: u32) -> Result<(), Strin
             online: true,
             joined_at: ctx.timestamp,
             dropped_at: None,
+            email: None,
         });
     }
     Ok(())
@@ -2246,6 +2249,7 @@ pub fn join(ctx: &ReducerContext, plan_id: u32, name: String) -> Result<(), Stri
         online: true,
         joined_at: ctx.timestamp,
         dropped_at: None,
+        email: None,
     });
     event(
         ctx,
@@ -2584,11 +2588,74 @@ pub fn drop_out(ctx: &ReducerContext, plan_id: u32) -> Result<(), String> {
     Ok(())
 }
 
+fn valid_email(email: &str) -> bool {
+    // Pattern: one or more non-whitespace non-@ chars, @, one or more non-whitespace non-@ chars,
+    // dot, one or more non-whitespace non-@ chars. Also enforce 254 char max.
+    if email.is_empty() || email.len() > 254 {
+        return false;
+    }
+    let email = email.trim();
+    if email.is_empty() || email.len() > 254 {
+        return false;
+    }
+    if !email.contains('@') || !email.contains('.') {
+        return false;
+    }
+    let at_pos = match email.find('@') {
+        Some(pos) => pos,
+        None => return false,
+    };
+    if at_pos == 0 || at_pos == email.len() - 1 {
+        return false;
+    }
+    let before_at = &email[..at_pos];
+    let after_at = &email[at_pos + 1..];
+    if before_at
+        .bytes()
+        .any(|b| b.is_ascii_whitespace() || b == b'@')
+    {
+        return false;
+    }
+    if after_at.is_empty() || after_at.find('.').is_none() {
+        return false;
+    }
+    let dot_pos = match after_at.rfind('.') {
+        Some(pos) => pos,
+        None => return false,
+    };
+    if dot_pos == 0 || dot_pos == after_at.len() - 1 {
+        return false;
+    }
+    if after_at
+        .bytes()
+        .any(|b| b.is_ascii_whitespace() || b == b'@')
+    {
+        return false;
+    }
+    true
+}
+
 #[spacetimedb::reducer]
 pub fn leave(ctx: &ReducerContext, plan_id: u32) -> Result<(), String> {
     let mut f = friend_for(ctx, plan_id).ok_or("Join the plan first")?;
     f.online = false;
     ctx.db.friend().id().update(f);
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+pub fn record_member_email(
+    ctx: &ReducerContext,
+    room_id: u32,
+    email: String,
+) -> Result<(), String> {
+    let mut friend = friend_for(ctx, room_id).ok_or("Join the plan first")?;
+    let email = email.trim().to_string();
+    if email.is_empty() || !valid_email(&email) {
+        return Err("Email is invalid".into());
+    }
+    friend.email = Some(email);
+    ctx.db.friend().id().update(friend);
     Ok(())
 }
 
@@ -2930,5 +2997,33 @@ mod tests {
 
         assert!(draft_name_matches(&bowling.name, "Bowling"));
         assert!(!draft_name_matches(&escape_room.name, "Bowling"));
+    }
+
+    #[test]
+    fn valid_email_accepts_standard_format() {
+        assert!(valid_email("user@example.com"));
+        assert!(valid_email("alice@domain.co.uk"));
+        assert!(valid_email("test.name@sub.domain.org"));
+    }
+
+    #[test]
+    fn valid_email_rejects_invalid_format() {
+        assert!(!valid_email(""));
+        assert!(!valid_email("   "));
+        assert!(!valid_email("missing-at-sign.com"));
+        assert!(!valid_email("missing@domain"));
+        assert!(!valid_email("@domain.com"));
+        assert!(!valid_email("user@.com"));
+        assert!(!valid_email("user name@domain.com"));
+        assert!(!valid_email("user@domain .com"));
+        assert!(!valid_email(&"x".repeat(255)));
+    }
+
+    #[test]
+    fn valid_email_enforces_length_limit() {
+        let too_long = format!("{}@example.com", "a".repeat(250));
+        assert!(!valid_email(&too_long));
+        let at_limit = format!("{}@example.com", "a".repeat(240));
+        assert!(valid_email(&at_limit));
     }
 }
