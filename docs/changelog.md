@@ -179,3 +179,4 @@
 - Completed migration inspection: all proposed data changes are additive (two defaulted private-room columns, new tables, `shared_room_story`, and views), with no entity removal or recreation.
 - Cancelled the final confirmation because Maincloud still warns that every client will disconnect. No module publish or Vercel deployment occurred; the warning is a release stop under the active plan.
 - Restored generated bindings to their minimal generator formatting after the temporary broad Prettier rewrite, retaining only the generated semantic changes.
+- Pushed the safe compatibility commit to `origin/main` as `b3f07ec`; production remains on the previously verified presence release because the public-story migration was intentionally cancelled.
