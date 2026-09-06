@@ -13,6 +13,7 @@ import AdvanceBotWatermarkReducer from "../advance_bot_watermark_reducer";
 import BotAddActivityReducer from "../bot_add_activity_reducer";
 import CancelPrivateProposalReducer from "../cancel_private_proposal_reducer";
 import CancelProposalReducer from "../cancel_proposal_reducer";
+import ClearPollDraftReducer from "../clear_poll_draft_reducer";
 import CreatePrivateRoomReducer from "../create_private_room_reducer";
 import CreateRoomReducer from "../create_room_reducer";
 import DropOutReducer from "../drop_out_reducer";
@@ -34,6 +35,7 @@ import SetPrivateVoteReducer from "../set_private_vote_reducer";
 import SetPublicShareSettingsReducer from "../set_public_share_settings_reducer";
 import SubmitLocationReducer from "../submit_location_reducer";
 import UnpublishRoomReducer from "../unpublish_room_reducer";
+import UpdatePollDraftReducer from "../update_poll_draft_reducer";
 
 export type AcceptParams = __Infer<typeof AcceptReducer>;
 export type AcceptPrivateProposalParams = __Infer<typeof AcceptPrivateProposalReducer>;
@@ -42,6 +44,7 @@ export type AdvanceBotWatermarkParams = __Infer<typeof AdvanceBotWatermarkReduce
 export type BotAddActivityParams = __Infer<typeof BotAddActivityReducer>;
 export type CancelPrivateProposalParams = __Infer<typeof CancelPrivateProposalReducer>;
 export type CancelProposalParams = __Infer<typeof CancelProposalReducer>;
+export type ClearPollDraftParams = __Infer<typeof ClearPollDraftReducer>;
 export type CreatePrivateRoomParams = __Infer<typeof CreatePrivateRoomReducer>;
 export type CreateRoomParams = __Infer<typeof CreateRoomReducer>;
 export type DropOutParams = __Infer<typeof DropOutReducer>;
@@ -63,3 +66,4 @@ export type SetPrivateVoteParams = __Infer<typeof SetPrivateVoteReducer>;
 export type SetPublicShareSettingsParams = __Infer<typeof SetPublicShareSettingsReducer>;
 export type SubmitLocationParams = __Infer<typeof SubmitLocationReducer>;
 export type UnpublishRoomParams = __Infer<typeof UnpublishRoomReducer>;
+export type UpdatePollDraftParams = __Infer<typeof UpdatePollDraftReducer>;
