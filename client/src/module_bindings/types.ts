@@ -114,6 +114,7 @@ export const Friend = __t.object("Friend", {
   online: __t.bool(),
   joinedAt: __t.timestamp(),
   droppedAt: __t.option(__t.timestamp()),
+  email: __t.option(__t.string()),
 });
 export type Friend = __Infer<typeof Friend>;
 

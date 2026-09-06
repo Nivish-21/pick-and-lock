@@ -19,4 +19,5 @@ export default __t.row({
   online: __t.bool(),
   joinedAt: __t.timestamp().name("joined_at"),
   droppedAt: __t.option(__t.timestamp()).name("dropped_at"),
+  email: __t.option(__t.string()),
 });
