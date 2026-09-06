@@ -207,3 +207,10 @@
 - Cancelled the final confirmation because Maincloud still warns that every client will disconnect. No module publish or Vercel deployment occurred; the warning is a release stop under the active plan.
 - Restored generated bindings to their minimal generator formatting after the temporary broad Prettier rewrite, retaining only the generated semantic changes.
 - Pushed the safe compatibility commit to `origin/main` as `b3f07ec`; production remains on the previously verified presence release because the public-story migration was intentionally cancelled.
+
+# 2026-09-06 — Freeze-window closeout: Task 3, member-email schema, full redeploy
+
+- Completed Task 3 (entry intro): `Plan.onInsert` now calls a new `ensureBotFriendAndIntroduce` method — ensures the bot's `Friend` row exists, and only when the room has no prior chat, sends a static intro message followed by a location-request prompt, with no LLM call on this path. Two new tests cover the fresh-room and already-has-chat cases. 31/31 bot-service tests pass, `tsc --noEmit` clean. Pushed as `bd75e86`; closed issue #31.
+- Republished the Maincloud module to carry the merged `Friend.email` column (`e5eb434`) live — SpacetimeDB flagged it as breaking (new column, properly defaulted) since it changes a table an existing view depends on; confirmed with the owner before publishing with `--yes=break-clients`. `record_member_email` is now functional in production.
+- Verified Render auto-deployed the bot-service through `bd75e86` (status `live`) with no manual restart needed this time — the reconnect fix added earlier in the session absorbed the publish-triggered disconnect on its own.
+- Redeployed the client to Vercel production (`vercel --prod`); confirmed live at `pick-and-lock.vercel.app`, carrying the email-capture UI, the `@agent` mention popup, and Task 3's bot changes.
