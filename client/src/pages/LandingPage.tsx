@@ -4,7 +4,7 @@ import "../styles/landing.css";
 
 type LandingPageProps = {
   view: RoomView;
-  onJoin: (name: string) => void;
+  onJoin: (name: string, email?: string) => void;
 };
 
 function formatPrice(price: number): string {
@@ -13,6 +13,7 @@ function formatPrice(price: number): string {
 
 export function LandingPage({ view, onJoin }: LandingPageProps) {
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [error, setError] = useState("");
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -25,7 +26,8 @@ export function LandingPage({ view, onJoin }: LandingPageProps) {
     }
 
     setError("");
-    onJoin(displayName);
+    const trimmedEmail = email.trim();
+    onJoin(displayName, trimmedEmail.length > 0 ? trimmedEmail : undefined);
   }
 
   return (
@@ -74,6 +76,18 @@ export function LandingPage({ view, onJoin }: LandingPageProps) {
             <p id="name-help" className="form-help">
               No account. Just pick the name your friends know.
             </p>
+
+            <label htmlFor="display-email">Your email (optional)</label>
+            <input
+              id="display-email"
+              name="displayEmail"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="your.email@example.com"
+            />
+
             <p id="name-error" className="form-error" aria-live="polite">
               {error}
             </p>

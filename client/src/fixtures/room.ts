@@ -63,6 +63,7 @@ export type RoomActions = {
   cancelProposal: (proposalId: number) => Promise<void>;
   dropOut: () => Promise<void>;
   leave: () => Promise<void>;
+  recordMemberEmail: (email: string) => Promise<void>;
   sendJoinEmail: (email: string, shareCode: string) => Promise<void>;
 };
 
@@ -185,5 +186,6 @@ export const fixtureActions: RoomActions = {
   cancelProposal: noOp,
   dropOut: noOp,
   leave: noOp,
+  recordMemberEmail: noOp,
   sendJoinEmail: noOp,
 };

@@ -8,6 +8,7 @@ export type CreateRoomInput = {
   dateLabel: string;
   scheduledAt: Timestamp;
   hostName: string;
+  hostEmail?: string;
 };
 
 export type CreateRoomPageProps = {
@@ -57,6 +58,7 @@ export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
   const [title, setTitle] = useState("");
   const [scheduledAtValue, setScheduledAtValue] = useState("");
   const [hostName, setHostName] = useState("");
+  const [hostEmail, setHostEmail] = useState("");
   const [shareCode, setShareCode] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
@@ -103,12 +105,14 @@ export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
     setPending(true);
 
     try {
+      const trimmedEmail = hostEmail.trim();
       await onCreate({
         shareCode: nextShareCode,
         title: trimmedTitle,
         dateLabel: formatDateLabel(scheduledDate),
         scheduledAt: Timestamp.fromDate(scheduledDate),
         hostName: trimmedHostName,
+        hostEmail: trimmedEmail.length > 0 ? trimmedEmail : undefined,
       });
       setShareCode(nextShareCode);
       setCreated(true);
@@ -194,6 +198,19 @@ export function CreateRoomPage({ onCreate }: CreateRoomPageProps) {
               maxLength={40}
               autoComplete="name"
               aria-invalid={Boolean(error && !hostName.trim())}
+            />
+          </div>
+
+          <div className="create-room-field">
+            <label htmlFor="host-email">Your email (optional)</label>
+            <input
+              id="host-email"
+              name="hostEmail"
+              type="email"
+              value={hostEmail}
+              onChange={(event) => setHostEmail(event.target.value)}
+              placeholder="your.email@example.com"
+              autoComplete="email"
             />
           </div>
 

@@ -17,6 +17,7 @@ function fillForm(
   title: string,
   scheduledAt = "2026-09-05T19:00",
   hostName = "Nivish",
+  hostEmail = "",
 ) {
   fireEvent.change(screen.getByLabelText("What are we deciding?"), {
     target: { value: title },
@@ -27,6 +28,11 @@ function fillForm(
   fireEvent.change(screen.getByLabelText("Your name"), {
     target: { value: hostName },
   });
+  if (hostEmail) {
+    fireEvent.change(screen.getByLabelText("Your email (optional)"), {
+      target: { value: hostEmail },
+    });
+  }
 }
 
 describe("CreateRoomPage", () => {
@@ -134,5 +140,31 @@ describe("CreateRoomPage", () => {
 
     expect(success.textContent).toContain("Room created.");
     expect(success.textContent).toContain(shareCode);
+  });
+
+  it("includes email in the create input when provided", async () => {
+    const onCreate = vi
+      .fn<(input: CreateRoomInput) => Promise<void>>()
+      .mockResolvedValue(undefined);
+
+    render(<CreateRoomPage onCreate={onCreate} />);
+    fillForm("Dinner plan", "2026-09-05T19:00", "Nivish", "test@example.com");
+    fireEvent.click(screen.getByRole("button", { name: "Create room" }));
+
+    await waitFor(() => expect(onCreate).toHaveBeenCalledOnce());
+    expect(onCreate.mock.calls[0][0].hostEmail).toBe("test@example.com");
+  });
+
+  it("omits email from create input when empty", async () => {
+    const onCreate = vi
+      .fn<(input: CreateRoomInput) => Promise<void>>()
+      .mockResolvedValue(undefined);
+
+    render(<CreateRoomPage onCreate={onCreate} />);
+    fillForm("Dinner plan");
+    fireEvent.click(screen.getByRole("button", { name: "Create room" }));
+
+    await waitFor(() => expect(onCreate).toHaveBeenCalledOnce());
+    expect(onCreate.mock.calls[0][0].hostEmail).toBeUndefined();
   });
 });

@@ -55,6 +55,8 @@ export function actionsFor(
   planId: number,
 ): BridgeActions {
   const joinRoom = (name: string) => connection.reducers.join({ planId, name });
+  const recordMemberEmail = (email: string) =>
+    connection.reducers.recordMemberEmail({ roomId: planId, email });
   const addActivity = (
     name: string,
     price: number,
@@ -100,6 +102,7 @@ export function actionsFor(
     dropOut,
     leave: leaveRoom,
     leaveRoom,
+    recordMemberEmail,
     sendJoinEmail: async (email, shareCode) => {
       const response = await fetch("/api/capture-email", {
         method: "POST",

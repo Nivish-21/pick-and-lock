@@ -32,12 +32,18 @@ function App() {
       {() => (
         <CreateRoomPage
           onCreate={async (input) => {
-            const { hostName, ...roomInput } = input;
+            const { hostName, hostEmail, ...roomInput } = input;
             await createRoom(roomInput);
             sessionStorage.setItem(
               `pending-host-name:${input.shareCode}`,
               hostName,
             );
+            if (hostEmail) {
+              sessionStorage.setItem(
+                `pending-host-email:${input.shareCode}`,
+                hostEmail,
+              );
+            }
             window.location.assign(`/r/${input.shareCode}`);
           }}
         />
@@ -69,6 +75,9 @@ function RoomSessionContent({
   const [pendingHostName, setPendingHostName] = useState<string | null>(() =>
     sessionStorage.getItem(`pending-host-name:${roomCode}`),
   );
+  const [pendingHostEmail, setPendingHostEmail] = useState<string | null>(() =>
+    sessionStorage.getItem(`pending-host-email:${roomCode}`),
+  );
   const [joinError, setJoinError] = useState("");
 
   useEffect(() => {
@@ -80,6 +89,12 @@ function RoomSessionContent({
         setName(pendingHostName);
         setPendingHostName(null);
         sessionStorage.removeItem(`pending-host-name:${roomCode}`);
+        if (pendingHostEmail) {
+          actions.sendJoinEmail(pendingHostEmail, roomCode).catch(() => undefined);
+          actions.recordMemberEmail(pendingHostEmail).catch(() => undefined);
+          sessionStorage.removeItem(`pending-host-email:${roomCode}`);
+          setPendingHostEmail(null);
+        }
       },
       (error: unknown) => {
         if (!active) return;
@@ -91,7 +106,7 @@ function RoomSessionContent({
     return () => {
       active = false;
     };
-  }, [actions, name, pendingHostName, roomCode]);
+  }, [actions, name, pendingHostName, pendingHostEmail, roomCode]);
 
   if (pendingHostName !== null && name === null) {
     return <p role="status">{joinError || "Joining your room…"}</p>;
@@ -103,8 +118,14 @@ function RoomSessionContent({
     return (
       <LandingPage
         view={view}
-        onJoin={(nextName) => {
-          void actions.join(nextName).then(() => setName(nextName));
+        onJoin={(nextName, nextEmail) => {
+          void actions.join(nextName).then(() => {
+            setName(nextName);
+            if (nextEmail) {
+              actions.sendJoinEmail(nextEmail, roomCode).catch(() => undefined);
+              actions.recordMemberEmail(nextEmail).catch(() => undefined);
+            }
+          });
         }}
       />
     );
