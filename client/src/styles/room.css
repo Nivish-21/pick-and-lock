@@ -10,11 +10,13 @@
 }
 .room-main-column {
   min-width: 0;
+  order: 2;
 }
 .room-sidebar {
   display: grid;
   align-content: start;
   gap: 1rem;
+  order: 1;
 }
 .room-header {
   display: flex;

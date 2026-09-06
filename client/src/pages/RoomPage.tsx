@@ -15,9 +15,11 @@ function eventMessage(event: RoomView["latestEvent"]): string {
 function RoomSidebar({
   view,
   actions,
+  showQr = false,
 }: {
   view: RoomView;
   actions: RoomActions;
+  showQr?: boolean;
 }) {
   const bridgeView = view as RoomView & {
     chatMessages?: Array<{
@@ -50,6 +52,7 @@ function RoomSidebar({
         }
       />
       <GroupInputPanel preferences={bridgeView.preferences ?? []} />
+      {showQr ? <RoomQrCode roomUrl={window.location.href} /> : null}
     </aside>
   );
 }
@@ -139,9 +142,8 @@ export function RoomPage({ view, actions }: RoomPageProps) {
             <p className="room-event" aria-live="polite">
               {eventMessage(view.latestEvent)}
             </p>
-            <RoomQrCode roomUrl={window.location.href} />
           </div>
-          <RoomSidebar view={view} actions={actions} />
+          <RoomSidebar view={view} actions={actions} showQr />
         </div>
       </main>
     );
@@ -154,26 +156,36 @@ export function RoomPage({ view, actions }: RoomPageProps) {
         onCopy={() => void copyRoomLink()}
         shareStatus={shareStatus}
       />
+      {view.latestEvent?.kind === "reopened" ? (
+        <section className="reopen-notice" aria-live="polite">
+          <strong>Plan reopened</strong>
+          <span>{eventMessage(view.latestEvent)}</span>
+        </section>
+      ) : null}
+      <section className="room-intro" aria-labelledby="room-title">
+        <p className="room-kicker">
+          {proposal ? "Group decision" : "What works for you?"}
+        </p>
+        <h1 id="room-title">
+          {proposal ? "One plan is on the table." : view.title}
+        </h1>
+        <p>
+          {proposal
+            ? "Only eligible friends can agree. The plan locks at the required count."
+            : "Choose what works. The group sees feasibility as answers arrive."}
+        </p>
+      </section>
       <div className="room-layout">
         <div className="room-main-column">
-          {view.latestEvent?.kind === "reopened" ? (
-            <section className="reopen-notice" aria-live="polite">
-              <strong>Plan reopened</strong>
-              <span>{eventMessage(view.latestEvent)}</span>
-            </section>
-          ) : null}
-          <section className="room-intro" aria-labelledby="room-title">
-            <p className="room-kicker">
-              {proposal ? "Group decision" : "What works for you?"}
-            </p>
-            <h1 id="room-title">
-              {proposal ? "One plan is on the table." : view.title}
-            </h1>
-            <p>
-              {proposal
-                ? "Only eligible friends can agree. The plan locks at the required count."
-                : "Choose what works. The group sees feasibility as answers arrive."}
-            </p>
+          <section className="activity-list" aria-label="Activity choices">
+            {view.activities.map((activity) => (
+              <ActivityCard
+                activity={activity}
+                actions={actions}
+                onError={setToast}
+                key={activity.id}
+              />
+            ))}
           </section>
           {proposal ? (
             <section className="proposal-panel" aria-label="Pending proposal">
@@ -200,16 +212,6 @@ export function RoomPage({ view, actions }: RoomPageProps) {
               </button>
             </section>
           ) : null}
-          <section className="activity-list" aria-label="Activity choices">
-            {view.activities.map((activity) => (
-              <ActivityCard
-                activity={activity}
-                actions={actions}
-                onError={setToast}
-                key={activity.id}
-              />
-            ))}
-          </section>
           <details>
             <summary>Add manually</summary>
             <form
@@ -307,9 +309,8 @@ export function RoomPage({ view, actions }: RoomPageProps) {
           <p className="toast-region" aria-live="polite">
             {toast ? `Action not applied: ${toast}` : ""}
           </p>
-          <RoomQrCode roomUrl={window.location.href} />
         </div>
-        <RoomSidebar view={view} actions={actions} />
+        <RoomSidebar view={view} actions={actions} showQr />
       </div>
     </main>
   );

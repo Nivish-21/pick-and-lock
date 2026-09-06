@@ -86,7 +86,10 @@ export function RoomChat({
 
       <div className="room-chat-list" aria-live="polite" aria-label="Room messages">
         {messages.length === 0 ? (
-          <p className="room-chat-empty">No messages yet. Start the conversation.</p>
+          <p className="room-chat-empty">
+            No messages yet. Start the conversation, or type <strong>@agent</strong> to
+            bring in the AI concierge directly.
+          </p>
         ) : (
           messages.map((message) => (
             <article className={message.isBot ? "room-chat-message is-bot" : "room-chat-message"} key={messageKey(message.id)}>

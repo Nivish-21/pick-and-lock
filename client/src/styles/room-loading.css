@@ -1,0 +1,35 @@
+.room-loading {
+  display: grid;
+  place-items: center;
+  gap: 0.75rem;
+  min-height: 100dvh;
+  padding: 1.5rem;
+  text-align: center;
+  background: var(--canvas);
+  color: var(--ink);
+}
+.room-loading-brand {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--signal);
+}
+.room-loading-spinner {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 0.2rem solid var(--line);
+  border-top-color: var(--signal);
+  animation: room-loading-spin 0.8s linear infinite;
+}
+.room-loading-error {
+  color: var(--danger);
+  max-width: 24rem;
+}
+@keyframes room-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

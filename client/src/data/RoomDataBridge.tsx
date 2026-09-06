@@ -7,6 +7,7 @@ import {
   shareCodeFromLocation,
 } from "./spacetime";
 import type { DbConnection } from "../module_bindings";
+import "../styles/room-loading.css";
 
 export type BridgeRoomView = RoomView & {
   chatMessages: Array<{
@@ -140,9 +141,23 @@ export function RoomDataBridge({ children }: Props) {
     }
   }, [shareCode]);
 
-  if (error) return <p role="alert">{error}</p>;
+  if (error)
+    return (
+      <div className="room-loading">
+        <p className="room-loading-brand">Sorted</p>
+        <p role="alert" className="room-loading-error">
+          {error}
+        </p>
+      </div>
+    );
   if (!connection || planId == null || !ready || !identity)
-    return <p>Connecting to the room…</p>;
+    return (
+      <div className="room-loading">
+        <p className="room-loading-brand">Sorted</p>
+        <div className="room-loading-spinner" aria-hidden="true" />
+        <p role="status">Joining the room…</p>
+      </div>
+    );
   const view: BridgeRoomView = {
     ...buildRoomView(connection.db, planId, identity),
     chatMessages: [...connection.db.myRoomChat]
