@@ -4,14 +4,23 @@ type Insert<T> = (_context: unknown, row: T) => void;
 
 function table<T>(rows: T[] = []) {
   let onInsert: Insert<T> | undefined;
+  let onDelete: Insert<T> | undefined;
   return {
     onInsert(callback: Insert<T>) {
       onInsert = callback;
+    },
+    onDelete(callback: Insert<T>) {
+      onDelete = callback;
     },
     onUpdate() {},
     insert(row: T) {
       rows.push(row);
       onInsert?.({}, row);
+    },
+    delete(row: T) {
+      const index = rows.indexOf(row);
+      if (index >= 0) rows.splice(index, 1);
+      onDelete?.({}, row);
     },
     [Symbol.iterator]() {
       return rows[Symbol.iterator]();
@@ -151,6 +160,23 @@ describe("RoomBotService context caches", () => {
     ]);
     expect((service as any).planTitles.get(9)).toBe("Friday evening");
     expect((service as any).memberCounts.get(9)).toBe(1);
+    service.stop();
+  });
+
+  it("decrements member counts when a membership leaves the subscribed view", () => {
+    const service = new RoomBotService({
+      host: "ws://test",
+      database: "test",
+      token: "test",
+      openAiKey: "test",
+    });
+    fixture.connection.apply();
+
+    const member = { roomId: 11, membershipId: 4 };
+    fixture.connection.db.myRoomMembers.insert(member);
+    fixture.connection.db.myRoomMembers.delete(member);
+
+    expect((service as any).memberCounts.get(11)).toBe(0);
     service.stop();
   });
 });

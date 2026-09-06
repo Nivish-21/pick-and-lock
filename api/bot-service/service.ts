@@ -193,6 +193,10 @@ export class RoomBotService {
         (this.memberCounts.get(row.roomId) ?? 0) + 1,
       );
     });
+    connection.db.myRoomMembers.onDelete((_context, row) => {
+      const count = this.memberCounts.get(row.roomId) ?? 0;
+      this.memberCounts.set(row.roomId, Math.max(0, count - 1));
+    });
 
     connection
       .subscriptionBuilder()
