@@ -160,6 +160,22 @@ pub struct BotRoomState {
     pub last_processed_message_id: u64,
 }
 
+#[spacetimedb::table(accessor = bot_poll_draft, private)]
+pub struct BotPollDraft {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u64,
+    #[index(btree)]
+    pub room_id: u32,
+    pub name: String,
+    pub price: Option<u32>,
+    pub min_people: Option<u32>,
+    pub distance_km: Option<u32>,
+    pub time_minutes: Option<u32>,
+    pub awaiting_confirmation: bool,
+    pub updated_at: Timestamp,
+}
+
 #[spacetimedb::table(accessor = location_submission, private)]
 pub struct LocationSubmission {
     #[primary_key]
@@ -488,6 +504,46 @@ pub struct MyBotRoomState {
     pub bot_messages_in_current_minute: u32,
     pub minute_window_started_at: Timestamp,
     pub last_processed_message_id: u64,
+}
+
+#[derive(SpacetimeType)]
+pub struct MyBotPollDraft {
+    pub id: u64,
+    pub room_id: u32,
+    pub name: String,
+    pub price: Option<u32>,
+    pub min_people: Option<u32>,
+    pub distance_km: Option<u32>,
+    pub time_minutes: Option<u32>,
+    pub awaiting_confirmation: bool,
+}
+
+fn draft_name_matches(existing_name: &str, name: &str) -> bool {
+    existing_name.trim().eq_ignore_ascii_case(name.trim())
+}
+
+fn patched_poll_draft(
+    existing: Option<&BotPollDraft>,
+    room_id: u32,
+    name: &str,
+    price: Option<u32>,
+    min_people: Option<u32>,
+    distance_km: Option<u32>,
+    time_minutes: Option<u32>,
+    awaiting_confirmation: bool,
+    updated_at: Timestamp,
+) -> BotPollDraft {
+    BotPollDraft {
+        id: existing.map(|draft| draft.id).unwrap_or(0),
+        room_id,
+        name: name.trim().to_string(),
+        price: price.or(existing.and_then(|draft| draft.price)),
+        min_people: min_people.or(existing.and_then(|draft| draft.min_people)),
+        distance_km: distance_km.or(existing.and_then(|draft| draft.distance_km)),
+        time_minutes: time_minutes.or(existing.and_then(|draft| draft.time_minutes)),
+        awaiting_confirmation,
+        updated_at,
+    }
 }
 
 fn friend_for(ctx: &ReducerContext, plan_id: u32) -> Option<Friend> {
@@ -1273,6 +1329,25 @@ pub fn my_room_locations(ctx: &ViewContext) -> Vec<MyRoomLocation> {
         .collect()
 }
 
+#[spacetimedb::view(accessor = my_bot_poll_draft, public, primary_key = id)]
+pub fn my_bot_poll_draft(ctx: &ViewContext) -> Vec<MyBotPollDraft> {
+    let room_ids = view_plan_ids(ctx);
+    room_ids
+        .into_iter()
+        .flat_map(|room_id| ctx.db.bot_poll_draft().room_id().filter(room_id))
+        .map(|draft| MyBotPollDraft {
+            id: draft.id,
+            room_id: draft.room_id,
+            name: draft.name,
+            price: draft.price,
+            min_people: draft.min_people,
+            distance_km: draft.distance_km,
+            time_minutes: draft.time_minutes,
+            awaiting_confirmation: draft.awaiting_confirmation,
+        })
+        .collect()
+}
+
 #[spacetimedb::view(accessor = my_bot_room_state, public, primary_key = room_id)]
 pub fn my_bot_room_state(ctx: &ViewContext) -> Vec<MyBotRoomState> {
     let room_ids = view_plan_ids(ctx);
@@ -1444,6 +1519,72 @@ pub fn ensure_bot_friend(ctx: &ReducerContext, plan_id: u32) -> Result<(), Strin
             joined_at: ctx.timestamp,
             dropped_at: None,
         });
+    }
+    Ok(())
+}
+
+/// A field passed as `None` means "not mentioned this turn" and leaves the
+/// existing value unchanged, never clears it — the bot only ever refines a
+/// draft toward completion, it never needs to un-learn a fact.
+#[spacetimedb::reducer]
+pub fn update_poll_draft(
+    ctx: &ReducerContext,
+    room_id: u32,
+    name: String,
+    price: Option<u32>,
+    min_people: Option<u32>,
+    distance_km: Option<u32>,
+    time_minutes: Option<u32>,
+    awaiting_confirmation: bool,
+) -> Result<(), String> {
+    require_bot(ctx)?;
+    plan_for(ctx, room_id)?;
+    let name = name.trim().to_string();
+    if name.is_empty() || name.len() > 60 {
+        return Err("Poll draft name is invalid".into());
+    }
+    let existing = ctx
+        .db
+        .bot_poll_draft()
+        .room_id()
+        .filter(room_id)
+        .find(|draft| draft_name_matches(&draft.name, &name));
+    let patched = patched_poll_draft(
+        existing.as_ref(),
+        room_id,
+        &name,
+        price,
+        min_people,
+        distance_km,
+        time_minutes,
+        awaiting_confirmation,
+        ctx.timestamp,
+    );
+    match existing {
+        Some(row) => {
+            ctx.db.bot_poll_draft().id().update(BotPollDraft {
+                id: row.id,
+                ..patched
+            });
+        }
+        None => {
+            ctx.db.bot_poll_draft().insert(patched);
+        }
+    }
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+pub fn clear_poll_draft(ctx: &ReducerContext, room_id: u32, name: String) -> Result<(), String> {
+    require_bot(ctx)?;
+    if let Some(row) = ctx
+        .db
+        .bot_poll_draft()
+        .room_id()
+        .filter(room_id)
+        .find(|draft| draft_name_matches(&draft.name, &name))
+    {
+        ctx.db.bot_poll_draft().id().delete(row.id);
     }
     Ok(())
 }
@@ -2717,5 +2858,77 @@ mod tests {
             Some("DINNER1".to_string())
         );
         assert_eq!(story_id_to_unpublish("DINNER1", "OTHER1"), None);
+    }
+
+    fn draft(name: &str, price: Option<u32>, min_people: Option<u32>) -> BotPollDraft {
+        BotPollDraft {
+            id: 1,
+            room_id: 7,
+            name: name.to_string(),
+            price,
+            min_people,
+            distance_km: None,
+            time_minutes: None,
+            awaiting_confirmation: false,
+            updated_at: Timestamp::UNIX_EPOCH,
+        }
+    }
+
+    #[test]
+    fn draft_names_match_case_insensitively_and_distinct_names_do_not() {
+        assert!(draft_name_matches("Bowling", "bowling"));
+        assert!(draft_name_matches(" Bowling ", "bowling"));
+        assert!(!draft_name_matches("Bowling", "Escape Room"));
+    }
+
+    #[test]
+    fn a_partial_patch_only_overwrites_fields_it_names() {
+        let existing = draft("Bowling", Some(30), None);
+
+        let patched = patched_poll_draft(
+            Some(&existing),
+            7,
+            "Bowling",
+            None,
+            Some(4),
+            None,
+            None,
+            false,
+            Timestamp::UNIX_EPOCH,
+        );
+
+        assert_eq!(patched.price, Some(30), "unmentioned field is preserved");
+        assert_eq!(patched.min_people, Some(4), "mentioned field is applied");
+        assert_eq!(patched.id, existing.id, "patch targets the same row");
+    }
+
+    #[test]
+    fn a_new_name_starts_a_fresh_draft_independent_of_existing_ones() {
+        let escape_room = draft("Escape Room", Some(50), Some(6));
+
+        let bowling_patch = patched_poll_draft(
+            None,
+            7,
+            "Bowling",
+            Some(20),
+            None,
+            None,
+            None,
+            false,
+            Timestamp::UNIX_EPOCH,
+        );
+
+        assert_eq!(bowling_patch.id, 0, "brand new draft has no existing id");
+        assert_eq!(bowling_patch.name, "Bowling");
+        assert_eq!(escape_room.price, Some(50), "sibling draft is untouched");
+    }
+
+    #[test]
+    fn clearing_a_draft_targets_only_the_named_row() {
+        let bowling = draft("Bowling", None, None);
+        let escape_room = draft("Escape Room", None, None);
+
+        assert!(draft_name_matches(&bowling.name, "Bowling"));
+        assert!(!draft_name_matches(&escape_room.name, "Bowling"));
     }
 }

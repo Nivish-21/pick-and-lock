@@ -41,6 +41,7 @@ import AdvanceBotWatermarkReducer from "./advance_bot_watermark_reducer";
 import BotAddActivityReducer from "./bot_add_activity_reducer";
 import CancelPrivateProposalReducer from "./cancel_private_proposal_reducer";
 import CancelProposalReducer from "./cancel_proposal_reducer";
+import ClearPollDraftReducer from "./clear_poll_draft_reducer";
 import CreatePrivateRoomReducer from "./create_private_room_reducer";
 import CreateRoomReducer from "./create_room_reducer";
 import DropOutReducer from "./drop_out_reducer";
@@ -62,6 +63,7 @@ import SetPrivateVoteReducer from "./set_private_vote_reducer";
 import SetPublicShareSettingsReducer from "./set_public_share_settings_reducer";
 import SubmitLocationReducer from "./submit_location_reducer";
 import UnpublishRoomReducer from "./unpublish_room_reducer";
+import UpdatePollDraftReducer from "./update_poll_draft_reducer";
 
 // Import all procedure arg schemas
 
@@ -71,6 +73,7 @@ import ActivityRow from "./activity_table";
 import AnswerRow from "./answer_table";
 import EventLogRow from "./event_log_table";
 import FriendRow from "./friend_table";
+import MyBotPollDraftRow from "./my_bot_poll_draft_table";
 import MyBotRoomStateRow from "./my_bot_room_state_table";
 import MyRoomAcceptancesRow from "./my_room_acceptances_table";
 import MyRoomChatRow from "./my_room_chat_table";
@@ -214,6 +217,13 @@ const tablesSchema = __schema({
       { name: 'shared_room_story_id_key', constraint: 'unique', columns: ['id'] },
     ],
   }, SharedRoomStoryRow),
+  myBotPollDraft: __table({
+    name: 'my_bot_poll_draft',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyBotPollDraftRow),
   myBotRoomState: __table({
     name: 'my_bot_room_state',
     indexes: [
@@ -316,6 +326,7 @@ const reducersSchema = __reducers(
   __reducerSchema("bot_add_activity", BotAddActivityReducer),
   __reducerSchema("cancel_private_proposal", CancelPrivateProposalReducer),
   __reducerSchema("cancel_proposal", CancelProposalReducer),
+  __reducerSchema("clear_poll_draft", ClearPollDraftReducer),
   __reducerSchema("create_private_room", CreatePrivateRoomReducer),
   __reducerSchema("create_room", CreateRoomReducer),
   __reducerSchema("drop_out", DropOutReducer),
@@ -337,6 +348,7 @@ const reducersSchema = __reducers(
   __reducerSchema("set_public_share_settings", SetPublicShareSettingsReducer),
   __reducerSchema("submit_location", SubmitLocationReducer),
   __reducerSchema("unpublish_room", UnpublishRoomReducer),
+  __reducerSchema("update_poll_draft", UpdatePollDraftReducer),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */
@@ -349,6 +361,8 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
     readonly "event_log": Omit<typeof tablesSchema.schemaType.tables["eventLog"], "accessorName"> & { readonly accessorName: "event_log" };
     /** @deprecated Use `sharedRoomStory` instead. This alias will be removed in the next major version. */
     readonly "shared_room_story": Omit<typeof tablesSchema.schemaType.tables["sharedRoomStory"], "accessorName"> & { readonly accessorName: "shared_room_story" };
+    /** @deprecated Use `myBotPollDraft` instead. This alias will be removed in the next major version. */
+    readonly "my_bot_poll_draft": Omit<typeof tablesSchema.schemaType.tables["myBotPollDraft"], "accessorName"> & { readonly accessorName: "my_bot_poll_draft" };
     /** @deprecated Use `myBotRoomState` instead. This alias will be removed in the next major version. */
     readonly "my_bot_room_state": Omit<typeof tablesSchema.schemaType.tables["myBotRoomState"], "accessorName"> & { readonly accessorName: "my_bot_room_state" };
     /** @deprecated Use `myRoomAcceptances` instead. This alias will be removed in the next major version. */
@@ -395,6 +409,7 @@ const REMOTE_MODULE = {
 const tableAccessorAliases = {
   "event_log": "eventLog",
   "shared_room_story": "sharedRoomStory",
+  "my_bot_poll_draft": "myBotPollDraft",
   "my_bot_room_state": "myBotRoomState",
   "my_room_acceptances": "myRoomAcceptances",
   "my_room_chat": "myRoomChat",
@@ -432,6 +447,8 @@ export type DbView = __DbViewBase & {
   readonly "event_log": __DbViewBase["eventLog"];
   /** @deprecated Use `sharedRoomStory` instead. This alias will be removed in the next major version. */
   readonly "shared_room_story": __DbViewBase["sharedRoomStory"];
+  /** @deprecated Use `myBotPollDraft` instead. This alias will be removed in the next major version. */
+  readonly "my_bot_poll_draft": __DbViewBase["myBotPollDraft"];
   /** @deprecated Use `myBotRoomState` instead. This alias will be removed in the next major version. */
   readonly "my_bot_room_state": __DbViewBase["myBotRoomState"];
   /** @deprecated Use `myRoomAcceptances` instead. This alias will be removed in the next major version. */
@@ -466,6 +483,8 @@ export type Tables = __TablesBase & {
   readonly "event_log": __TablesBase["eventLog"];
   /** @deprecated Use `sharedRoomStory` instead. This alias will be removed in the next major version. */
   readonly "shared_room_story": __TablesBase["sharedRoomStory"];
+  /** @deprecated Use `myBotPollDraft` instead. This alias will be removed in the next major version. */
+  readonly "my_bot_poll_draft": __TablesBase["myBotPollDraft"];
   /** @deprecated Use `myBotRoomState` instead. This alias will be removed in the next major version. */
   readonly "my_bot_room_state": __TablesBase["myBotRoomState"];
   /** @deprecated Use `myRoomAcceptances` instead. This alias will be removed in the next major version. */

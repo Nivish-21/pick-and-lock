@@ -52,6 +52,19 @@ export const AnswerState = __t.enum("AnswerState", {
 });
 export type AnswerState = __Infer<typeof AnswerState>;
 
+export const BotPollDraft = __t.object("BotPollDraft", {
+  id: __t.u64(),
+  roomId: __t.u32(),
+  name: __t.string(),
+  price: __t.option(__t.u32()),
+  minPeople: __t.option(__t.u32()),
+  distanceKm: __t.option(__t.u32()),
+  timeMinutes: __t.option(__t.u32()),
+  awaitingConfirmation: __t.bool(),
+  updatedAt: __t.timestamp(),
+});
+export type BotPollDraft = __Infer<typeof BotPollDraft>;
+
 export const BotRoomState = __t.object("BotRoomState", {
   roomId: __t.u32(),
   lastBotMessageAt: __t.option(__t.timestamp()),
@@ -125,6 +138,18 @@ export const MemberPreference = __t.object("MemberPreference", {
   recordedAt: __t.timestamp(),
 });
 export type MemberPreference = __Infer<typeof MemberPreference>;
+
+export const MyBotPollDraft = __t.object("MyBotPollDraft", {
+  id: __t.u64(),
+  roomId: __t.u32(),
+  name: __t.string(),
+  price: __t.option(__t.u32()),
+  minPeople: __t.option(__t.u32()),
+  distanceKm: __t.option(__t.u32()),
+  timeMinutes: __t.option(__t.u32()),
+  awaitingConfirmation: __t.bool(),
+});
+export type MyBotPollDraft = __Infer<typeof MyBotPollDraft>;
 
 export const MyBotRoomState = __t.object("MyBotRoomState", {
   roomId: __t.u32(),
