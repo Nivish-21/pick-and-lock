@@ -210,67 +210,72 @@ export function RoomPage({ view, actions }: RoomPageProps) {
               />
             ))}
           </section>
-          <form
-            className="add-activity"
-            onSubmit={(event) => void addActivity(event)}
-          >
-            <div>
-              <p className="room-kicker">Add an option</p>
-              <h2>What else could work?</h2>
-            </div>
-            <label>
-              Activity name
-              <input
-                required
-                maxLength={60}
-                value={activityName}
-                onChange={(event) => setActivityName(event.target.value)}
-              />
-            </label>
-            <label>
-              Price in INR
-              <input
-                required
-                min="0"
-                max="1000000"
-                type="number"
-                value={activityPrice}
-                onChange={(event) => setActivityPrice(event.target.value)}
-              />
-            </label>
-            <label>
-              Minimum people
-              <input
-                required
-                min="1"
-                max="50"
-                type="number"
-                value={activityMinPeople}
-                onChange={(event) => setActivityMinPeople(event.target.value)}
-              />
-            </label>
-            <label>
-              Distance in km (optional)
-              <input
-                min="0"
-                max="1000"
-                type="number"
-                value={activityDistance}
-                onChange={(event) => setActivityDistance(event.target.value)}
-              />
-            </label>
-            <label>
-              Time budget in minutes (optional)
-              <input
-                min="0"
-                max="1440"
-                type="number"
-                value={activityTimeMinutes}
-                onChange={(event) => setActivityTimeMinutes(event.target.value)}
-              />
-            </label>
-            <button type="submit">Add activity</button>
-          </form>
+          <details>
+            <summary>Add manually</summary>
+            <form
+              className="add-activity"
+              onSubmit={(event) => void addActivity(event)}
+            >
+              <div>
+                <p className="room-kicker">Add an option</p>
+                <h2>What else could work?</h2>
+              </div>
+              <label>
+                Activity name
+                <input
+                  required
+                  maxLength={60}
+                  value={activityName}
+                  onChange={(event) => setActivityName(event.target.value)}
+                />
+              </label>
+              <label>
+                Price in INR
+                <input
+                  required
+                  min="0"
+                  max="1000000"
+                  type="number"
+                  value={activityPrice}
+                  onChange={(event) => setActivityPrice(event.target.value)}
+                />
+              </label>
+              <label>
+                Minimum people
+                <input
+                  required
+                  min="1"
+                  max="50"
+                  type="number"
+                  value={activityMinPeople}
+                  onChange={(event) => setActivityMinPeople(event.target.value)}
+                />
+              </label>
+              <label>
+                Distance in km (optional)
+                <input
+                  min="0"
+                  max="1000"
+                  type="number"
+                  value={activityDistance}
+                  onChange={(event) => setActivityDistance(event.target.value)}
+                />
+              </label>
+              <label>
+                Time budget in minutes (optional)
+                <input
+                  min="0"
+                  max="1440"
+                  type="number"
+                  value={activityTimeMinutes}
+                  onChange={(event) =>
+                    setActivityTimeMinutes(event.target.value)
+                  }
+                />
+              </label>
+              <button type="submit">Add activity</button>
+            </form>
+          </details>
           <section className="group-grid" aria-label="Group status">
             <div className="group-panel">
               <h2>Friends</h2>

@@ -99,7 +99,7 @@ describe("RoomPage", () => {
     );
   });
 
-  it("adds a custom activity with the entered values", async () => {
+  it("keeps manual activity entry closed until expanded, then adds an activity", async () => {
     const addActivity = vi.fn().mockResolvedValue(undefined);
 
     render(
@@ -108,6 +108,11 @@ describe("RoomPage", () => {
         actions={actionsWith({ addActivity })}
       />,
     );
+    const disclosure = screen.getByText("Add manually").closest("details");
+    expect(disclosure?.open).toBe(false);
+
+    fireEvent.click(screen.getByText("Add manually"));
+    expect(disclosure?.open).toBe(true);
     fireEvent.change(screen.getByLabelText("Activity name"), {
       target: { value: "Picnic" },
     });
@@ -139,6 +144,7 @@ describe("RoomPage", () => {
         actions={actionsWith({ addActivity })}
       />,
     );
+    fireEvent.click(screen.getByText("Add manually"));
     fireEvent.change(screen.getByLabelText("Activity name"), {
       target: { value: "Museum" },
     });
@@ -189,6 +195,7 @@ describe("RoomPage", () => {
         actions={actionsWith({ addActivity })}
       />,
     );
+    fireEvent.click(screen.getByText("Add manually"));
     fireEvent.change(screen.getByLabelText("Activity name"), {
       target: { value: "Bowling" },
     });
