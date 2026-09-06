@@ -11,6 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "nodemailer": "^10.0.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
@@ -19,6 +20,7 @@
   "devDependencies": {
     "@testing-library/react": "^16.3.3",
     "@types/node": "^24.13.3",
+    "@types/nodemailer": "^8.0.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.1.0",

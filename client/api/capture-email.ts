@@ -10,15 +10,20 @@
  * with a plain-text body on failure.
  *
  * This does NOT touch Section A (room/reducer logic) or any SpacetimeDB
- * table — it only sends a one-off welcome email via Resend
- * (https://resend.com). It requires a real `RESEND_API_KEY` secret, which
- * only the team can provision (see .env.example); without one it responds
- * 501 so the client-side flow degrades safely instead of hanging or
- * crashing (email is explicitly optional and must never block room entry).
+ * table — it only sends a one-off welcome email over plain SMTP via
+ * `nodemailer`, using an existing mailbox rather than a transactional
+ * provider. This avoids the sender-domain verification step a provider
+ * like Resend requires before it will deliver to arbitrary recipients —
+ * an existing mailbox is already trusted to send to anyone. Requires
+ * `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` (see .env.example);
+ * without them it responds 501 so the client-side flow degrades safely
+ * instead of hanging or crashing (email is explicitly optional and must
+ * never block room entry).
  *
  * Deployed as a Vercel Node.js Function (this file lives under the
  * project's `api/` directory per Vercel's file-based convention).
  */
+import nodemailer from "nodemailer";
 
 type VercelLikeRequest = {
   method?: string;
@@ -76,11 +81,11 @@ export default async function handler(
     return;
   }
 
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
+  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
+  if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
     // Email is optional and must never block room entry — the client
     // treats any non-2xx as "could not send" and moves on. This is the
-    // expected response until the team adds a real RESEND_API_KEY secret.
+    // expected response until the team adds real SMTP secrets.
     res.status(501).send("Email sending is not configured yet.");
     return;
   }
@@ -90,26 +95,20 @@ export default async function handler(
   const roomUrl = `https://sorted.vercel.app/r/${trimmedShareCode}`;
 
   try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        from:
-          process.env.RESEND_FROM_ADDRESS || "Sorted <onboarding@resend.dev>",
-        to: [trimmedEmail],
-        subject: "You're in — welcome to Sorted",
-        text: `You're in.\n\nYour room: ${roomUrl}\n\nAnswer in, out, or conditional — Sorted locks the plan the moment enough friends agree, and reopens automatically if someone drops out.`,
-      }),
+    const port = Number(SMTP_PORT);
+    const transport = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port,
+      secure: port === 465,
+      auth: { user: SMTP_USER, pass: SMTP_PASS },
     });
 
-    if (!response.ok) {
-      const detail = await response.text();
-      res.status(502).send(detail || "Email provider rejected the request.");
-      return;
-    }
+    await transport.sendMail({
+      from: process.env.SMTP_FROM_ADDRESS || SMTP_USER,
+      to: trimmedEmail,
+      subject: "You're in — welcome to Sorted",
+      text: `You're in.\n\nYour room: ${roomUrl}\n\nAnswer in, out, or conditional — Sorted locks the plan the moment enough friends agree, and reopens automatically if someone drops out.`,
+    });
 
     res.status(200).json({ ok: true });
   } catch (error) {
