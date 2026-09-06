@@ -16,6 +16,7 @@ export type SpeakTrigger =
   | "location-submitted"
   | "decision-milestone"
   | "silence-timeout"
+  | "passive-intent"
   | "none";
 
 export type SpeakGateInput = {
@@ -59,16 +60,30 @@ export function decideSpeak(input: SpeakGateInput): SpeakGateResult {
   }
 
   if (isDirectlyAddressed(input.messages)) {
-    return { allowed: true, trigger: "direct-address", reason: "directly addressed" };
+    return {
+      allowed: true,
+      trigger: "direct-address",
+      reason: "directly addressed",
+    };
   }
   if (input.locationJustSubmitted) {
-    return { allowed: true, trigger: "location-submitted", reason: "new location" };
+    return {
+      allowed: true,
+      trigger: "location-submitted",
+      reason: "new location",
+    };
   }
-  const humanDecisionMilestone = input.decisionMilestone && input.messages.some(
-    (message) => !message.isBot && message.kind === "recap",
-  );
+  const humanDecisionMilestone =
+    input.decisionMilestone &&
+    input.messages.some(
+      (message) => !message.isBot && message.kind === "recap",
+    );
   if (humanDecisionMilestone) {
-    return { allowed: true, trigger: "decision-milestone", reason: "decision milestone" };
+    return {
+      allowed: true,
+      trigger: "decision-milestone",
+      reason: "decision milestone",
+    };
   }
 
   const silenceMs = input.silenceMs ?? 120_000;
@@ -77,7 +92,11 @@ export function decideSpeak(input: SpeakGateInput): SpeakGateResult {
     input.now - input.lastActivityAt >= silenceMs &&
     input.everyoneAnswered !== true
   ) {
-    return { allowed: true, trigger: "silence-timeout", reason: "room is waiting" };
+    return {
+      allowed: true,
+      trigger: "silence-timeout",
+      reason: "room is waiting",
+    };
   }
 
   return { allowed: false, trigger: "none", reason: "no speak trigger" };

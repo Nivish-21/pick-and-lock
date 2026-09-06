@@ -1,6 +1,7 @@
 import { DbConnection } from "../../client/src/module_bindings";
 import { RoomDebouncer } from "./debounce";
 import { askModerator, type ModeratorMessage, type PollDraftContext } from "./openai";
+import { classifyIntent } from "./intentClassifier";
 import { findNearbyPlaces } from "./places";
 import {
   decideSpeak,
@@ -390,7 +391,7 @@ export class RoomBotService {
     const locationJustSubmitted = batch.some(
       (entry) => entry.type === "location",
     );
-    const gate = decideSpeak({
+    let gate = decideSpeak({
       messages: newMessages,
       now: Date.now(),
       state: previousState,
@@ -401,6 +402,21 @@ export class RoomBotService {
       lastActivityAt: this.lastActivity.get(roomId),
       everyoneAnswered: false,
     });
+    if (!gate.allowed && gate.reason === "no speak trigger") {
+      const intent = await classifyIntent(
+        this.config.openAiKey,
+        newMessages.map<ModeratorMessage>((message) => ({
+          senderName: message.senderName,
+          body: message.body,
+        })),
+      );
+      if (intent.engage)
+        gate = {
+          allowed: true,
+          trigger: "passive-intent",
+          reason: "passive intent",
+        };
+    }
     const result = await askModerator(this.config.openAiKey, {
       allowedToSpeak: gate.allowed,
       trigger: gate.trigger,

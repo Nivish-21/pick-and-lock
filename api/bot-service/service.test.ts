@@ -1,5 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const { askModerator, classifyIntent } = vi.hoisted(() => ({
+  askModerator: vi.fn().mockResolvedValue({
+    reply_text: null,
+    extracted_preferences: [],
+    place_query_needed: false,
+    activity_ideas: [],
+  }),
+  classifyIntent: vi.fn().mockResolvedValue({ engage: false }),
+}));
+
+vi.mock("./openai", () => ({ askModerator }));
+vi.mock("./intentClassifier", () => ({ classifyIntent }));
+
 type Insert<T> = (_context: unknown, row: T) => void;
 
 function table<T>(rows: T[] = []) {
@@ -54,7 +67,10 @@ const fixture = vi.hoisted(() => {
       myBotRoomState,
       myBotPollDraft,
     },
-    reducers: { ensureBotFriend: vi.fn().mockResolvedValue(undefined) },
+    reducers: {
+      ensureBotFriend: vi.fn().mockResolvedValue(undefined),
+      advanceBotWatermark: vi.fn().mockResolvedValue(undefined),
+    },
     disconnect: vi.fn(),
     subscriptionBuilder: () => ({
       onApplied(callback: () => void) {
@@ -184,6 +200,82 @@ describe("RoomBotService context caches", () => {
     fixture.connection.db.myRoomMembers.delete(member);
 
     expect((service as any).memberCounts.get(11)).toBe(0);
+    service.stop();
+  });
+});
+
+describe("RoomBotService passive intent", () => {
+  function serviceWithState(state: Record<string, unknown>) {
+    const service = new RoomBotService({
+      host: "ws://test",
+      database: "test",
+      token: "test",
+      openAiKey: "test",
+    });
+    (service as any).states.set(1, {
+      roomId: 1,
+      lastProcessedMessageId: 0,
+      ...state,
+    });
+    (service as any).messages.set(1, [
+      {
+        id: 1,
+        roomId: 1,
+        senderName: "Priya",
+        body: "What should we do Saturday?",
+        kind: "text",
+        sentAt: Date.now(),
+      },
+    ]);
+    return service;
+  }
+
+  it("does not classify when cooldown blocks the room", async () => {
+    const service = serviceWithState({
+      lastBotMessageAt: Date.now(),
+      botMessagesInCurrentMinute: 0,
+      minuteWindowStartedAt: Date.now(),
+    });
+
+    await (service as any).processRoomUnsafe(1, [{ type: "message", id: 1 }]);
+
+    expect(classifyIntent).not.toHaveBeenCalled();
+    service.stop();
+  });
+
+  it("does not classify when the minute cap blocks the room", async () => {
+    const service = serviceWithState({
+      lastBotMessageAt: undefined,
+      botMessagesInCurrentMinute: 3,
+      minuteWindowStartedAt: Date.now(),
+    });
+
+    await (service as any).processRoomUnsafe(1, [{ type: "message", id: 1 }]);
+
+    expect(classifyIntent).not.toHaveBeenCalled();
+    service.stop();
+  });
+
+  it("passes passive intent engagement into the moderator path", async () => {
+    classifyIntent.mockResolvedValueOnce({ engage: true });
+    const service = serviceWithState({
+      lastBotMessageAt: undefined,
+      botMessagesInCurrentMinute: 0,
+      minuteWindowStartedAt: Date.now(),
+    });
+
+    await (service as any).processRoomUnsafe(1, [{ type: "message", id: 1 }]);
+
+    expect(classifyIntent).toHaveBeenCalledWith("test", [
+      { senderName: "Priya", body: "What should we do Saturday?" },
+    ]);
+    expect(askModerator).toHaveBeenCalledWith(
+      "test",
+      expect.objectContaining({
+        allowedToSpeak: true,
+        trigger: "passive-intent",
+      }),
+    );
     service.stop();
   });
 });
