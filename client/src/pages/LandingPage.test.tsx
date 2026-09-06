@@ -36,7 +36,7 @@ describe("LandingPage", () => {
       screen.getByRole("button", { name: `Join ${saturdayOpenView.title}` }),
     );
 
-    expect(onJoin).toHaveBeenCalledWith("Nivish");
+    expect(onJoin).toHaveBeenCalledWith("Nivish", undefined);
   });
 
   it("renders the live room's activities, not a fixture", () => {
