@@ -126,6 +126,23 @@ Tier 1 and Tier 2 both call the same model; Tier 1's prompt and expected output 
 - [ ] Wrap the existing add-activity form (`RoomPage.tsx:92`, `addActivity`) in a closed-by-default disclosure ("Add manually ▾"). No reducer, schema, or test-visible-behavior change — the form still works identically once opened.
 - [ ] Update the form's existing tests only if they currently assume the form is visible by default; add one test confirming the disclosure starts closed and the form becomes visible and functional once expanded.
 
+## Task 8 — Reckless-decision advisory
+
+**Owner:** bot-service agent. Depends on Task 5 being live (reuses its confirm mechanism, adds nothing new to it).
+
+**Files:** `api/bot-service/service.ts`, `api/bot-service/openai.ts`.
+
+**Scope:** "reckless" means a proposal conflicts with numbers the room already gave — a budget or distance preference already captured in `preference_digest`, or too little time left before `Plan.scheduled_at` for the activity to be realistic. Not general safety judgment — the bot has no basis to judge whether an activity is inherently dangerous, only whether it fits what the group itself already said. The bot always advises, never blocks: a flagged draft still creates normally once confirmed.
+
+- [ ] In `service.ts`, compute `minutesUntilScheduled: number | null` per room from the cached `Plan.scheduledAt` (Task 1) vs. current time — pure arithmetic, not something to ask the model to compute, since LLMs are unreliable at date math. Pass it into `askModerator`'s context.
+- [ ] Extend `ModeratorResult` with `advisory: Array<{ name: string, message: string }>` — one entry per open or newly-proposed draft that the model judges conflicts with a stated budget/distance preference or `minutesUntilScheduled`. Empty when nothing conflicts.
+- [ ] Update `MODERATOR_SYSTEM_PROMPT`: when a draft's price/distance/time conflicts with a preference already in `preference_digest`, or the activity plus travel time won't realistically fit before `minutes_until_scheduled`, say so plainly in `reply_text` alongside the normal confirm question — advise against it once, then proceed exactly as Task 5 already does if the group confirms anyway. Never repeat the same advisory twice for the same draft.
+- [ ] Tests: a draft priced well above a stated budget preference produces an advisory message and still creates normally on confirmation; a draft whose time requirement exceeds `minutesUntilScheduled` triggers the timing advisory; a draft with no conflicting preference on file produces no advisory; confirming a flagged draft is not blocked or delayed by the advisory having been shown.
+
+## Deploy and migration
+
+Not a task to act on now — nothing above is built yet. Recorded here so it isn't lost: once these land, Task 4 needs a Maincloud publish (new table only, additive, same owner-confirmation gate every prior publish this session has required) before Task 5/8 can do anything real; the client needs a fresh `vercel --prod` deploy after Task 7 (and any client-visible task) merges; the bot-service on Render redeploys automatically on push to `main` per its existing Blueprint, but should be watched via `render logs` after each merge that touches `api/bot-service/**`, the same way `f81e810` was verified live this session.
+
 ## Suggested shipping order
 
 1. Task 1 (caching) — foundational, zero user-visible change, safe to verify in isolation.
@@ -135,10 +152,13 @@ Tier 1 and Tier 2 both call the same model; Tier 1's prompt and expected output 
 5. Task 2 (Tier 1 classifier) — needs Task 1's context to be worth anything.
 6. Task 6 (Places rating) — independent, can land before or after Task 5.
 7. Task 5 (drafting conversation) — the big one; depends on 1, 2, and 4 all being live and verified first.
+8. Task 8 (reckless advisory) — last, since it only adds a message on top of Task 5's already-working confirm flow.
+
+Re-run the full existing bot guardrail test suite (off-topic deflection, jailbreak resistance, real-world-action refusal) after every prompt change in Tasks 5, 6, and 8 — `MODERATOR_SYSTEM_PROMPT` keeps growing, and nothing here should erode guardrails that already pass.
 
 ## Plan self-review
 
 - Placeholder scan: every task names its files, owner, and a concrete checklist; no TBDs.
 - Internal consistency: Task 5's required fields (`price`, `min_people`) match `bot_add_activity`'s actual non-optional parameters; Task 4's new table avoids the view-recreation hazard documented in `docs/decisions.md`'s 2026-09-06 entry; Task 4's `(room_id, name)`-keyed drafts and Task 5's list-shaped `poll_draft_updates`/`confirm_create` agree on supporting multiple concurrent options rather than one draft per room.
-- Scope check: each task is independently mergeable and testable; only Task 5 has real fan-in (1, 2, 4), matching the "biggest and last" position in the shipping order.
-- Ambiguity check: "confirm before create" is pinned to a concrete mechanism (an explicit `confirm_create` flag plus a required next-turn affirmative), not left as a vague instruction to the model.
+- Scope check: each task is independently mergeable and testable; only Task 5 has real fan-in (1, 2, 4), matching the "biggest and last" position in the shipping order; Task 8 deliberately adds nothing to the state machine, only a message, keeping it a safe final layer.
+- Ambiguity check: "confirm before create" is pinned to a concrete mechanism (an explicit `confirm_create` flag plus a required next-turn affirmative), not left as a vague instruction to the model; "reckless" is scoped to conflicts with numbers the room already stated, not open-ended safety judgment, so it has a concrete test oracle instead of relying on subjective model output.
