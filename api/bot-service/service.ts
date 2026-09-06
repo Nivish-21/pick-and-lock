@@ -65,8 +65,11 @@ export type BotServiceConfig = {
   placesKey?: string;
 };
 
+const RECONNECT_DELAY_MS = 5_000;
+
 export class RoomBotService {
-  private readonly connection: DbConnection;
+  private connection: DbConnection;
+  private stopped = false;
   private readonly messages = new Map<number, CachedMessage[]>();
   private readonly preferences = new Map<number, CachedPreference[]>();
   private readonly locations = new Map<number, CachedLocation[]>();
@@ -98,21 +101,32 @@ export class RoomBotService {
         ),
       );
     });
-    this.connection = DbConnection.builder()
-      .withUri(config.host)
-      .withDatabaseName(config.database)
-      .withToken(config.token)
+    this.connection = this.connect();
+  }
+
+  private connect(): DbConnection {
+    return DbConnection.builder()
+      .withUri(this.config.host)
+      .withDatabaseName(this.config.database)
+      .withToken(this.config.token)
       .onConnect((connection) => this.subscribe(connection))
       .onConnectError((_context, error) =>
         console.error("Bot connection error", error),
       )
-      .onDisconnect((_context, error) =>
-        console.error("Bot disconnected", error ?? "unknown error"),
-      )
+      .onDisconnect((_context, error) => {
+        console.error("Bot disconnected", error ?? "unknown error");
+        if (this.stopped) return;
+        setTimeout(() => {
+          if (this.stopped) return;
+          console.log("Bot reconnecting...");
+          this.connection = this.connect();
+        }, RECONNECT_DELAY_MS);
+      })
       .build();
   }
 
   stop(): void {
+    this.stopped = true;
     this.debouncer.dispose();
     this.connection.disconnect();
   }

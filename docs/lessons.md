@@ -163,3 +163,11 @@ An append-only patch targeted text from `docs/plan.md` while editing `docs/decis
 ## 2026-09-06 — Sent a Rust file to Prettier in a mixed-language gate
 
 The combined formatting command passed `server/spacetimedb/src/lib.rs` to Prettier, which has no Rust parser, and it therefore failed after the otherwise-green client gates. Format Rust with `cargo fmt` and run Prettier only on JavaScript/TypeScript sources.
+
+## 2026-09-06 — Bot-service had no reconnect logic; a breaking publish silently killed it
+
+Publishing a breaking schema change to Maincloud disconnects every connected client, including the bot-service itself. `api/bot-service/service.ts`'s `onDisconnect` handler only logged the error — there was no retry or reconnect loop — so after the disconnect the Render process stayed alive but permanently stopped processing any room, with no crash and no visible symptom beyond the one log line. Found only by deliberately checking Render logs after a publish, not by any alert. Recovered live with a manual `render restart`, then fixed properly: the connection-building logic moved into a `connect()` method the class can call again, `onDisconnect` now schedules a rebuild after a fixed delay unless `stop()` was called first. Still worth checking bot-service logs after any future Maincloud publish, since the fix hasn't been proven against a real production disconnect yet, only against the unit tests.
+
+## 2026-09-06 — A merged PR's schema change sat unpublished for hours without anyone noticing
+
+PR #29 (private decision engine) merged into `main`'s code, but nobody ran `spacetime publish` for it — the next publish (today, for an unrelated table) surfaced it as a much larger, unexpectedly breaking migration bundling two unrelated features together. Merging code and publishing a database schema are two separate steps with no automatic link between them on this project; a merged PR that touches `server/spacetimedb/src/lib.rs` should be published promptly, not left to accumulate until the next unrelated publish forces the issue.

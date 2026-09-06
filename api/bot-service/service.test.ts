@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { askModerator, classifyIntent } = vi.hoisted(() => ({
   askModerator: vi.fn().mockResolvedValue({
@@ -93,6 +93,9 @@ const fixture = vi.hoisted(() => {
   return { connection };
 });
 
+const buildSpy = vi.fn(() => fixture.connection);
+let lastOnDisconnect: ((_context: unknown, error: unknown) => void) | undefined;
+
 vi.mock("../../client/src/module_bindings", () => ({
   DbConnection: {
     builder: () => ({
@@ -112,10 +115,11 @@ vi.mock("../../client/src/module_bindings", () => ({
       onConnectError() {
         return this;
       },
-      onDisconnect() {
+      onDisconnect(callback: (_context: unknown, error: unknown) => void) {
+        lastOnDisconnect = callback;
         return this;
       },
-      build: () => fixture.connection,
+      build: buildSpy,
     }),
   },
 }));
@@ -281,5 +285,46 @@ describe("RoomBotService passive intent", () => {
       }),
     );
     service.stop();
+  });
+});
+
+describe("RoomBotService reconnect", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("rebuilds the connection after an unexpected disconnect", () => {
+    new RoomBotService({
+      host: "ws://test",
+      database: "test",
+      token: "test",
+      openAiKey: "test",
+    });
+
+    expect(buildSpy).toHaveBeenCalledTimes(1);
+    lastOnDisconnect?.(undefined, new Error("network blip"));
+    vi.advanceTimersByTime(5_000);
+
+    expect(buildSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not reconnect after stop() was called", () => {
+    const service = new RoomBotService({
+      host: "ws://test",
+      database: "test",
+      token: "test",
+      openAiKey: "test",
+    });
+
+    service.stop();
+    lastOnDisconnect?.(undefined, new Error("network blip"));
+    vi.advanceTimersByTime(5_000);
+
+    expect(buildSpy).toHaveBeenCalledTimes(1);
   });
 });
