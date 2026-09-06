@@ -201,9 +201,7 @@ export class RoomBotService {
     connection.db.myBotPollDraft.onDelete((_context, row) => this.removePollDraft(row.roomId, row.name));
     connection.db.plan.onInsert((_context, row) => {
       this.planTitles.set(row.id, row.title);
-      void connection.reducers
-        .ensureBotFriend({ planId: row.id })
-        .catch(() => undefined);
+      void this.ensureBotFriendAndIntroduce(connection, row.id);
     });
     connection.db.activity.onInsert((_context, row) => {
       this.cacheActivity(row);
@@ -304,6 +302,30 @@ export class RoomBotService {
         "SELECT * FROM activity",
         "SELECT * FROM plan",
       ]);
+  }
+
+  private async ensureBotFriendAndIntroduce(
+    connection: DbConnection,
+    roomId: number,
+  ): Promise<void> {
+    await connection.reducers.ensureBotFriend({ planId: roomId }).catch(() => undefined);
+    if ((this.messages.get(roomId)?.length ?? 0) !== 0) return;
+    await connection.reducers
+      .sendBotMessage({
+        roomId,
+        body: "Hi, I'm Sorted's planning assistant — mention me anytime, or just tell me what you're deciding and I'll help build a poll.",
+        kind: "text",
+        payloadJson: "{}",
+      })
+      .catch(() => undefined);
+    await connection.reducers
+      .sendBotMessage({
+        roomId,
+        body: "Share your location to help me suggest nearby options.",
+        kind: "location_request",
+        payloadJson: "{}",
+      })
+      .catch(() => undefined);
   }
 
   private cacheActivity(row: {

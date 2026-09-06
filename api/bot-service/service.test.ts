@@ -74,6 +74,7 @@ const fixture = vi.hoisted(() => {
     reducers: {
       ensureBotFriend: vi.fn().mockResolvedValue(undefined),
       advanceBotWatermark: vi.fn().mockResolvedValue(undefined),
+      sendBotMessage: vi.fn().mockResolvedValue(undefined),
     },
     disconnect: vi.fn(),
     subscriptionBuilder: () => ({
@@ -208,6 +209,65 @@ describe("RoomBotService context caches", () => {
     fixture.connection.db.myRoomMembers.delete(member);
 
     expect((service as any).memberCounts.get(11)).toBe(0);
+    service.stop();
+  });
+});
+
+describe("RoomBotService entry intro", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("sends the static intro then location request for a fresh room without calling the LLM", async () => {
+    const service = new RoomBotService({
+      host: "ws://test",
+      database: "test",
+      token: "test",
+      openAiKey: "test",
+    });
+
+    await (service as any).ensureBotFriendAndIntroduce(fixture.connection, 21);
+
+    expect(fixture.connection.reducers.ensureBotFriend).toHaveBeenCalledWith({
+      planId: 21,
+    });
+    expect(fixture.connection.reducers.sendBotMessage).toHaveBeenCalledTimes(2);
+    expect(fixture.connection.reducers.sendBotMessage).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ roomId: 21, kind: "text" }),
+    );
+    expect(fixture.connection.reducers.sendBotMessage).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ roomId: 21, kind: "location_request" }),
+    );
+    expect(askModerator).not.toHaveBeenCalled();
+    service.stop();
+  });
+
+  it("does not send an entry intro when the room already has chat", async () => {
+    const service = new RoomBotService({
+      host: "ws://test",
+      database: "test",
+      token: "test",
+      openAiKey: "test",
+    });
+    (service as any).messages.set(22, [
+      {
+        id: 1,
+        roomId: 22,
+        senderName: "Priya",
+        body: "Hey everyone",
+        kind: "text",
+        sentAt: Date.now(),
+      },
+    ]);
+
+    await (service as any).ensureBotFriendAndIntroduce(fixture.connection, 22);
+
+    expect(fixture.connection.reducers.ensureBotFriend).toHaveBeenCalledWith({
+      planId: 22,
+    });
+    expect(fixture.connection.reducers.sendBotMessage).not.toHaveBeenCalled();
     service.stop();
   });
 });
