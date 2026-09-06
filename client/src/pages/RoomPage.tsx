@@ -92,6 +92,24 @@ export function RoomPage({ view, actions }: RoomPageProps) {
     }
   }
 
+  async function shareRoomLink() {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: view.title,
+          text: `Join "${view.title}" and help decide the plan.`,
+          url: window.location.href,
+        });
+      } catch (shareError) {
+        if (shareError instanceof Error && shareError.name !== "AbortError") {
+          setShareStatus("Could not share room link.");
+        }
+      }
+      return;
+    }
+    await copyRoomLink();
+  }
+
   async function addActivity(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     await runAction(() =>
@@ -113,6 +131,7 @@ export function RoomPage({ view, actions }: RoomPageProps) {
         <RoomHeader
           dateLabel={view.dateLabel}
           onCopy={() => void copyRoomLink()}
+          onShare={() => void shareRoomLink()}
           shareStatus={shareStatus}
         />
         <div className="room-layout">
@@ -154,6 +173,7 @@ export function RoomPage({ view, actions }: RoomPageProps) {
       <RoomHeader
         dateLabel={view.dateLabel}
         onCopy={() => void copyRoomLink()}
+        onShare={() => void shareRoomLink()}
         shareStatus={shareStatus}
       />
       {view.latestEvent?.kind === "reopened" ? (
@@ -319,10 +339,12 @@ export function RoomPage({ view, actions }: RoomPageProps) {
 function RoomHeader({
   dateLabel,
   onCopy,
+  onShare,
   shareStatus,
 }: {
   dateLabel: string;
   onCopy: () => void;
+  onShare: () => void;
   shareStatus: string;
 }) {
   return (
@@ -338,6 +360,9 @@ function RoomHeader({
       </a>
       <div className="room-header-actions">
         <p>{dateLabel}</p>
+        <button type="button" onClick={onShare}>
+          Share room
+        </button>
         <button type="button" onClick={onCopy}>
           Copy room link
         </button>

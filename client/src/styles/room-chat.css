@@ -126,6 +126,7 @@
 }
 
 .room-chat-form input {
+  width: 100%;
   min-width: 0;
   flex: 1;
   min-height: 2.9rem;
