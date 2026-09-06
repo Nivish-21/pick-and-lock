@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from "react";
+import { useState, useRef, type FormEvent } from "react";
 import "../styles/room-chat.css";
+import { ChatMentionPopup } from "./ChatMentionPopup";
 
 export type RoomChatMessage = {
   id: number | bigint;
@@ -34,6 +35,7 @@ export function RoomChat({
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -110,14 +112,22 @@ export function RoomChat({
       <form className="room-chat-form" onSubmit={submit}>
         <label htmlFor="room-chat-input">Message the room</label>
         <div>
-          <input
-            id="room-chat-input"
-            value={draft}
-            maxLength={500}
-            onChange={(event) => setDraft(event.target.value)}
-            placeholder="Share a thought or constraint"
-            disabled={disabled || sending}
-          />
+          <div className="room-chat-input-wrapper">
+            <input
+              ref={inputRef}
+              id="room-chat-input"
+              value={draft}
+              maxLength={500}
+              onChange={(event) => setDraft(event.target.value)}
+              placeholder="Share a thought or constraint"
+              disabled={disabled || sending}
+            />
+            <ChatMentionPopup
+              inputValue={draft}
+              inputRef={inputRef}
+              onInsertMention={(newValue) => setDraft(newValue)}
+            />
+          </div>
           <button type="submit" disabled={disabled || sending || !draft.trim()}>
             {sending ? "Sending…" : "Send"}
           </button>
