@@ -155,3 +155,11 @@ The Maincloud plan for the public-story module removed and recreated `my_rooms`,
 ## 2026-09-06 — Checked off historical plan steps despite append-only documentation
 
 The active release plan was amended by toggling existing checkboxes, which conflicts with the repository's append-only documentation rule. Preserve historical plans and append current outcome and blocker notes instead.
+
+## 2026-09-06 — Used stale documentation anchors during a compatibility-plan append
+
+An append-only patch targeted text from `docs/plan.md` while editing `docs/decisions.md` and `docs/lessons.md`, so no content changed. Read each destination's exact final lines and use one-file append patches when recording release work.
+
+## 2026-09-06 — Sent a Rust file to Prettier in a mixed-language gate
+
+The combined formatting command passed `server/spacetimedb/src/lib.rs` to Prettier, which has no Rust parser, and it therefore failed after the otherwise-green client gates. Format Rust with `cargo fmt` and run Prettier only on JavaScript/TypeScript sources.

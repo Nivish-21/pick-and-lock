@@ -275,3 +275,16 @@ The production Vercel build for the real-time presence hotfix completed and was 
 - [x] Trace the API TypeScript compilation boundary and write the smallest regression proof for the runtime-environment access.
 - [x] Correct the typing/build configuration without widening the client bundle or changing email behaviour.
 - [x] Verify Vercel build locally and in a fresh production deployment, then resume two-identity browser proof for presence.
+
+## Additive Maincloud compatibility migration (2026-09-06 — owner-authorised release work)
+
+Production schema inspection proved that `my_rooms.status` uses the deployed one-variant `PrivateRoomStatus::Open`. The queued v2 module widens that type to `Locked`, forcing the breaking view recreation. Preserve the deployed legacy status and add separate defaulted v2 lifecycle state instead. The legacy view remains intentionally limited; all new state goes through new v2/public projections.
+
+- [ ] Replace the v2 use of `PrivateRoomStatus` with a distinct defaulted decision-status field while retaining the old private-room field and `my_rooms` output byte-for-byte compatible.
+- [ ] Regenerate bindings and run Rust format/tests/build plus client test/typecheck/build gates.
+- [ ] Inspect the generated Maincloud migration non-interactively only to confirm that it adds fields/tables/views and does not remove or recreate any deployed entity; stop if it reports client disconnects or replacement.
+- [ ] Publish and deploy only if that proof succeeds, then run the already-planned public-share lifecycle E2E and append the release evidence.
+
+**Progress (2026-09-06):** implementation and binding regeneration are complete locally. Rust format, 13/13 server tests, SpacetimeDB build, 52/52 client tests, client lint, and client build pass. The compatibility strategy retains production's one-variant `PrivateRoomStatus` and `my_rooms` schema, adds defaulted v2 `decision_status`, and moves public-story status to it. The Prettier invocation was split out because Prettier cannot parse Rust; run it against the regenerated TypeScript sources before migration inspection. No Maincloud publish or Vercel deploy has run.
+
+**Migration result (2026-09-06):** the inspected plan is additive in data terms—defaulted columns, new tables, new public story table, and new views only—but Maincloud still labels the combined schema update as client-breaking and warns it will disconnect all clients. Confirmation was cancelled. This fails the third step's no-disconnect condition; do not publish or deploy this module unless the owner explicitly accepts the interruption or a server-platform-supported no-disconnect upgrade path is identified.

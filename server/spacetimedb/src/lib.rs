@@ -176,6 +176,11 @@ pub struct LocationSubmission {
 #[derive(SpacetimeType, Clone, Copy, PartialEq, Eq)]
 pub enum PrivateRoomStatus {
     Open,
+}
+
+#[derive(SpacetimeType, Clone, Copy, PartialEq, Eq)]
+pub enum DecisionRoomStatus {
+    Open,
     Locked,
 }
 
@@ -203,7 +208,10 @@ pub struct PrivateRoom {
     pub creator_identity: Identity,
     pub title: String,
     pub created_at: Timestamp,
+    // Kept for the deployed `my_rooms` view schema. New lifecycle state lives below.
     pub status: PrivateRoomStatus,
+    #[default(DecisionRoomStatus::Open)]
+    pub decision_status: DecisionRoomStatus,
     #[default(None)]
     pub locked_choice_id: Option<u32>,
 }
@@ -245,7 +253,7 @@ pub struct SharedRoomStory {
     #[primary_key]
     pub id: String,
     pub title: String,
-    pub status: PrivateRoomStatus,
+    pub status: DecisionRoomStatus,
     pub choice_labels: Vec<String>,
     pub selected_choice_label: Option<String>,
     pub decision_count: u32,
@@ -697,16 +705,16 @@ fn next_private_metrics(
     )
 }
 
-fn should_reopen_private_room(status: PrivateRoomStatus, accepted_locked_proposal: bool) -> bool {
-    status == PrivateRoomStatus::Locked && accepted_locked_proposal
+fn should_reopen_private_room(status: DecisionRoomStatus, accepted_locked_proposal: bool) -> bool {
+    status == DecisionRoomStatus::Locked && accepted_locked_proposal
 }
 
 fn reopened_private_room_status(
-    status: PrivateRoomStatus,
+    status: DecisionRoomStatus,
     accepted_locked_proposal: bool,
-) -> PrivateRoomStatus {
+) -> DecisionRoomStatus {
     if should_reopen_private_room(status, accepted_locked_proposal) {
-        PrivateRoomStatus::Open
+        DecisionRoomStatus::Open
     } else {
         status
     }
@@ -779,7 +787,7 @@ fn creator_private_room_for_id(ctx: &ReducerContext, room_id: u32) -> Result<Pri
 fn shared_story_from_parts(
     id: String,
     title: String,
-    status: PrivateRoomStatus,
+    status: DecisionRoomStatus,
     choice_labels: Vec<String>,
     selected_choice_label: Option<String>,
     decision_count: u32,
@@ -849,7 +857,7 @@ fn shared_story_for(
     shared_story_from_parts(
         room.public_room_id.clone(),
         room.title.clone(),
-        room.status,
+        room.decision_status,
         choices.into_iter().map(|choice| choice.label).collect(),
         selected_choice_label,
         decision_count,
@@ -1627,6 +1635,7 @@ pub fn create_private_room(
         title,
         created_at: ctx.timestamp,
         status: PrivateRoomStatus::Open,
+        decision_status: DecisionRoomStatus::Open,
         locked_choice_id: None,
     });
     ctx.db.room_schedule().insert(RoomSchedule {
@@ -1756,7 +1765,7 @@ pub fn set_private_vote(
     let choice = private_choice_for(ctx, choice_id)?;
     let room = private_room_for(ctx, choice.room_id)?;
     active_membership_for(ctx, choice.room_id)?;
-    if room.status != PrivateRoomStatus::Open {
+    if room.decision_status != DecisionRoomStatus::Open {
         return Err("Room is locked".into());
     }
     if state == AnswerState::Conditional && max_price.is_none() {
@@ -1789,7 +1798,7 @@ pub fn propose_private_choice(ctx: &ReducerContext, choice_id: u32) -> Result<()
     let choice = private_choice_for(ctx, choice_id)?;
     let room = private_room_for(ctx, choice.room_id)?;
     active_membership_for(ctx, choice.room_id)?;
-    if room.status != PrivateRoomStatus::Open {
+    if room.decision_status != DecisionRoomStatus::Open {
         return Err("Room is locked".into());
     }
     if has_pending_private_proposal(ctx.db.room_proposal().iter(), choice.room_id) {
@@ -1832,7 +1841,7 @@ pub fn accept_private_proposal(ctx: &ReducerContext, proposal_id: u32) -> Result
     let choice = private_choice_for(ctx, proposal.choice_id)?;
     let mut room = private_room_for(ctx, proposal.room_id)?;
     active_membership_for(ctx, proposal.room_id)?;
-    if room.status != PrivateRoomStatus::Open {
+    if room.decision_status != DecisionRoomStatus::Open {
         return Err("Room is locked".into());
     }
     let vote = ctx
@@ -1879,7 +1888,7 @@ pub fn accept_private_proposal(ctx: &ReducerContext, proposal_id: u32) -> Result
         );
         metrics.latest_locked_at = Some(ctx.timestamp);
         proposal.status = ProposalStatus::Locked;
-        room.status = PrivateRoomStatus::Locked;
+        room.decision_status = DecisionRoomStatus::Locked;
         room.locked_choice_id = Some(choice.id);
         ctx.db.room_decision().insert(RoomDecision {
             id: 0,
@@ -1934,14 +1943,15 @@ pub fn leave_private_room(ctx: &ReducerContext, room_id: u32) -> Result<(), Stri
     });
     membership.left_at = Some(ctx.timestamp);
     ctx.db.room_membership().id().update(membership);
-    if should_reopen_private_room(room.status, accepted_locked_proposal) {
+    if should_reopen_private_room(room.decision_status, accepted_locked_proposal) {
         if let Some(mut proposal) = ctx.db.room_proposal().iter().find(|proposal| {
             proposal.room_id == room_id && proposal.status == ProposalStatus::Locked
         }) {
             proposal.status = ProposalStatus::Reopened;
             ctx.db.room_proposal().id().update(proposal);
         }
-        room.status = reopened_private_room_status(room.status, accepted_locked_proposal);
+        room.decision_status =
+            reopened_private_room_status(room.decision_status, accepted_locked_proposal);
         room.locked_choice_id = None;
         ctx.db.private_room().id().update(room);
         refresh_published_story(ctx, room_id)?;
@@ -2570,9 +2580,9 @@ mod tests {
 
     #[test]
     fn accepting_member_leave_reopens_a_locked_private_room() {
-        assert!(should_reopen_private_room(PrivateRoomStatus::Locked, true));
+        assert!(should_reopen_private_room(DecisionRoomStatus::Locked, true));
         assert!(!should_reopen_private_room(
-            PrivateRoomStatus::Locked,
+            DecisionRoomStatus::Locked,
             false
         ));
     }
@@ -2589,8 +2599,8 @@ mod tests {
         assert_eq!(metrics.decision_count, 1);
         assert_eq!(metrics.total_decision_seconds, 2);
         assert!(
-            reopened_private_room_status(PrivateRoomStatus::Locked, true)
-                == PrivateRoomStatus::Open
+            reopened_private_room_status(DecisionRoomStatus::Locked, true)
+                == DecisionRoomStatus::Open
         );
     }
 
@@ -2607,7 +2617,7 @@ mod tests {
         let story = shared_story_from_parts(
             "DINNER1".into(),
             "Dinner plan".into(),
-            PrivateRoomStatus::Locked,
+            DecisionRoomStatus::Locked,
             vec!["Bowling".into(), "Museum".into()],
             Some("Bowling".into()),
             1,
@@ -2618,7 +2628,7 @@ mod tests {
 
         assert_eq!(story.id, "DINNER1");
         assert_eq!(story.title, "Dinner plan");
-        assert!(matches!(story.status, PrivateRoomStatus::Locked));
+        assert!(matches!(story.status, DecisionRoomStatus::Locked));
         assert_eq!(story.choice_labels, ["Bowling", "Museum"]);
         assert_eq!(story.selected_choice_label.as_deref(), Some("Bowling"));
         assert_eq!(story.decision_count, 1);
@@ -2633,7 +2643,7 @@ mod tests {
         let published = shared_story_from_parts(
             "DINNER1".into(),
             "Dinner plan".into(),
-            PrivateRoomStatus::Open,
+            DecisionRoomStatus::Open,
             vec!["Bowling".into()],
             None,
             0,
@@ -2647,7 +2657,7 @@ mod tests {
             shared_story_from_parts(
                 "DINNER1".into(),
                 "Dinner plan".into(),
-                PrivateRoomStatus::Locked,
+                DecisionRoomStatus::Locked,
                 vec!["Bowling".into()],
                 Some("Bowling".into()),
                 1,
@@ -2659,7 +2669,7 @@ mod tests {
 
         assert_eq!(refreshed.published_at, published_at);
         assert_eq!(refreshed.updated_at, locked_at);
-        assert!(matches!(refreshed.status, PrivateRoomStatus::Locked));
+        assert!(matches!(refreshed.status, DecisionRoomStatus::Locked));
         assert_eq!(refreshed.selected_choice_label.as_deref(), Some("Bowling"));
         assert_eq!(refreshed.decision_count, 1);
     }
@@ -2672,7 +2682,7 @@ mod tests {
             shared_story_from_parts(
                 "DINNER1".into(),
                 "Dinner plan".into(),
-                PrivateRoomStatus::Locked,
+                DecisionRoomStatus::Locked,
                 vec!["Bowling".into()],
                 Some("Bowling".into()),
                 1,
@@ -2683,7 +2693,7 @@ mod tests {
             shared_story_from_parts(
                 "DINNER1".into(),
                 "Dinner plan".into(),
-                PrivateRoomStatus::Open,
+                DecisionRoomStatus::Open,
                 vec!["Bowling".into()],
                 None,
                 1,
@@ -2695,7 +2705,7 @@ mod tests {
 
         assert_eq!(refreshed.published_at, published_at);
         assert_eq!(refreshed.updated_at, reopened_at);
-        assert!(matches!(refreshed.status, PrivateRoomStatus::Open));
+        assert!(matches!(refreshed.status, DecisionRoomStatus::Open));
         assert_eq!(refreshed.selected_choice_label, None);
         assert_eq!(refreshed.decision_count, 1);
     }

@@ -168,3 +168,14 @@
 - Added the Node type reference required by the Vercel email function, so `process.env` typechecks in the deployment compiler without changing email behaviour or client runtime code.
 - Pushed `44036a1` and `127294f`, then deployed production `dpl_BP76FszHuT1gw47JxxTTLf2FmXPW` to `https://pick-and-lock.vercel.app`.
 - Verified production in two browser identities: join/presence, add option, answer/feasibility, proposal, atomic lock, and accepter drop-out/reopen all propagated to the other open session without reload.
+
+# 2026-09-06 — Preserved legacy `my_rooms` compatibility for the queued public-story release
+
+- Inspected the live Maincloud schema and identified the breaking contract precisely: deployed `PrivateRoomStatus` has only `Open`, and `my_rooms.status` returns it.
+- Kept that legacy field/type intact and introduced defaulted `PrivateRoom.decision_status` for v2 lock/reopen lifecycle; `shared_room_story` now exposes the separate decision status.
+- Regenerated TypeScript bindings. Rust format, 13 server tests, SpacetimeDB build, 52 client tests, client lint, and client build pass locally.
+- Did not publish or deploy: migration safety still requires inspection after the compatibility change. The first combined Prettier check was invalid because it passed a Rust file to Prettier; regenerated TypeScript formatting remains the immediate local follow-up.
+
+- Completed migration inspection: all proposed data changes are additive (two defaulted private-room columns, new tables, `shared_room_story`, and views), with no entity removal or recreation.
+- Cancelled the final confirmation because Maincloud still warns that every client will disconnect. No module publish or Vercel deployment occurred; the warning is a release stop under the active plan.
+- Restored generated bindings to their minimal generator formatting after the temporary broad Prettier rewrite, retaining only the generated semantic changes.

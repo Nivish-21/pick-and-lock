@@ -31,3 +31,7 @@ Private v2 rooms remain private by default. A creator may publish a narrow, reve
 ## 2026-09-05 — GitHub Issues are the live agent queue
 
 The repeated manual prompt relay is a coordination failure, not a coding task. We will use GitHub Issues with `ready`, `claimed`, `blocked`, and `review` states for atomic task claiming, one task branch per issue, and pull requests as handoffs. This is sufficient for two agents and avoids introducing another hosted coordination system. It does require agents to remain running or be awakened by their host; a repository cannot independently wake a stopped chat agent.
+
+## 2026-09-06 — Preserve the deployed `my_rooms` schema during the v2 release
+
+The deployed Maincloud module defines `PrivateRoomStatus` with only `Open`, and `my_rooms.status` exposes that type. Adding `Locked` to the same type causes SpacetimeDB to remove and recreate the view, disconnecting every live client. We will preserve that legacy type and field unchanged, add a new defaulted private decision-status field for v2 lifecycle state, and expose its state only through new v2/public projections. The legacy `my_rooms` view therefore remains a compatibility surface and continues to report `Open`; it is not the v2 room-state API. This trade-off avoids an unplanned production interruption and preserves existing data and subscriptions.

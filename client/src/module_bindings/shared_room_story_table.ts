@@ -10,7 +10,7 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 import {
-  PrivateRoomStatus,
+  DecisionRoomStatus,
 } from "./types";
 
 
@@ -18,7 +18,7 @@ export default __t.row({
   id: __t.string().primaryKey(),
   title: __t.string(),
   get status() {
-    return PrivateRoomStatus;
+    return DecisionRoomStatus;
   },
   choiceLabels: __t.array(__t.string()).name("choice_labels"),
   selectedChoiceLabel: __t.option(__t.string()).name("selected_choice_label"),

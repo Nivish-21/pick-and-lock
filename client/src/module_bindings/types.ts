@@ -74,6 +74,13 @@ export const ChatMessage = __t.object("ChatMessage", {
 });
 export type ChatMessage = __Infer<typeof ChatMessage>;
 
+// The tagged union or sum type for the algebraic type `DecisionRoomStatus`.
+export const DecisionRoomStatus = __t.enum("DecisionRoomStatus", {
+  Open: __t.unit(),
+  Locked: __t.unit(),
+});
+export type DecisionRoomStatus = __Infer<typeof DecisionRoomStatus>;
+
 export const EventLog = __t.object("EventLog", {
   id: __t.u64(),
   planId: __t.u32(),
@@ -284,6 +291,9 @@ export const PrivateRoom = __t.object("PrivateRoom", {
   get status() {
     return PrivateRoomStatus;
   },
+  get decisionStatus() {
+    return DecisionRoomStatus;
+  },
   lockedChoiceId: __t.option(__t.u32()),
 });
 export type PrivateRoom = __Infer<typeof PrivateRoom>;
@@ -298,7 +308,6 @@ export type PrivateRoomChoiceInput = __Infer<typeof PrivateRoomChoiceInput>;
 // The tagged union or sum type for the algebraic type `PrivateRoomStatus`.
 export const PrivateRoomStatus = __t.enum("PrivateRoomStatus", {
   Open: __t.unit(),
-  Locked: __t.unit(),
 });
 export type PrivateRoomStatus = __Infer<typeof PrivateRoomStatus>;
 
@@ -437,7 +446,7 @@ export const SharedRoomStory = __t.object("SharedRoomStory", {
   id: __t.string(),
   title: __t.string(),
   get status() {
-    return PrivateRoomStatus;
+    return DecisionRoomStatus;
   },
   choiceLabels: __t.array(__t.string()),
   selectedChoiceLabel: __t.option(__t.string()),
