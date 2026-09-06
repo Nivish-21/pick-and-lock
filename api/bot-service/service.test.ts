@@ -6,6 +6,10 @@ const { askModerator, classifyIntent } = vi.hoisted(() => ({
     extracted_preferences: [],
     place_query_needed: false,
     activity_ideas: [],
+    wants_poll: false,
+    poll_draft_updates: [],
+    cold_start_ideas: [],
+    confirm_create: [],
   }),
   classifyIntent: vi.fn().mockResolvedValue({ engage: false }),
 }));
