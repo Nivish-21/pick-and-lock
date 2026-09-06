@@ -1,13 +1,13 @@
 import { DbConnection } from "../../client/src/module_bindings";
 import { RoomDebouncer } from "./debounce";
-import { askModerator, type ModeratorMessage } from "./openai";
+import { askModerator, type ModeratorMessage, type PollDraftContext } from "./openai";
 import { findNearbyPlaces } from "./places";
 import {
   decideSpeak,
   type SpeakGateMessage,
   type SpeakGateState,
 } from "./speakGate";
-import { extractPollIdeas } from "./pollAuthoring";
+import { mergePollDraftUpdates } from "./pollAuthoring";
 
 type CachedMessage = SpeakGateMessage & {
   id: number;
@@ -42,6 +42,8 @@ type CachedActivity = {
   timeMinutes?: number;
 };
 
+type CachedPollDraft = PollDraftContext;
+
 type TimestampLike = Date | number | { toDate(): Date };
 
 function numeric(value: number | bigint): number {
@@ -70,6 +72,7 @@ export class RoomBotService {
   private readonly states = new Map<number, CachedState>();
   private readonly lastActivity = new Map<number, number>();
   private readonly activities = new Map<number, CachedActivity[]>();
+  private readonly pollDrafts = new Map<number, CachedPollDraft[]>();
   private readonly planTitles = new Map<number, string>();
   private readonly memberCounts = new Map<number, number>();
   private readonly debouncer: RoomDebouncer<{
@@ -178,6 +181,9 @@ export class RoomBotService {
     connection.db.myBotRoomState.onUpdate((_context, _oldRow, row) =>
       this.cacheState(row),
     );
+    connection.db.myBotPollDraft.onInsert((_context, row) => this.cachePollDraft(row));
+    connection.db.myBotPollDraft.onUpdate((_context, _oldRow, row) => this.cachePollDraft(row));
+    connection.db.myBotPollDraft.onDelete((_context, row) => this.removePollDraft(row.roomId, row.name));
     connection.db.plan.onInsert((_context, row) => {
       this.planTitles.set(row.id, row.title);
       void connection.reducers
@@ -206,11 +212,13 @@ export class RoomBotService {
         this.locations.clear();
         this.lastActivity.clear();
         this.activities.clear();
+        this.pollDrafts.clear();
         this.planTitles.clear();
         this.memberCounts.clear();
         for (const row of connection.db.activity) {
           this.cacheActivity(row);
         }
+        for (const row of connection.db.myBotPollDraft) this.cachePollDraft(row);
         for (const row of connection.db.plan) {
           this.planTitles.set(row.id, row.title);
           void connection.reducers
@@ -276,6 +284,7 @@ export class RoomBotService {
         "SELECT * FROM my_room_preferences",
         "SELECT * FROM my_room_locations",
         "SELECT * FROM my_bot_room_state",
+        "SELECT * FROM my_bot_poll_draft",
         "SELECT * FROM my_room_members",
         "SELECT * FROM activity",
         "SELECT * FROM plan",
@@ -320,6 +329,36 @@ export class RoomBotService {
       minuteWindowStartedAt: timestampMs(row.minuteWindowStartedAt),
       lastProcessedMessageId: numeric(row.lastProcessedMessageId),
     });
+  }
+
+  private cachePollDraft(row: {
+    roomId: number;
+    name: string;
+    price?: number;
+    minPeople?: number;
+    distanceKm?: number;
+    timeMinutes?: number;
+    awaitingConfirmation: boolean;
+  }): void {
+    const drafts = this.pollDrafts.get(row.roomId) ?? [];
+    const index = drafts.findIndex((draft) => draft.name.toLocaleLowerCase() === row.name.toLocaleLowerCase());
+    const draft: CachedPollDraft = {
+      name: row.name,
+      ...(row.price === undefined ? {} : { price: row.price }),
+      ...(row.minPeople === undefined ? {} : { min_people: row.minPeople }),
+      ...(row.distanceKm === undefined ? {} : { distance_km: row.distanceKm }),
+      ...(row.timeMinutes === undefined ? {} : { time_minutes: row.timeMinutes }),
+      awaiting_confirmation: row.awaitingConfirmation,
+    };
+    if (index >= 0) drafts[index] = draft;
+    else drafts.push(draft);
+    this.pollDrafts.set(row.roomId, drafts);
+  }
+
+  private removePollDraft(roomId: number, name: string): void {
+    this.pollDrafts.set(roomId, (this.pollDrafts.get(roomId) ?? []).filter(
+      (draft) => draft.name.toLocaleLowerCase() !== name.toLocaleLowerCase(),
+    ));
   }
 
   private async processRoom(
@@ -375,73 +414,66 @@ export class RoomBotService {
             `${preference.friendName}: ${preference.statement} (${preference.category})`,
         )
         .join("; "),
+      roomTitle: this.planTitles.get(roomId) ?? "",
+      currentActivities: this.activities.get(roomId) ?? [],
+      memberCount: this.memberCounts.get(roomId) ?? 0,
+      pollDrafts: this.pollDrafts.get(roomId) ?? [],
     });
     console.log(
       `Room ${roomId}: trigger=${gate.trigger} allowed=${gate.allowed} newMessages=${newMessages.length} reply=${result.reply_text ? "yes" : "no"} ideas=${result.activity_ideas.length}`,
     );
 
-    const ideas =
-      newMessages.length > 0
-        ? extractPollIdeas(
-            result.activity_ideas,
-            (this.activities.get(roomId) ?? []).map(
-              (activity) => activity.name,
-            ),
-          )
-        : [];
-    let authoredNames: string[] = [];
-    if (ideas.length > 0) {
-      await this.connection.reducers
-        .sendBotMessage({
+    const priorDrafts = this.pollDrafts.get(roomId) ?? [];
+    const confirmation = newMessages.some((message) =>
+      !message.isBot && /^(?:yes|yeah|yep|sure|please|go ahead|add (?:them|it)|do it)\b/i.test(message.body.trim()),
+    );
+    const confirmedNames = confirmation
+      ? priorDrafts
+          .filter((draft) => draft.awaiting_confirmation && draft.price !== undefined && draft.min_people !== undefined)
+          .map((draft) => draft.name)
+      : [];
+    const createdNames: string[] = [];
+    for (const name of confirmedNames) {
+      const draft = priorDrafts.find((candidate) => candidate.name === name);
+      if (!draft || draft.price === undefined || draft.min_people === undefined) continue;
+      try {
+        await this.connection.reducers.botAddActivity({
           roomId,
-          body: "Drafting a few options from the chat...",
-          kind: "text",
-          payloadJson: "{}",
-        })
-        .catch((error) =>
-          console.error(
-            `sendBotMessage (drafting) failed for room ${roomId}`,
-            error,
-          ),
-        );
-      for (const idea of ideas) {
-        try {
-          await this.connection.reducers.botAddActivity({
-            roomId,
-            name: idea.name,
-            price: idea.price,
-            minPeople: idea.minPeople,
-          });
-          authoredNames.push(idea.name);
-          const activities = this.activities.get(roomId) ?? [];
-          if (!activities.some((activity) => activity.name === idea.name))
-            activities.push({
-              name: idea.name,
-              price: idea.price,
-              minPeople: idea.minPeople,
-            });
-          this.activities.set(roomId, activities);
-        } catch {
-          // A concurrent human add or another bot cycle may have claimed the name.
-        }
+          name: draft.name,
+          price: draft.price,
+          minPeople: draft.min_people,
+          distanceKm: draft.distance_km,
+          timeMinutes: draft.time_minutes,
+        });
+        await this.connection.reducers.clearPollDraft({ roomId, name: draft.name });
+        this.removePollDraft(roomId, draft.name);
+        createdNames.push(draft.name);
+      } catch {
+        // A concurrent human add may have claimed this name; preserve the draft for retry.
       }
-      if (authoredNames.length > 0) {
-        setTimeout(() => {
-          void this.connection.reducers
-            .sendBotMessage({
-              roomId,
-              body: `Added to the poll: ${authoredNames.join(", ")}.`,
-              kind: "recap",
-              payloadJson: JSON.stringify({ activities: authoredNames }),
-            })
-            .catch((error) =>
-              console.error(
-                `sendBotMessage (recap) failed for room ${roomId}`,
-                error,
-              ),
-            );
-        }, 26_000);
-      }
+    }
+
+    const updates = mergePollDraftUpdates([
+      ...result.poll_draft_updates,
+      ...(result.wants_poll && result.poll_draft_updates.length === 0
+        ? result.cold_start_ideas.slice(0, 3).map((name) => ({ name }))
+        : []),
+    ]);
+    for (const update of updates) {
+      const existing = priorDrafts.find((draft) => draft.name.toLocaleLowerCase() === update.name.toLocaleLowerCase());
+      const complete = (update.price ?? existing?.price) !== undefined && (update.minPeople ?? existing?.min_people) !== undefined;
+      const awaitingConfirmation = existing?.awaiting_confirmation || (
+        complete && result.confirm_create.some((name) => name.toLocaleLowerCase() === update.name.toLocaleLowerCase())
+      );
+      await this.connection.reducers.updatePollDraft({
+        roomId,
+        name: update.name,
+        price: update.price,
+        minPeople: update.minPeople,
+        distanceKm: update.distanceKm,
+        timeMinutes: update.timeMinutes,
+        awaitingConfirmation,
+      });
     }
 
     for (const preference of result.extracted_preferences) {
@@ -453,7 +485,18 @@ export class RoomBotService {
         sourceMessageId: BigInt(newMessages.at(-1)?.id ?? 0),
       });
     }
-    if (result.reply_text && gate.allowed && authoredNames.length === 0) {
+    if (createdNames.length > 0) {
+      await this.connection.reducers
+        .sendBotMessage({
+          roomId,
+          body: `Added to the poll: ${createdNames.join(", ")}.`,
+          kind: "recap",
+          payloadJson: JSON.stringify({ activities: createdNames }),
+        })
+        .catch((error) =>
+          console.error(`sendBotMessage (recap) failed for room ${roomId}`, error),
+        );
+    } else if (result.reply_text && gate.allowed) {
       await this.connection.reducers
         .sendBotMessage({
           roomId,

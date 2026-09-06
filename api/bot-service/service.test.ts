@@ -5,6 +5,9 @@ type Insert<T> = (_context: unknown, row: T) => void;
 function table<T>(rows: T[] = []) {
   let onInsert: Insert<T> | undefined;
   let onDelete: Insert<T> | undefined;
+  let onUpdate:
+    | ((_context: unknown, oldRow: T, row: T) => void)
+    | undefined;
   return {
     onInsert(callback: Insert<T>) {
       onInsert = callback;
@@ -12,7 +15,9 @@ function table<T>(rows: T[] = []) {
     onDelete(callback: Insert<T>) {
       onDelete = callback;
     },
-    onUpdate() {},
+    onUpdate(callback: (_context: unknown, oldRow: T, row: T) => void) {
+      onUpdate = callback;
+    },
     insert(row: T) {
       rows.push(row);
       onInsert?.({}, row);
@@ -36,6 +41,7 @@ const fixture = vi.hoisted(() => {
   const myRoomPreferences = table<any>();
   const myRoomLocations = table<any>();
   const myBotRoomState = table<any>();
+  const myBotPollDraft = table<any>();
   let onApplied: (() => void) | undefined;
   const connection = {
     db: {
@@ -46,6 +52,7 @@ const fixture = vi.hoisted(() => {
       myRoomPreferences,
       myRoomLocations,
       myBotRoomState,
+      myBotPollDraft,
     },
     reducers: { ensureBotFriend: vi.fn().mockResolvedValue(undefined) },
     disconnect: vi.fn(),
