@@ -34,6 +34,14 @@ type CachedState = SpeakGateState & {
   lastProcessedMessageId: number;
 };
 
+type CachedActivity = {
+  name: string;
+  price: number;
+  minPeople: number;
+  distanceKm?: number;
+  timeMinutes?: number;
+};
+
 type TimestampLike = Date | number | { toDate(): Date };
 
 function numeric(value: number | bigint): number {
@@ -61,7 +69,9 @@ export class RoomBotService {
   private readonly locations = new Map<number, CachedLocation[]>();
   private readonly states = new Map<number, CachedState>();
   private readonly lastActivity = new Map<number, number>();
-  private readonly activities = new Map<number, Array<{ name: string }>>();
+  private readonly activities = new Map<number, CachedActivity[]>();
+  private readonly planTitles = new Map<number, string>();
+  private readonly memberCounts = new Map<number, number>();
   private readonly debouncer: RoomDebouncer<{
     type: "message" | "location";
     id: number;
@@ -169,15 +179,19 @@ export class RoomBotService {
       this.cacheState(row),
     );
     connection.db.plan.onInsert((_context, row) => {
+      this.planTitles.set(row.id, row.title);
       void connection.reducers
         .ensureBotFriend({ planId: row.id })
         .catch(() => undefined);
     });
     connection.db.activity.onInsert((_context, row) => {
-      const activities = this.activities.get(row.planId) ?? [];
-      if (!activities.some((activity) => activity.name === row.name))
-        activities.push({ name: row.name });
-      this.activities.set(row.planId, activities);
+      this.cacheActivity(row);
+    });
+    connection.db.myRoomMembers.onInsert((_context, row) => {
+      this.memberCounts.set(
+        row.roomId,
+        (this.memberCounts.get(row.roomId) ?? 0) + 1,
+      );
     });
 
     connection
@@ -188,15 +202,22 @@ export class RoomBotService {
         this.locations.clear();
         this.lastActivity.clear();
         this.activities.clear();
+        this.planTitles.clear();
+        this.memberCounts.clear();
         for (const row of connection.db.activity) {
-          const activities = this.activities.get(row.planId) ?? [];
-          activities.push({ name: row.name });
-          this.activities.set(row.planId, activities);
+          this.cacheActivity(row);
         }
         for (const row of connection.db.plan) {
+          this.planTitles.set(row.id, row.title);
           void connection.reducers
             .ensureBotFriend({ planId: row.id })
             .catch(() => undefined);
+        }
+        for (const row of connection.db.myRoomMembers) {
+          this.memberCounts.set(
+            row.roomId,
+            (this.memberCounts.get(row.roomId) ?? 0) + 1,
+          );
         }
         for (const row of connection.db.myRoomChat) {
           const roomMessages = this.messages.get(row.roomId) ?? [];
@@ -251,9 +272,32 @@ export class RoomBotService {
         "SELECT * FROM my_room_preferences",
         "SELECT * FROM my_room_locations",
         "SELECT * FROM my_bot_room_state",
+        "SELECT * FROM my_room_members",
         "SELECT * FROM activity",
         "SELECT * FROM plan",
       ]);
+  }
+
+  private cacheActivity(row: {
+    planId: number;
+    name: string;
+    price: number;
+    minPeople: number;
+    distanceKm?: number;
+    timeMinutes?: number;
+  }): void {
+    const activities = this.activities.get(row.planId) ?? [];
+    if (activities.some((activity) => activity.name === row.name)) return;
+    activities.push({
+      name: row.name,
+      price: row.price,
+      minPeople: row.minPeople,
+      ...(row.distanceKm === undefined ? {} : { distanceKm: row.distanceKm }),
+      ...(row.timeMinutes === undefined
+        ? {}
+        : { timeMinutes: row.timeMinutes }),
+    });
+    this.activities.set(row.planId, activities);
   }
 
   private cacheState(row: {
@@ -351,7 +395,10 @@ export class RoomBotService {
           payloadJson: "{}",
         })
         .catch((error) =>
-          console.error(`sendBotMessage (drafting) failed for room ${roomId}`, error),
+          console.error(
+            `sendBotMessage (drafting) failed for room ${roomId}`,
+            error,
+          ),
         );
       for (const idea of ideas) {
         try {
@@ -363,7 +410,12 @@ export class RoomBotService {
           });
           authoredNames.push(idea.name);
           const activities = this.activities.get(roomId) ?? [];
-          activities.push({ name: idea.name });
+          if (!activities.some((activity) => activity.name === idea.name))
+            activities.push({
+              name: idea.name,
+              price: idea.price,
+              minPeople: idea.minPeople,
+            });
           this.activities.set(roomId, activities);
         } catch {
           // A concurrent human add or another bot cycle may have claimed the name.
@@ -379,7 +431,10 @@ export class RoomBotService {
               payloadJson: JSON.stringify({ activities: authoredNames }),
             })
             .catch((error) =>
-              console.error(`sendBotMessage (recap) failed for room ${roomId}`, error),
+              console.error(
+                `sendBotMessage (recap) failed for room ${roomId}`,
+                error,
+              ),
             );
         }, 26_000);
       }
@@ -403,7 +458,10 @@ export class RoomBotService {
           payloadJson: "{}",
         })
         .catch((error) =>
-          console.error(`sendBotMessage (reply) failed for room ${roomId}`, error),
+          console.error(
+            `sendBotMessage (reply) failed for room ${roomId}`,
+            error,
+          ),
         );
     }
 
@@ -429,7 +487,10 @@ export class RoomBotService {
             payloadJson: JSON.stringify({ places }),
           })
           .catch((error) =>
-            console.error(`sendBotMessage (places) failed for room ${roomId}`, error),
+            console.error(
+              `sendBotMessage (places) failed for room ${roomId}`,
+              error,
+            ),
           );
       } catch (error) {
         console.error(`findNearbyPlaces failed for room ${roomId}`, error);
@@ -441,7 +502,10 @@ export class RoomBotService {
             payloadJson: JSON.stringify({ places: [] }),
           })
           .catch((error) =>
-            console.error(`sendBotMessage (places-error) failed for room ${roomId}`, error),
+            console.error(
+              `sendBotMessage (places-error) failed for room ${roomId}`,
+              error,
+            ),
           );
       }
     }
