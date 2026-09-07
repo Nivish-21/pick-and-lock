@@ -143,7 +143,7 @@ export async function askModerator(
   const content = data.choices?.[0]?.message?.content;
   if (!content) {
     console.log(
-      `[openai] empty content: status=${response.status} choices=${data.choices?.length ?? "?"} content=${typeof content}`,
+      `[openai] empty content: status=${response.status} choices=${data.choices?.length ?? "?"} content=${typeof content} body=${JSON.stringify(data).slice(0, 600)}`,
     );
     return emptyResult;
   }
