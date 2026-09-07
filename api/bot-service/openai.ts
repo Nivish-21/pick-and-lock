@@ -88,11 +88,17 @@ export async function askModerator(
     messages: ModeratorMessage[];
     preferenceDigest: string;
     roomTitle?: string;
-    currentActivities?: Array<{ name: string; price: number; minPeople: number; distanceKm?: number; timeMinutes?: number }>;
+    currentActivities?: Array<{
+      name: string;
+      price: number;
+      minPeople: number;
+      distanceKm?: number;
+      timeMinutes?: number;
+    }>;
     memberCount?: number;
     pollDrafts?: PollDraftContext[];
   },
-  options: RetryFetchOptions = {},
+  options: RetryFetchOptions = { timeoutMs: 30_000 },
 ): Promise<ModeratorResult> {
   const response = await fetchWithRetry(
     "https://api.openai.com/v1/chat/completions",
@@ -135,7 +141,12 @@ export async function askModerator(
     choices?: Array<{ message?: { content?: string | null } }>;
   };
   const content = data.choices?.[0]?.message?.content;
-  if (!content) return emptyResult;
+  if (!content) {
+    console.log(
+      `[openai] empty content: status=${response.status} choices=${data.choices?.length ?? "?"} content=${typeof content}`,
+    );
+    return emptyResult;
+  }
   try {
     const parsed = JSON.parse(content) as Partial<ModeratorResult>;
     return {
@@ -155,13 +166,20 @@ export async function askModerator(
         ? parsed.poll_draft_updates
         : [],
       cold_start_ideas: Array.isArray(parsed.cold_start_ideas)
-        ? parsed.cold_start_ideas.filter((idea): idea is string => typeof idea === "string")
+        ? parsed.cold_start_ideas.filter(
+            (idea): idea is string => typeof idea === "string",
+          )
         : [],
       confirm_create: Array.isArray(parsed.confirm_create)
-        ? parsed.confirm_create.filter((name): name is string => typeof name === "string")
+        ? parsed.confirm_create.filter(
+            (name): name is string => typeof name === "string",
+          )
         : [],
     };
-  } catch {
+  } catch (error) {
+    console.log(
+      `[openai] parse failed: prefix=${typeof content === "string" ? JSON.stringify(content.slice(0, 200)) : content} err=${String(error)}`,
+    );
     return emptyResult;
   }
 }
