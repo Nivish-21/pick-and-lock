@@ -290,3 +290,36 @@ Production schema inspection proved that `my_rooms.status` uses the deployed one
 **Migration result (2026-09-06):** the inspected plan is additive in data terms—defaulted columns, new tables, new public story table, and new views only—but Maincloud still labels the combined schema update as client-breaking and warns it will disconnect all clients. Confirmation was cancelled. This fails the third step's no-disconnect condition; do not publish or deploy this module unless the owner explicitly accepts the interruption or a server-platform-supported no-disconnect upgrade path is identified.
 
 **Handoff (2026-09-06):** the compatibility change and evidence are pushed as `b3f07ec`. Production stays on the verified v1 presence deployment. The remaining public-share publish/deploy/E2E steps are intentionally blocked by the Maincloud client-disconnect warning, not by an untested local change.
+
+## Task block: restore bot authorization — `BOT_IDENTITY` reset by the `Friend.email` republish (2026-09-07 — EXECUTED, auth fix verified live; definition of done MET)
+
+**Read `docs/lessons.md`'s "2026-09-06/07" entry and `docs/status.md`'s "2026-09-07" entry in full before touching anything.** Root cause is already confirmed, read-only, this session — do not re-diagnose from scratch.
+
+**One-sentence summary:** the bot's source code is correct and untouched; a routine schema republish (`e5eb434`, `Friend.email` column) was run without re-supplying the `BOT_IDENTITY` compile-time env var, which is never persisted anywhere, so the currently-published Maincloud module silently rejects every bot-authenticated call (`ensure_bot_friend`, `send_bot_message`, `record_preference`, `bot_add_activity`, `advance_bot_watermark`) in every room. The fix is a republish of the exact same already-committed code with that one env var supplied again — no file edit required.
+
+**Non-goals — do not do these:**
+- Do not regenerate a new bot identity/token (`generate-identity.ts`). The existing 6 rooms' `Friend` rows are tied to the current identity; a new identity would orphan them and require re-joining every room.
+- Do not change `server/spacetimedb/src/lib.rs`, `require_bot()`, or any bot reducer — the logic is already correct.
+- Do not bundle any other pending schema/code change into this publish. This must be a republish of the current `main` HEAD as-is, isolated to fixing the env var.
+
+**Steps:**
+
+1. **Recover the bot's exact public identity hex** (this is a public identifier, not a secret — safe to look up and use in a publish command). Do this by either:
+   - Querying `spacetime sql pick-and-lock "SELECT * FROM friend"` and finding the identity value shared by the bot's existing `Friend` rows across the 6 known-working rooms (11, 13, 14, 16, 21, 23), or
+   - Checking Render logs for the bot-service's own `onConnect` log line (prints `connected as <hex>` or equivalent — check `api/bot-service/service.ts`/`index.ts` for the exact log call) right after a restart.
+   - **Do not read `api/bot-service/.env` or print `BOT_SPACETIME_TOKEN`** — that's the secret token, not the public identity, and reading/printing secrets requires separate explicit permission per this project's standing rule. The identity hex is a different, non-secret value.
+2. **Confirm the current `main` HEAD has no uncommitted or unpublished schema changes beyond what's already live** — run `git status`, and diff the currently-published schema against `server/spacetimedb/src/lib.rs` on HEAD the same way every prior publish in this project has (`git diff <last-published-commit> HEAD -- server/spacetimedb/src/lib.rs`) to confirm this publish introduces no unexpected table/column changes.
+3. **Get explicit owner confirmation before running the publish** — state exactly what will run and that it's a live production database action, same discipline as every prior publish this session and prior sessions. This step cannot be skipped or assumed.
+4. **Run the republish with `BOT_IDENTITY` set:**
+   ```
+   BOT_IDENTITY=<identity hex from step 1> spacetime publish pick-and-lock --module-path server/spacetimedb --yes=<remote or break-clients, matching whatever the schema-diff in step 2 requires>
+   ```
+5. **Verify immediately, against the live database, not just "it published":**
+   - `spacetime sql pick-and-lock "SELECT * FROM friend WHERE plan_id = 29"` (or whatever the currently-affected room's plan id is) — confirm a bot `Friend` row appears within a minute or two of a `render restart` (a restart is needed after any Maincloud publish to force the bot-service to reconnect and re-run its bootstrap sweep; this project's existing reconnect-on-disconnect logic may also pick this up automatically — check Render logs either way).
+   - Send a real `@sorted`/`@agent` message in a live room and confirm a genuine bot reply appears (query `my_room_chat`/`my_bot_room_state` directly via `spacetime sql`, don't just trust the browser UI — this project's own lessons.md has prior incidents of view-materialization looking wrong in the browser while the server-side data was fine).
+   - Confirm the previously-working rooms (11, 13, 14, 16, 21, 23) are unaffected (bot still present, no duplicate/orphaned `Friend` rows).
+6. **Update `docs/status.md` and `docs/changelog.md`** with the fix confirmation and timestamp, and check off this task block's steps in this file, per this project's standing logging discipline.
+
+**Execution status (this file, 2026-09-07):** Steps 1–4 executed with owner go-ahead. Step 5 complete — `require_bot()`-gated reducers confirmed working against live DB at 16:17–17:51 UTC (bot connected 16:17:22; `send_bot_message` intro rows written into rooms 4–30 at 16:17:24; room 14 watermark advanced 59→97→100; rooms 11/13/14/16/21/23 friend rows unchanged). Three additional bot-service bugs surfaced and fixed: (1) `gpt-5-nano` reasoning tokens consuming `max_completion_tokens` → added `reasoning_effort: "minimal"` (`1f77cb0`); (2) JS `slice(0,500)` chars vs Rust `body.len() > 500` bytes mismatch → byte-aware `truncateToBytes` (`baada50`); (3) `recordPreference` hallucinated friend_id killing batch → wrapped non-fatal `.catch()` (`8bbfb23`). **Verified at 17:51:10 UTC: room 14 message 142 (`AI Concierge`, `is_bot=true`) — a genuine SQL-verified bot reply to a direct-address `@sorted` message.** Done-criterion met.
+
+**Known follow-up:** `recordPreference` still receives hallucinated friend_ids (model has no member roster) — now non-fatal but preferences aren't recorded. Full fix: pass member roster in user content JSON.
