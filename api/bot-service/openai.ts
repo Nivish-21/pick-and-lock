@@ -111,6 +111,7 @@ export async function askModerator(
       body: JSON.stringify({
         model: "gpt-5-nano",
         max_completion_tokens: 4_000,
+        reasoning_effort: "minimal",
         response_format: { type: "json_object" },
         messages: [
           {
