@@ -17,12 +17,24 @@ const SAFE_SCOPE_DEFLECTION =
 const OUT_OF_SCOPE_OUTPUT =
   /ignore\s+(?:all\s+)?previous|system\s+prompt|prompt\s+extract|role[- ]?play|\b(?:book|booking|reserve|reserving|pay|payment|call|calling)\b.*\b(?:for you|it|them|the venue|the restaurant)\b/i;
 
+const MAX_REPLY_BYTES = 500;
+
+function truncateToBytes(text: string, maxBytes: number): string {
+  const encoder = new TextEncoder();
+  if (encoder.encode(text).length <= maxBytes) return text;
+  for (let length = text.length; length > 0; length -= 1) {
+    const candidate = text.slice(0, length);
+    if (encoder.encode(candidate).length <= maxBytes) return candidate;
+  }
+  return "";
+}
+
 function sanitizeReply(
   reply: string | null,
   allowedToSpeak: boolean,
 ): string | null {
   if (!allowedToSpeak || typeof reply !== "string") return null;
-  const trimmed = reply.trim().slice(0, 500);
+  const trimmed = truncateToBytes(reply.trim(), MAX_REPLY_BYTES);
   if (!trimmed) return null;
   return OUT_OF_SCOPE_OUTPUT.test(trimmed) ? SAFE_SCOPE_DEFLECTION : trimmed;
 }
