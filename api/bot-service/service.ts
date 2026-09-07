@@ -1,6 +1,10 @@
 import { DbConnection } from "../../client/src/module_bindings";
 import { RoomDebouncer } from "./debounce";
-import { askModerator, type ModeratorMessage, type PollDraftContext } from "./openai";
+import {
+  askModerator,
+  type ModeratorMessage,
+  type PollDraftContext,
+} from "./openai";
 import { classifyIntent } from "./intentClassifier";
 import { findNearbyPlaces } from "./places";
 import {
@@ -196,9 +200,15 @@ export class RoomBotService {
     connection.db.myBotRoomState.onUpdate((_context, _oldRow, row) =>
       this.cacheState(row),
     );
-    connection.db.myBotPollDraft.onInsert((_context, row) => this.cachePollDraft(row));
-    connection.db.myBotPollDraft.onUpdate((_context, _oldRow, row) => this.cachePollDraft(row));
-    connection.db.myBotPollDraft.onDelete((_context, row) => this.removePollDraft(row.roomId, row.name));
+    connection.db.myBotPollDraft.onInsert((_context, row) =>
+      this.cachePollDraft(row),
+    );
+    connection.db.myBotPollDraft.onUpdate((_context, _oldRow, row) =>
+      this.cachePollDraft(row),
+    );
+    connection.db.myBotPollDraft.onDelete((_context, row) =>
+      this.removePollDraft(row.roomId, row.name),
+    );
     connection.db.plan.onInsert((_context, row) => {
       this.planTitles.set(row.id, row.title);
       void this.ensureBotFriendAndIntroduce(connection, row.id);
@@ -231,7 +241,8 @@ export class RoomBotService {
         for (const row of connection.db.activity) {
           this.cacheActivity(row);
         }
-        for (const row of connection.db.myBotPollDraft) this.cachePollDraft(row);
+        for (const row of connection.db.myBotPollDraft)
+          this.cachePollDraft(row);
         for (const row of connection.db.plan) {
           this.planTitles.set(row.id, row.title);
           void connection.reducers
@@ -308,7 +319,9 @@ export class RoomBotService {
     connection: DbConnection,
     roomId: number,
   ): Promise<void> {
-    await connection.reducers.ensureBotFriend({ planId: roomId }).catch(() => undefined);
+    await connection.reducers
+      .ensureBotFriend({ planId: roomId })
+      .catch(() => undefined);
     if ((this.messages.get(roomId)?.length ?? 0) !== 0) return;
     await connection.reducers
       .sendBotMessage({
@@ -378,13 +391,18 @@ export class RoomBotService {
     awaitingConfirmation: boolean;
   }): void {
     const drafts = this.pollDrafts.get(row.roomId) ?? [];
-    const index = drafts.findIndex((draft) => draft.name.toLocaleLowerCase() === row.name.toLocaleLowerCase());
+    const index = drafts.findIndex(
+      (draft) =>
+        draft.name.toLocaleLowerCase() === row.name.toLocaleLowerCase(),
+    );
     const draft: CachedPollDraft = {
       name: row.name,
       ...(row.price === undefined ? {} : { price: row.price }),
       ...(row.minPeople === undefined ? {} : { min_people: row.minPeople }),
       ...(row.distanceKm === undefined ? {} : { distance_km: row.distanceKm }),
-      ...(row.timeMinutes === undefined ? {} : { time_minutes: row.timeMinutes }),
+      ...(row.timeMinutes === undefined
+        ? {}
+        : { time_minutes: row.timeMinutes }),
       awaiting_confirmation: row.awaitingConfirmation,
     };
     if (index >= 0) drafts[index] = draft;
@@ -393,9 +411,12 @@ export class RoomBotService {
   }
 
   private removePollDraft(roomId: number, name: string): void {
-    this.pollDrafts.set(roomId, (this.pollDrafts.get(roomId) ?? []).filter(
-      (draft) => draft.name.toLocaleLowerCase() !== name.toLocaleLowerCase(),
-    ));
+    this.pollDrafts.set(
+      roomId,
+      (this.pollDrafts.get(roomId) ?? []).filter(
+        (draft) => draft.name.toLocaleLowerCase() !== name.toLocaleLowerCase(),
+      ),
+    );
   }
 
   private async processRoom(
@@ -476,18 +497,28 @@ export class RoomBotService {
     );
 
     const priorDrafts = this.pollDrafts.get(roomId) ?? [];
-    const confirmation = newMessages.some((message) =>
-      !message.isBot && /^(?:yes|yeah|yep|sure|please|go ahead|add (?:them|it)|do it)\b/i.test(message.body.trim()),
+    const confirmation = newMessages.some(
+      (message) =>
+        !message.isBot &&
+        /^(?:yes|yeah|yep|sure|please|go ahead|add (?:them|it)|do it)\b/i.test(
+          message.body.trim(),
+        ),
     );
     const confirmedNames = confirmation
       ? priorDrafts
-          .filter((draft) => draft.awaiting_confirmation && draft.price !== undefined && draft.min_people !== undefined)
+          .filter(
+            (draft) =>
+              draft.awaiting_confirmation &&
+              draft.price !== undefined &&
+              draft.min_people !== undefined,
+          )
           .map((draft) => draft.name)
       : [];
     const createdNames: string[] = [];
     for (const name of confirmedNames) {
       const draft = priorDrafts.find((candidate) => candidate.name === name);
-      if (!draft || draft.price === undefined || draft.min_people === undefined) continue;
+      if (!draft || draft.price === undefined || draft.min_people === undefined)
+        continue;
       try {
         await this.connection.reducers.botAddActivity({
           roomId,
@@ -497,7 +528,10 @@ export class RoomBotService {
           distanceKm: draft.distance_km,
           timeMinutes: draft.time_minutes,
         });
-        await this.connection.reducers.clearPollDraft({ roomId, name: draft.name });
+        await this.connection.reducers.clearPollDraft({
+          roomId,
+          name: draft.name,
+        });
         this.removePollDraft(roomId, draft.name);
         createdNames.push(draft.name);
       } catch {
@@ -512,11 +546,20 @@ export class RoomBotService {
         : []),
     ]);
     for (const update of updates) {
-      const existing = priorDrafts.find((draft) => draft.name.toLocaleLowerCase() === update.name.toLocaleLowerCase());
-      const complete = (update.price ?? existing?.price) !== undefined && (update.minPeople ?? existing?.min_people) !== undefined;
-      const awaitingConfirmation = existing?.awaiting_confirmation || (
-        complete && result.confirm_create.some((name) => name.toLocaleLowerCase() === update.name.toLocaleLowerCase())
+      const existing = priorDrafts.find(
+        (draft) =>
+          draft.name.toLocaleLowerCase() === update.name.toLocaleLowerCase(),
       );
+      const complete =
+        (update.price ?? existing?.price) !== undefined &&
+        (update.minPeople ?? existing?.min_people) !== undefined;
+      const awaitingConfirmation =
+        existing?.awaiting_confirmation ||
+        (complete &&
+          result.confirm_create.some(
+            (name) =>
+              name.toLocaleLowerCase() === update.name.toLocaleLowerCase(),
+          ));
       await this.connection.reducers.updatePollDraft({
         roomId,
         name: update.name,
@@ -529,13 +572,20 @@ export class RoomBotService {
     }
 
     for (const preference of result.extracted_preferences) {
-      await this.connection.reducers.recordPreference({
-        roomId,
-        friendId: preference.friend_id,
-        statement: preference.statement,
-        category: preference.category,
-        sourceMessageId: BigInt(newMessages.at(-1)?.id ?? 0),
-      });
+      await this.connection.reducers
+        .recordPreference({
+          roomId,
+          friendId: preference.friend_id,
+          statement: preference.statement,
+          category: preference.category,
+          sourceMessageId: BigInt(newMessages.at(-1)?.id ?? 0),
+        })
+        .catch((error) =>
+          console.error(
+            `recordPreference failed for room ${roomId} (friend_id=${preference.friend_id})`,
+            error,
+          ),
+        );
     }
     if (createdNames.length > 0) {
       await this.connection.reducers
@@ -546,7 +596,10 @@ export class RoomBotService {
           payloadJson: JSON.stringify({ activities: createdNames }),
         })
         .catch((error) =>
-          console.error(`sendBotMessage (recap) failed for room ${roomId}`, error),
+          console.error(
+            `sendBotMessage (recap) failed for room ${roomId}`,
+            error,
+          ),
         );
     } else if (result.reply_text && gate.allowed) {
       await this.connection.reducers
