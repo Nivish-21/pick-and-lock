@@ -34,6 +34,13 @@ type CachedPreference = {
   category: string;
 };
 
+type CachedMember = {
+  id: number;
+  name: string;
+};
+
+type IdentityLike = { isEqual(other: IdentityLike): boolean };
+
 type CachedState = SpeakGateState & {
   roomId: number;
   lastProcessedMessageId: number;
@@ -83,6 +90,8 @@ export class RoomBotService {
   private readonly pollDrafts = new Map<number, CachedPollDraft[]>();
   private readonly planTitles = new Map<number, string>();
   private readonly memberCounts = new Map<number, number>();
+  private readonly members = new Map<number, CachedMember[]>();
+  private botIdentity?: IdentityLike;
   private readonly debouncer: RoomDebouncer<{
     type: "message" | "location";
     id: number;
@@ -113,7 +122,10 @@ export class RoomBotService {
       .withUri(this.config.host)
       .withDatabaseName(this.config.database)
       .withToken(this.config.token)
-      .onConnect((connection) => this.subscribe(connection))
+      .onConnect((connection, identity) => {
+        this.botIdentity = identity;
+        this.subscribe(connection);
+      })
       .onConnectError((_context, error) =>
         console.error("Bot connection error", error),
       )
@@ -226,6 +238,13 @@ export class RoomBotService {
       const count = this.memberCounts.get(row.roomId) ?? 0;
       this.memberCounts.set(row.roomId, Math.max(0, count - 1));
     });
+    connection.db.friend.onInsert((_context, row) => this.cacheFriend(row));
+    connection.db.friend.onUpdate((_context, _oldRow, row) =>
+      this.cacheFriend(row),
+    );
+    connection.db.friend.onDelete((_context, row) =>
+      this.removeFriend(row.planId, row.id),
+    );
 
     connection
       .subscriptionBuilder()
@@ -238,6 +257,10 @@ export class RoomBotService {
         this.pollDrafts.clear();
         this.planTitles.clear();
         this.memberCounts.clear();
+        this.members.clear();
+        for (const row of connection.db.friend) {
+          this.cacheFriend(row);
+        }
         for (const row of connection.db.activity) {
           this.cacheActivity(row);
         }
@@ -312,6 +335,7 @@ export class RoomBotService {
         "SELECT * FROM my_room_members",
         "SELECT * FROM activity",
         "SELECT * FROM plan",
+        "SELECT * FROM friend",
       ]);
   }
 
@@ -339,6 +363,32 @@ export class RoomBotService {
         payloadJson: "{}",
       })
       .catch(() => undefined);
+  }
+
+  private cacheFriend(row: {
+    planId: number;
+    id: number;
+    identity: IdentityLike;
+    name: string;
+    droppedAt?: unknown;
+  }): void {
+    const isBot = this.botIdentity?.isEqual(row.identity) ?? false;
+    const roomMembers = (this.members.get(row.planId) ?? []).filter(
+      (member) => member.id !== row.id,
+    );
+    if (!row.droppedAt && !isBot) {
+      roomMembers.push({ id: row.id, name: row.name });
+    }
+    this.members.set(row.planId, roomMembers);
+  }
+
+  private removeFriend(roomId: number, friendId: number): void {
+    this.members.set(
+      roomId,
+      (this.members.get(roomId) ?? []).filter(
+        (member) => member.id !== friendId,
+      ),
+    );
   }
 
   private cacheActivity(row: {
@@ -490,6 +540,7 @@ export class RoomBotService {
       roomTitle: this.planTitles.get(roomId) ?? "",
       currentActivities: this.activities.get(roomId) ?? [],
       memberCount: this.memberCounts.get(roomId) ?? 0,
+      members: this.members.get(roomId) ?? [],
       pollDrafts: this.pollDrafts.get(roomId) ?? [],
     });
     console.log(
@@ -571,7 +622,14 @@ export class RoomBotService {
       });
     }
 
+    const roster = this.members.get(roomId) ?? [];
     for (const preference of result.extracted_preferences) {
+      if (!roster.some((member) => member.id === preference.friend_id)) {
+        console.warn(
+          `Skipping recordPreference for room ${roomId}: friend_id=${preference.friend_id} is not in the room roster`,
+        );
+        continue;
+      }
       await this.connection.reducers
         .recordPreference({
           roomId,

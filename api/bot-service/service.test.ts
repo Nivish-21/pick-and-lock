@@ -22,9 +22,7 @@ type Insert<T> = (_context: unknown, row: T) => void;
 function table<T>(rows: T[] = []) {
   let onInsert: Insert<T> | undefined;
   let onDelete: Insert<T> | undefined;
-  let onUpdate:
-    | ((_context: unknown, oldRow: T, row: T) => void)
-    | undefined;
+  let onUpdate: ((_context: unknown, oldRow: T, row: T) => void) | undefined;
   return {
     onInsert(callback: Insert<T>) {
       onInsert = callback;
@@ -50,6 +48,10 @@ function table<T>(rows: T[] = []) {
   };
 }
 
+function makeIdentity(id: string) {
+  return { isEqual: (other: { id?: string }) => other?.id === id, id };
+}
+
 const fixture = vi.hoisted(() => {
   const activity = table<any>();
   const plan = table<any>();
@@ -59,6 +61,11 @@ const fixture = vi.hoisted(() => {
   const myRoomLocations = table<any>();
   const myBotRoomState = table<any>();
   const myBotPollDraft = table<any>();
+  const friend = table<any>();
+  const botIdentity = {
+    isEqual: (other: { id?: string }) => other?.id === "bot",
+    id: "bot",
+  };
   let onApplied: (() => void) | undefined;
   const connection = {
     db: {
@@ -70,11 +77,13 @@ const fixture = vi.hoisted(() => {
       myRoomLocations,
       myBotRoomState,
       myBotPollDraft,
+      friend,
     },
     reducers: {
       ensureBotFriend: vi.fn().mockResolvedValue(undefined),
       advanceBotWatermark: vi.fn().mockResolvedValue(undefined),
       sendBotMessage: vi.fn().mockResolvedValue(undefined),
+      recordPreference: vi.fn().mockResolvedValue(undefined),
     },
     disconnect: vi.fn(),
     subscriptionBuilder: () => ({
@@ -91,7 +100,7 @@ const fixture = vi.hoisted(() => {
       onApplied?.();
     },
   };
-  return { connection };
+  return { connection, botIdentity };
 });
 
 const buildSpy = vi.fn(() => fixture.connection);
@@ -109,8 +118,13 @@ vi.mock("../../client/src/module_bindings", () => ({
       withToken() {
         return this;
       },
-      onConnect(callback: (connection: typeof fixture.connection) => void) {
-        callback(fixture.connection);
+      onConnect(
+        callback: (
+          connection: typeof fixture.connection,
+          identity: typeof fixture.botIdentity,
+        ) => void,
+      ) {
+        callback(fixture.connection, fixture.botIdentity);
         return this;
       },
       onConnectError() {
@@ -209,6 +223,67 @@ describe("RoomBotService context caches", () => {
     fixture.connection.db.myRoomMembers.delete(member);
 
     expect((service as any).memberCounts.get(11)).toBe(0);
+    service.stop();
+  });
+
+  it("caches a friend roster excluding dropped members and the bot's own identity", () => {
+    fixture.connection.db.friend.insert({
+      planId: 12,
+      id: 101,
+      identity: makeIdentity("priya"),
+      name: "Priya",
+      droppedAt: undefined,
+    });
+    fixture.connection.db.friend.insert({
+      planId: 12,
+      id: 102,
+      identity: makeIdentity("arjun-dropped"),
+      name: "Arjun",
+      droppedAt: new Date(),
+    });
+    fixture.connection.db.friend.insert({
+      planId: 12,
+      id: 103,
+      identity: fixture.botIdentity,
+      name: "AI Concierge",
+      droppedAt: undefined,
+    });
+
+    const service = new RoomBotService({
+      host: "ws://test",
+      database: "test",
+      token: "test",
+      openAiKey: "test",
+    });
+    fixture.connection.apply();
+
+    expect((service as any).members.get(12)).toEqual([
+      { id: 101, name: "Priya" },
+    ]);
+    service.stop();
+  });
+
+  it("removes a friend from the roster once they're deleted from the subscribed view", () => {
+    const service = new RoomBotService({
+      host: "ws://test",
+      database: "test",
+      token: "test",
+      openAiKey: "test",
+    });
+    fixture.connection.apply();
+
+    const member = {
+      planId: 13,
+      id: 201,
+      identity: makeIdentity("priya-2"),
+      name: "Priya",
+    };
+    fixture.connection.db.friend.insert(member);
+    expect((service as any).members.get(13)).toEqual([
+      { id: 201, name: "Priya" },
+    ]);
+    fixture.connection.db.friend.delete(member);
+    expect((service as any).members.get(13)).toEqual([]);
     service.stop();
   });
 });
@@ -343,6 +418,55 @@ describe("RoomBotService passive intent", () => {
         allowedToSpeak: true,
         trigger: "passive-intent",
       }),
+    );
+    service.stop();
+  });
+});
+
+describe("RoomBotService recordPreference roster guard", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("only records preferences whose friend_id is in the room's roster, skipping hallucinated ids", async () => {
+    askModerator.mockResolvedValueOnce({
+      reply_text: null,
+      extracted_preferences: [
+        { friend_id: 4, statement: "vegetarian", category: "dietary" },
+        { friend_id: 999, statement: "no seafood", category: "dietary" },
+      ],
+      place_query_needed: false,
+      activity_ideas: [],
+      wants_poll: false,
+      poll_draft_updates: [],
+      cold_start_ideas: [],
+      confirm_create: [],
+    });
+    const service = new RoomBotService({
+      host: "ws://test",
+      database: "test",
+      token: "test",
+      openAiKey: "test",
+    });
+    (service as any).members.set(2, [{ id: 4, name: "Priya" }]);
+    (service as any).messages.set(2, [
+      {
+        id: 1,
+        roomId: 2,
+        senderName: "Priya",
+        body: "I'm vegetarian",
+        kind: "text",
+        sentAt: Date.now(),
+      },
+    ]);
+
+    await (service as any).processRoomUnsafe(2, [{ type: "message", id: 1 }]);
+
+    expect(fixture.connection.reducers.recordPreference).toHaveBeenCalledTimes(
+      1,
+    );
+    expect(fixture.connection.reducers.recordPreference).toHaveBeenCalledWith(
+      expect.objectContaining({ roomId: 2, friendId: 4 }),
     );
     service.stop();
   });
