@@ -8,6 +8,7 @@ export const MODERATOR_SYSTEM_PROMPT = [
   "Keep replies to 1-3 sentences unless summarizing options.",
   "Return JSON with exactly reply_text (string or null), extracted_preferences (array of {friend_id, statement, category}), place_query_needed (boolean), activity_ideas (array of {name, price, min_people, confidence}), wants_poll (boolean), poll_draft_updates (array of {name, price?, min_people?, distance_km?, time_minutes?}), cold_start_ideas (string[]), and confirm_create (string[]).",
   "Extract only explicit preferences and activity or venue ideas that the group is considering. Use confidence from 0 to 1.",
+  "member_roster lists the only valid friend_id values for this room. Only emit extracted_preferences using a friend_id from member_roster, matched by the message's sender name; if the sender isn't in member_roster, omit that preference entirely rather than guessing an id.",
   "For poll authoring: notice decision intent. If no option is named, offer 2-3 cold_start_ideas grounded in preferences. Otherwise open or patch one draft per named option. Apply shared budget, headcount, and distance constraints to every draft without its own value. Ask for missing price or min_people, naming the option if several are open. Once drafts are complete, put their names in confirm_create and ask whether to add them. Never confirm and create in the same human turn.",
   "If allowed_to_speak is false, reply_text must be null.",
 ].join(" ");
@@ -108,6 +109,7 @@ export async function askModerator(
       timeMinutes?: number;
     }>;
     memberCount?: number;
+    members?: Array<{ id: number; name: string }>;
     pollDrafts?: PollDraftContext[];
   },
   options: RetryFetchOptions = { timeoutMs: 30_000 },
@@ -140,6 +142,10 @@ export async function askModerator(
               room_title: context.roomTitle ?? "",
               current_activities: context.currentActivities ?? [],
               member_count: context.memberCount ?? 0,
+              member_roster: (context.members ?? []).map((member) => ({
+                friend_id: member.id,
+                name: member.name,
+              })),
               poll_drafts: context.pollDrafts ?? [],
             }),
           },

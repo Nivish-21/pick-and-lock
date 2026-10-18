@@ -323,3 +323,32 @@ Production schema inspection proved that `my_rooms.status` uses the deployed one
 **Execution status (this file, 2026-09-07):** Steps 1–4 executed with owner go-ahead. Step 5 complete — `require_bot()`-gated reducers confirmed working against live DB at 16:17–17:51 UTC (bot connected 16:17:22; `send_bot_message` intro rows written into rooms 4–30 at 16:17:24; room 14 watermark advanced 59→97→100; rooms 11/13/14/16/21/23 friend rows unchanged). Three additional bot-service bugs surfaced and fixed: (1) `gpt-5-nano` reasoning tokens consuming `max_completion_tokens` → added `reasoning_effort: "minimal"` (`1f77cb0`); (2) JS `slice(0,500)` chars vs Rust `body.len() > 500` bytes mismatch → byte-aware `truncateToBytes` (`baada50`); (3) `recordPreference` hallucinated friend_id killing batch → wrapped non-fatal `.catch()` (`8bbfb23`). **Verified at 17:51:10 UTC: room 14 message 142 (`AI Concierge`, `is_bot=true`) — a genuine SQL-verified bot reply to a direct-address `@sorted` message.** Done-criterion met.
 
 **Known follow-up:** `recordPreference` still receives hallucinated friend_ids (model has no member roster) — now non-fatal but preferences aren't recorded. Full fix: pass member roster in user content JSON.
+
+## Follow-up fix: real member roster for recordPreference (2026-09-08 — implemented, tested, not yet deployed)
+
+Implemented directly (bounded, bot-service-only, no schema change): `api/bot-service/service.ts` now subscribes to the public `Friend` table (not `my_room_members`, which is the unrelated v2 private-room system — that was a wrong note in the prior entry) and caches a `{id, name}` roster per room, excluding dropped members and the bot's own identity. The roster is passed into `askModerator`'s context (`api/bot-service/openai.ts`, new `member_roster` field in the request payload, system prompt updated to require using only those ids). `recordPreference` now also checks the roster before calling the reducer at all, skipping and logging any id the model still hallucinates instead of firing a doomed network call.
+
+- [x] Subscribe to `friend`, cache roster (insert/update/delete), exclude dropped + bot identity.
+- [x] Pass roster into `askModerator`; add `member_roster` to the OpenAI request payload; tighten system prompt.
+- [x] Guard `recordPreference` against ids not in the cached roster.
+- [x] Add test coverage (roster caching, roster removal, payload shape, hallucinated-id skip); 35/35 bot-service tests pass, `tsc --noEmit` clean, Prettier applied.
+- [ ] Commit and push (not done — awaiting explicit request, not part of this fix's authorization).
+- [ ] Deploy: Render auto-deploys `api/bot-service` on push to `main`; verify live via `spacetime sql` that a real preference gets recorded end-to-end after a genuine group message, same verification discipline as the auth fix.
+
+## Task block: ground place suggestions in the bot's own memory, so it stops inventing venues (2026-09-08 — found, not started; session paused)
+
+**Before touching anything, resolve the Xcode CLT license blocker first** (`sudo xcodebuild -license`, owner-run, interactive) — `git` doesn't work on this machine until then, and the roster-fix task block above still needs committing/deploying, ideally before or alongside this one.
+
+**One-sentence summary:** `findNearbyPlaces` (`api/bot-service/service.ts:685`) does call the real Google Places API and does show users genuine venue data via a `place_suggestions` chat message, but that real data lives only in the message's `payloadJson`; the bot's own memory of the conversation (`CachedMessage`/`ModeratorMessage`) only ever carries `body` text back into the model, so on any later turn the model has no real record of what it already found and invents venue names/prices from nothing. Live evidence: a production reply asserting a venue called "Hakethon" with a fabricated price — see `docs/changelog.md`'s 2026-09-08 audit entry for the exact trace.
+
+**Non-goals:**
+- Don't touch `findNearbyPlaces`/`places.ts` — the actual API call and its data are already correct and real.
+- Don't touch the friend-roster fix from the task block above — separate, unrelated hallucination source, already handled.
+
+**Suggested approach (not yet validated against the actual `CachedMessage` design, verify before committing to it):**
+1. When a `place_suggestions` message is cached (`service.ts`'s `myRoomChat.onInsert`/bootstrap loop), also parse and retain its `payloadJson` (the real places list) somewhere the model can see on later turns — either as a new field on `CachedMessage` that `askModerator`'s message-mapping includes in `body` (e.g., append a compact real-data summary to the bot's own message body before it's sent to the model), or as a small separate per-room cache (`Map<roomId, PlaceResult[]>`) passed into `askModerator`'s context the same way `members`/`currentActivities` are now.
+2. Update `MODERATOR_SYSTEM_PROMPT` to instruct the model to only reference venues from that real data when naming specific places/prices, and to say so plainly (not invent) when no real place data exists yet for the room.
+3. Add test coverage proving: a cached `place_suggestions` message's real venue data is retrievable by `processRoomUnsafe`/`askModerator`'s context builder, and that a subsequent `askModerator` call includes it in the request payload.
+4. Verify live the same way as every prior bot-service fix: real message flow in a real room, `spacetime sql` check that a reply naming a venue only ever names one that's actually in that room's real Places results.
+
+**Definition of done:** the bot never states a specific venue name or price in a reply unless it came from an actual `findNearbyPlaces` result cached for that room.
