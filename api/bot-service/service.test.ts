@@ -47,7 +47,10 @@ const fixture = vi.hoisted(() => {
       myRoomLocations,
       myBotRoomState,
     },
-    reducers: { ensureBotFriend: vi.fn().mockResolvedValue(undefined) },
+    reducers: {
+      ensureBotFriend: vi.fn().mockResolvedValue(undefined),
+      sendBotMessage: vi.fn().mockResolvedValue(undefined),
+    },
     disconnect: vi.fn(),
     subscriptionBuilder: () => ({
       onApplied(callback: () => void) {
@@ -93,6 +96,9 @@ vi.mock("../../client/src/module_bindings", () => ({
   },
 }));
 
+vi.mock("./openai", () => ({ askModerator: vi.fn() }));
+
+import { askModerator } from "./openai";
 import { RoomBotService } from "./service";
 
 describe("RoomBotService context caches", () => {
@@ -177,6 +183,69 @@ describe("RoomBotService context caches", () => {
     fixture.connection.db.myRoomMembers.delete(member);
 
     expect((service as any).memberCounts.get(11)).toBe(0);
+    service.stop();
+  });
+
+  it("sends the static intro then location request for a fresh room without calling the LLM", async () => {
+    const service = new RoomBotService({
+      host: "ws://test",
+      database: "test",
+      token: "test",
+      openAiKey: "test",
+    });
+
+    fixture.connection.db.plan.insert({ id: 12, title: "New plans" });
+    await vi.waitFor(() =>
+      expect(fixture.connection.reducers.sendBotMessage).toHaveBeenCalledTimes(2),
+    );
+
+    expect(fixture.connection.reducers.ensureBotFriend).toHaveBeenCalledWith({
+      planId: 12,
+    });
+    expect(fixture.connection.reducers.sendBotMessage).toHaveBeenNthCalledWith(
+      1,
+      {
+        roomId: 12,
+        body: "Hi, I'm Sorted's planning assistant — mention me anytime, or just tell me what you're deciding and I'll help build a poll.",
+        kind: "text",
+        payloadJson: "{}",
+      },
+    );
+    expect(fixture.connection.reducers.sendBotMessage).toHaveBeenNthCalledWith(
+      2,
+      {
+        roomId: 12,
+        body: "Share your location to help me suggest nearby options.",
+        kind: "location_request",
+        payloadJson: "{}",
+      },
+    );
+    expect(fixture.connection.reducers.sendBotMessage).toHaveBeenCalledTimes(2);
+    expect(askModerator).not.toHaveBeenCalled();
+    service.stop();
+  });
+
+  it("does not send an entry intro when the room already has chat", async () => {
+    fixture.connection.db.myRoomChat.insert({
+      id: 1,
+      roomId: 13,
+      senderName: "Priya",
+      body: "Already here",
+      isBot: false,
+      kind: "text",
+      sentAt: Date.now(),
+    });
+    const service = new RoomBotService({
+      host: "ws://test",
+      database: "test",
+      token: "test",
+      openAiKey: "test",
+    });
+
+    fixture.connection.db.plan.insert({ id: 13, title: "Existing plans" });
+    await Promise.resolve();
+
+    expect(fixture.connection.reducers.sendBotMessage).not.toHaveBeenCalled();
     service.stop();
   });
 });
